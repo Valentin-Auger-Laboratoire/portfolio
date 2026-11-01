@@ -37,14 +37,13 @@ ul, ol { list-style: none; }
 /* ---------- Barre du haut ---------- */
 .topbar {
   position: sticky; top: env(safe-area-inset-top, 0px); z-index: 10;
-  display: flex; align-items: center; justify-content: space-between;
+  display: flex; align-items: center; justify-content: center;
   padding: 14px max(16px, calc((100% - var(--maxw)) / 2));
   background: rgba(12, 12, 13, 0.92);
   backdrop-filter: blur(8px);
   border-bottom: 1px solid var(--border);
 }
-.logo { font-family: var(--mono); font-weight: 500; }
-.nav { display: flex; gap: 28px; }
+.nav { display: flex; gap: 36px; }
 .nav a { color: var(--text-dim); font-size: 0.92rem; transition: color .2s; }
 .nav a:hover, .nav a.active { color: var(--accent); }
 .menu-toggle { display: none; background: none; border: 0; color: var(--text); font-size: 1.4rem; cursor: pointer; }
@@ -103,7 +102,6 @@ main { max-width: var(--maxw); margin: 0 auto; padding: 0 16px; }
     4px 4px 0 #000;
 }
 .tagline { color: var(--text-dim); font-size: 1.12rem; max-width: 52ch; margin: 20px 0 32px; }
-.hero-actions { display: flex; gap: 14px; flex-wrap: wrap; }
 
 .btn {
   display: inline-block; padding: 11px 22px; border-radius: var(--radius);
@@ -118,8 +116,6 @@ main { max-width: var(--maxw); margin: 0 auto; padding: 0 16px; }
     2px 2px 0 #000;
 }
 .btn-primary:hover { filter: brightness(1.1); transform: translateY(-1px); }
-.btn-ghost { border: 1px solid var(--border-hi); color: var(--text); }
-.btn-ghost:hover { border-color: var(--accent); color: var(--accent); }
 
 .status-panel {
   /* rectangle simple, semi-transparent, l'image se devine derrière (flou) */
@@ -230,10 +226,10 @@ main { max-width: var(--maxw); margin: 0 auto; padding: 0 16px; }
   border-radius: var(--radius); transition: border-color .2s; overflow-wrap: anywhere;
 }
 .contact-links a:hover { border-color: var(--accent); }
-/* Grand bouton rouge "Télécharger mon CV" (même style que le bouton principal, allongé) */
+/* CV : deux grands boutons rouges côte à côte, sous la carte contact */
+.cv-block { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin-top: 24px; }
 .btn-cv {
   display: flex; align-items: center; justify-content: center; gap: 12px;
-  width: 100%; max-width: 520px; margin-top: 28px;
   padding: 18px 28px; font-size: 1.1rem; letter-spacing: 0.01em;
 }
 .btn-cv-icon { font-size: 1.3rem; line-height: 1; }
@@ -253,7 +249,9 @@ main { max-width: var(--maxw); margin: 0 auto; padding: 0 16px; }
   .about-photo { max-height: 360px; }
   .skills-banner { aspect-ratio: 16 / 7; }
   .contact { padding: 36px 20px; }
+  .topbar { justify-content: flex-end; }
   .menu-toggle { display: block; }
+  .cv-block { grid-template-columns: 1fr; }
   .nav {
     display: none; position: absolute; top: 100%; left: 0; right: 0;
     flex-direction: column; gap: 0; background: var(--bg); border-bottom: 1px solid var(--border);
