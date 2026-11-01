@@ -28,7 +28,7 @@ window.I18N_EN = {
   'status.search': 'Looking for',
   'status.searchValue': 'Internship abroad — 16 weeks',
   'status.location': 'Location',
-  'status.locationValue': 'City, France',
+  'status.locationValue': 'Paris area, France',
 
   'about.title': '<span>01</span> About',
   'about.p1': 'Replace this text with 3–4 sentences about yourself: what interests you in networks and AI, the kind of problems you like to solve, and what you are looking for.',
