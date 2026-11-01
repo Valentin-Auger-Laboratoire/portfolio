@@ -3,22 +3,31 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Valentin Auger — Élève ingénieur · Réseaux & IA</title>
-  <meta name="description" content="Portfolio de Valentin Auger, élève ingénieur : réseaux, intelligence artificielle et développement.">
+  <title data-i18n="meta.title">Valentin Auger — Élève ingénieur · Réseaux & IA</title>
+  <meta name="description" data-i18n-attr="content:meta.description" content="Portfolio de Valentin Auger, élève ingénieur : réseaux, intelligence artificielle et développement.">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="style.css">
 </head>
 <body>
+  <!--
+    TRADUCTION : le texte français est écrit ici directement.
+    Chaque élément marqué data-i18n="clé" a sa version anglaise dans i18n.js (même clé).
+    Pour modifier un texte : changer le français ici ET l'anglais dans i18n.js.
+  -->
   <header class="topbar">
-    <button class="menu-toggle" aria-label="Ouvrir le menu" aria-expanded="false">☰</button>
+    <div class="lang-switch" role="group" aria-label="Langue / Language">
+      <button type="button" data-lang="fr" aria-pressed="true">FR</button>
+      <button type="button" data-lang="en" aria-pressed="false">EN</button>
+    </div>
+    <button class="menu-toggle" data-i18n-attr="aria-label:nav.menu" aria-label="Ouvrir le menu" aria-expanded="false">☰</button>
     <nav class="nav">
-      <a href="#apropos">À propos</a>
-      <a href="#projets">Projets</a>
-      <a href="#competences">Compétences</a>
-      <a href="#parcours">Parcours</a>
-      <a href="#contact">Contact</a>
+      <a href="#apropos" data-i18n="nav.about">À propos</a>
+      <a href="#projets" data-i18n="nav.projects">Projets</a>
+      <a href="#competences" data-i18n="nav.skills">Compétences</a>
+      <a href="#parcours" data-i18n="nav.background">Parcours</a>
+      <a href="#contact" data-i18n="nav.contact">Contact</a>
     </nav>
   </header>
 
@@ -26,76 +35,75 @@
   <section id="accueil" class="hero">
     <!-- Côté gauche : nom + photo de Valentin en fond (assets/photo.jpg, passée en noir et blanc automatiquement) -->
     <div class="hero-left">
-        <div class="hero-text">
-          <p class="eyebrow">Élève ingénieur</p>
-          <h1>Valentin Auger</h1>
-          <p class="tagline">Réseaux, intelligence artificielle et développement logiciel.
-            Je conçois des systèmes qui fonctionnent, et je documente comment.</p>
-        </div>
+      <div class="hero-text">
+        <p class="eyebrow" data-i18n="hero.eyebrow">Élève ingénieur</p>
+        <h1>Valentin Auger</h1>
+        <p class="tagline" data-i18n="hero.tagline">Réseaux, intelligence artificielle et développement logiciel.
+          Je conçois des systèmes qui fonctionnent, et je documente comment.</p>
+      </div>
     </div>
 
     <!-- Côté droit : image ingénierie santé en fond (assets/fond-sante.jpg, noir et blanc auto) + fiche résumé -->
     <div class="hero-right">
-        <aside class="status-panel" aria-label="Résumé">
-          <dl class="panel-body">
-            <div><dt>École</dt><dd>École Publique d'Ingénieurs de la Santé et du Numérique (EPISEN)</dd></div>
-            <div><dt>Année</dt><dd>2<sup>e</sup> année cycle ingénieur</dd></div>
-            <div><dt>Focus</dt><dd>Réseaux · IA · Systèmes</dd></div>
-            <div><dt>Recherche</dt><dd class="ok">Stage — été 2027</dd></div>
-            <div><dt>Lieu</dt><dd>Ville, France</dd></div>
-          </dl>
-        </aside>
+      <aside class="status-panel" data-i18n-attr="aria-label:status.label" aria-label="Résumé">
+        <dl class="panel-body">
+          <div><dt data-i18n="status.school">École</dt><dd data-i18n="status.schoolValue">École Publique d'Ingénieurs de la Santé et du Numérique (EPISEN)</dd></div>
+          <div><dt data-i18n="status.year">Année</dt><dd data-i18n="status.yearValue">2<sup>e</sup> année cycle ingénieur</dd></div>
+          <div><dt data-i18n="status.focus">Focus</dt><dd data-i18n="status.focusValue">Réseaux · IA · Systèmes</dd></div>
+          <div><dt data-i18n="status.search">Recherche</dt><dd class="ok" data-i18n="status.searchValue">Stage à l'étranger — 16 semaines</dd></div>
+          <div><dt data-i18n="status.location">Lieu</dt><dd data-i18n="status.locationValue">Ville, France</dd></div>
+        </dl>
+      </aside>
     </div>
-
   </section>
 
   <main>
     <!-- À PROPOS -->
     <section id="apropos" class="section">
-      <h2 class="section-title"><span>01</span> À propos</h2>
+      <h2 class="section-title" data-i18n="about.title"><span>01</span> À propos</h2>
       <div class="about-grid">
         <div class="about">
-          <p>Remplace ce texte par 3–4 phrases sur toi : ce qui t'intéresse dans les réseaux et l'IA,
+          <p data-i18n="about.p1">Remplace ce texte par 3–4 phrases sur toi : ce qui t'intéresse dans les réseaux et l'IA,
             le type de problèmes que tu aimes résoudre, et ce que tu cherches (stage, alternance…).</p>
-          <p>Reste factuel : un recruteur doit comprendre en 15 secondes qui tu es et ce que tu sais faire.</p>
+          <p data-i18n="about.p2">Reste factuel : un recruteur doit comprendre en 15 secondes qui tu es et ce que tu sais faire.</p>
         </div>
-        <img class="about-photo" src="assets/code-main.jpg" alt="Main devant un écran d'ordinateur affichant du code" loading="lazy">
+        <img class="about-photo" src="assets/code-main.jpg" data-i18n-attr="alt:about.photoAlt" alt="Main devant un écran d'ordinateur affichant du code" loading="lazy">
       </div>
     </section>
 
     <!-- PROJETS -->
     <section id="projets" class="section">
-      <h2 class="section-title"><span>02</span> Projets</h2>
+      <h2 class="section-title" data-i18n="projects.title"><span>02</span> Projets</h2>
 
-      <div class="filters" role="group" aria-label="Filtrer les projets">
-        <button class="filter active" data-filter="all">Tous</button>
-        <button class="filter" data-filter="reseau">Réseaux</button>
-        <button class="filter" data-filter="ia">IA</button>
-        <button class="filter" data-filter="dev">Dev</button>
+      <div class="filters" role="group" data-i18n-attr="aria-label:projects.filterLabel" aria-label="Filtrer les projets">
+        <button class="filter active" data-filter="all" data-i18n="projects.all">Tous</button>
+        <button class="filter" data-filter="reseau" data-i18n="tag.network">Réseaux</button>
+        <button class="filter" data-filter="ia" data-i18n="tag.ai">IA</button>
+        <button class="filter" data-filter="dev" data-i18n="tag.dev">Dev</button>
       </div>
 
       <div class="projects-grid">
         <article class="project-card" data-tags="reseau">
           <div class="card-top">
-            <span class="card-type">Réseaux</span>
+            <span class="card-type" data-i18n="tag.network">Réseaux</span>
             <span class="card-date">2026</span>
           </div>
-          <h3>Infrastructure réseau virtualisée</h3>
-          <p>Conception d'une topologie multi-VLAN avec routage OSPF et pare-feu, simulée sous GNS3.</p>
+          <h3 data-i18n="p1.title">Infrastructure réseau virtualisée</h3>
+          <p data-i18n="p1.desc">Conception d'une topologie multi-VLAN avec routage OSPF et pare-feu, simulée sous GNS3.</p>
           <ul class="tags"><li>GNS3</li><li>OSPF</li><li>VLAN</li><li>pfSense</li></ul>
           <div class="card-links">
             <a href="#" target="_blank" rel="noopener">Code ↗</a>
-            <a href="#" target="_blank" rel="noopener">Rapport ↗</a>
+            <a href="#" target="_blank" rel="noopener" data-i18n="projects.report">Rapport ↗</a>
           </div>
         </article>
 
         <article class="project-card" data-tags="ia">
           <div class="card-top">
-            <span class="card-type">IA</span>
+            <span class="card-type" data-i18n="tag.ai">IA</span>
             <span class="card-date">2026</span>
           </div>
-          <h3>Détection d'anomalies réseau par ML</h3>
-          <p>Classification de trafic suspect à partir de captures réseau, comparaison de plusieurs modèles.</p>
+          <h3 data-i18n="p2.title">Détection d'anomalies réseau par ML</h3>
+          <p data-i18n="p2.desc">Classification de trafic suspect à partir de captures réseau, comparaison de plusieurs modèles.</p>
           <ul class="tags"><li>Python</li><li>scikit-learn</li><li>Wireshark</li></ul>
           <div class="card-links">
             <a href="#" target="_blank" rel="noopener">Code ↗</a>
@@ -104,11 +112,11 @@
 
         <article class="project-card" data-tags="dev">
           <div class="card-top">
-            <span class="card-type">Dev</span>
+            <span class="card-type" data-i18n="tag.dev">Dev</span>
             <span class="card-date">2025</span>
           </div>
-          <h3>Ce portfolio</h3>
-          <p>Site statique en HTML/CSS/JS sans framework, hébergé sur GitHub Pages.</p>
+          <h3 data-i18n="p3.title">Ce portfolio</h3>
+          <p data-i18n="p3.desc">Site statique en HTML/CSS/JS sans framework, hébergé sur GitHub Pages.</p>
           <ul class="tags"><li>HTML</li><li>CSS</li><li>JavaScript</li></ul>
           <div class="card-links">
             <a href="#" target="_blank" rel="noopener">Code ↗</a>
@@ -119,25 +127,25 @@
 
     <!-- COMPÉTENCES -->
     <section id="competences" class="section">
-      <h2 class="section-title"><span>03</span> Compétences</h2>
+      <h2 class="section-title" data-i18n="skills.title"><span>03</span> Compétences</h2>
       <div class="skills-banner">
-        <img src="assets/serveurs.jpg" alt="Couloir de baies de serveurs, dessin technique en noir et blanc" loading="lazy">
+        <img src="assets/serveurs.jpg" data-i18n-attr="alt:skills.bannerAlt" alt="Couloir de baies de serveurs, dessin technique en noir et blanc" loading="lazy">
       </div>
       <div class="skills-grid">
         <div class="skill-block">
-          <h3>Réseaux</h3>
-          <ul><li>TCP/IP, routage, VLAN</li><li>Cisco IOS</li><li>Wireshark</li><li>GNS3 / Packet Tracer</li></ul>
+          <h3 data-i18n="tag.network">Réseaux</h3>
+          <ul><li data-i18n="skills.net1">TCP/IP, routage, VLAN</li><li>Cisco IOS</li><li>Wireshark</li><li>GNS3 / Packet Tracer</li></ul>
         </div>
         <div class="skill-block">
-          <h3>Intelligence artificielle</h3>
+          <h3 data-i18n="skills.ai">Intelligence artificielle</h3>
           <ul><li>Python, NumPy, pandas</li><li>scikit-learn</li><li>PyTorch</li><li>Jupyter</li></ul>
         </div>
         <div class="skill-block">
-          <h3>Développement</h3>
+          <h3 data-i18n="skills.dev">Développement</h3>
           <ul><li>C / C++</li><li>Java</li><li>HTML / CSS / JS</li><li>SQL</li></ul>
         </div>
         <div class="skill-block">
-          <h3>Outils & systèmes</h3>
+          <h3 data-i18n="skills.tools">Outils & systèmes</h3>
           <ul><li>Linux, Bash</li><li>Git / GitHub</li><li>Docker</li><li>LaTeX</li></ul>
         </div>
       </div>
@@ -145,27 +153,27 @@
 
     <!-- PARCOURS -->
     <section id="parcours" class="section">
-      <h2 class="section-title"><span>04</span> Parcours</h2>
+      <h2 class="section-title" data-i18n="background.title"><span>04</span> Parcours</h2>
       <ol class="timeline">
         <li>
-          <span class="tl-date">2025 — aujourd'hui</span>
-          <h3>Cycle ingénieur — EPISEN</h3>
-          <p>Spécialité / majeure. Cours marquants.</p>
+          <span class="tl-date" data-i18n="background.e1date">2025 — aujourd'hui</span>
+          <h3 data-i18n="background.e1title">Cycle ingénieur — EPISEN</h3>
+          <p data-i18n="background.e1desc">Spécialité / majeure. Cours marquants.</p>
         </li>
         <li>
           <span class="tl-date">2023 — 2025</span>
-          <h3>Classe préparatoire / BUT / Licence</h3>
-          <p>Établissement, ville.</p>
+          <h3 data-i18n="background.e2title">Classe préparatoire / BUT / Licence</h3>
+          <p data-i18n="background.e2desc">Établissement, ville.</p>
         </li>
       </ol>
     </section>
 
     <!-- CONTACT -->
     <section id="contact" class="section">
-      <h2 class="section-title"><span>05</span> Contact</h2>
+      <h2 class="section-title" data-i18n="contact.title"><span>05</span> Contact</h2>
       <!-- fond : assets/code-ecrans.jpg (noir et blanc + voile sombre) -->
       <div class="contact">
-        <p>Ouvert aux opportunités de stage. Le plus simple : un e-mail.</p>
+        <p data-i18n="contact.intro">À la recherche d'un stage de 16 semaines à l'étranger. Le plus simple : un e-mail.</p>
         <ul class="contact-links">
           <li><a href="mailto:auger32valentin@gmail.com"><span>email</span>auger32valentin@gmail.com</a></li>
           <li><a href="https://github.com/Valentin-Auger-Laboratoire" target="_blank" rel="noopener"><span>github</span>github.com/Valentin-Auger-Laboratoire</a></li>
@@ -177,11 +185,11 @@
       <div class="cv-block">
         <a href="assets/cv-fr.pdf" class="btn btn-primary btn-cv" download="CV-Valentin-Auger-FR.pdf">
           <svg class="btn-cv-icon" viewBox="0 0 24 24" width="20" height="20" aria-hidden="true"><path d="M12 4v11m0 0-4.5-4.5M12 15l4.5-4.5M5 19h14" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>
-          <span class="btn-cv-text"><strong>Télécharger le CV</strong><small>Version française · PDF</small></span>
+          <span class="btn-cv-text"><strong data-i18n="cv.download">Télécharger le CV</strong><small data-i18n="cv.fr">Version française · PDF</small></span>
         </a>
         <a href="assets/cv-en.pdf" class="btn btn-primary btn-cv" download="CV-Valentin-Auger-EN.pdf">
           <svg class="btn-cv-icon" viewBox="0 0 24 24" width="20" height="20" aria-hidden="true"><path d="M12 4v11m0 0-4.5-4.5M12 15l4.5-4.5M5 19h14" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>
-          <span class="btn-cv-text"><strong>Download my resume</strong><small>English version · PDF</small></span>
+          <span class="btn-cv-text"><strong data-i18n="cv.download">Télécharger le CV</strong><small data-i18n="cv.en">Version anglaise · PDF</small></span>
         </a>
       </div>
     </section>
@@ -190,16 +198,17 @@
   <footer class="footer">
     <p class="footer-name">Valentin Auger</p>
     <p class="footer-quote">
-      <span>Connecter, sécuriser, faire durer.</span>
-      <span>Mais ce qui compte, c'est que ça marche. Et que ça tienne.</span>
+      <span data-i18n="footer.line1">Connecter, sécuriser, faire durer.</span>
+      <span data-i18n="footer.line2">Mais ce qui compte, c'est que ça marche. Et que ça tienne.</span>
     </p>
-    <nav class="footer-links" aria-label="Liens de pied de page">
+    <nav class="footer-links" data-i18n-attr="aria-label:footer.label" aria-label="Liens de pied de page">
       <a href="https://www.linkedin.com/in/auger-valentin" target="_blank" rel="noopener">LinkedIn</a>
       <a href="https://github.com/Valentin-Auger-Laboratoire" target="_blank" rel="noopener">GitHub</a>
-      <a href="#accueil">Haut de page ↑</a>
+      <a href="#accueil" data-i18n="footer.top">Haut de page ↑</a>
     </nav>
   </footer>
 
+  <script src="i18n.js"></script>
   <script src="script.js"></script>
 </body>
 </html>
