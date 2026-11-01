@@ -4,6 +4,16 @@
 - Élève ingénieur·e : réseaux, IA, code, technologies.
 - Objectif : portfolio technique pro (pas marketing), hébergé sur GitHub Pages.
 - Cible : recruteurs / tuteurs de stage.
+- Propriétaire GitHub : Valentin-Auger-Laboratoire (Valentin Auger).
+- Ses projets GitHub tournent autour de la santé connectée / IA / données médicales
+  (MedPredict, GaitAnalysis, MedScan, VitalWatch IoT, SecureHealth Exchange FHIR, Vision-ECG).
+
+## Déploiement
+- Dépôt : https://github.com/Valentin-Auger-Laboratoire/portfolio (branche `main`)
+- Site en ligne : https://valentin-auger-laboratoire.github.io/portfolio/
+- GitHub Pages : déploiement depuis `main`, dossier `/ (root)`. Chaque push met le site à jour (~1 min).
+- Le site vit dans un sous-dossier `/portfolio/` → utiliser des chemins RELATIFS (pas de `/` au début).
+- Valentin utilise un navigateur avec traduction auto : "Décors" = Settings, "Principaux" = main.
 
 ## Choix de design (validés)
 - Thème sombre "dashboard d'ingénieur", minimaliste.
@@ -26,4 +36,5 @@ data-tags possibles : reseau, ia, dev (plusieurs séparés par un espace).
 - [ ] Remplacer les textes "Prénom Nom", école, liens, e-mail
 - [ ] Ajouter cv.pdf dans assets/
 - [ ] Renseigner les vrais projets
-- [ ] Déployer sur GitHub Pages
+- [x] Déployer sur GitHub Pages
+- [ ] Choisir la couleur d'accent (sélecteur TEMPORAIRE en bas à droite → à retirer ensuite)
