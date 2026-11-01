@@ -16,17 +16,19 @@
 - Valentin utilise un navigateur avec traduction auto : "Décors" = Settings, "Principaux" = main.
 
 ## Choix de design (validés)
-- Thème sombre "dashboard d'ingénieur", minimaliste.
-- Fond : graphe de nœuds animé en canvas (script.js) — remplace l'image fond-tech.png.
+- Thème sobre ingénieur (avec une touche santé). Palette : NOIR / GRIS / BLANC + rouge profond pour les éléments importants. Pas de bleu.
+- Accueil scindé en deux : gauche noir (nom + photo en fond : assets/photo.jpg), droite gris clair (fiche status.sh). Trait d'ECG rouge à la jonction.
+- Fond animé (réseau de nœuds) SUPPRIMÉ : Valentin le trouvait pas pro / pas personnalisé.
+- Nom en grand : blanc, contour noir + ombre décalée. Logo en haut à gauche : "Valentin Auger".
 - Polices : Inter (texte) + JetBrains Mono (accents techniques).
-- Couleurs : toutes dans `:root` de style.css. Accent = rouge profond #c8102e (choisi par Valentin), surtout pas orangé. Secondaire bleu #7aa2f7 conservé.
+- Couleurs : toutes dans `:root` de style.css. Accent = rouge profond #c8102e (choisi par Valentin), surtout pas orangé. Secondaire = gris clair #c9c9cc.
 - Valentin a REFUSÉ : lettrage rétro (Shrikhand) sur le titre, couleur crème. Garder le design de base, ne changer que ce qui est demandé.
 - Pas d'illustrations, pas de framework : HTML/CSS/JS pur.
 
 ## Structure
 - index.html — sections : Accueil, À propos, Projets (filtres), Compétences, Parcours, Contact
 - style.css — styles (responsive < 820px)
-- script.js — fond animé, filtres projets, menu mobile, nav active
+- script.js — filtres projets, menu mobile, nav active
 - assets/ — cv.pdf, images de projets
 
 ## Ajouter un projet
