@@ -244,7 +244,10 @@ main { max-width: var(--maxw); margin: 0 auto; padding: 0 16px; }
   padding: 80px 16px 40px; margin-top: 64px; border-top: 1px solid var(--border);
 }
 .footer-name { font-weight: 600; letter-spacing: 0.02em; }
-.footer-quote { color: var(--text-dim); font-style: italic; }
+.footer-quote { display: grid; gap: 4px; margin-top: 4px; }
+.quote-main { color: var(--text); font-weight: 500; letter-spacing: 0.01em; }
+.quote-sub { color: var(--text-dim); font-style: italic; }
+.quote-sub em { color: var(--accent); font-weight: 600; }
 .footer-links { display: flex; flex-wrap: wrap; justify-content: center; gap: 24px; margin-top: 14px; font-size: 0.85rem; }
 .footer-links a { color: var(--text-dim); transition: color .2s; }
 .footer-links a:hover { color: var(--accent); }
