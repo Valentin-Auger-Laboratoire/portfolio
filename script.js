@@ -37,7 +37,7 @@
           ctx.beginPath(); ctx.moveTo(a.x, a.y); ctx.lineTo(b.x, b.y); ctx.stroke();
         }
       }
-      ctx.fillStyle = 'rgba(122, 162, 247, 0.6)';
+      ctx.fillStyle = `rgba(${accentRGB}, 0.6)`;
       ctx.beginPath(); ctx.arc(a.x, a.y, 1.6, 0, Math.PI * 2); ctx.fill();
     }
   }
@@ -95,29 +95,38 @@ document.querySelectorAll('main section[id]').forEach(s => observer.observe(s));
 
 document.getElementById('year').textContent = new Date().getFullYear();
 
-// ===== TEMPORAIRE — sélecteur de couleur d'accent (à supprimer une fois le choix fait) =====
+// ===== TEMPORAIRE — sélecteur de couleur + style de titre (à supprimer une fois le choix fait) =====
 (() => {
+  const root = document.documentElement;
   const ACCENTS = [
-    { id: 'cyan',   label: 'Cyan',           color: '#4fd1c5' },
-    { id: 'vert',   label: 'Vert terminal',  color: '#7ee787' },
-    { id: 'violet', label: 'Violet',         color: '#b39dfa' },
-    { id: 'ambre',  label: 'Ambre',          color: '#f0b35a' },
-    { id: 'bleu',   label: 'Bleu',           color: '#6cb6ff' },
+    { id: 'rouge',  label: 'Rouge affiche', color: '#f23b2e' },
+    { id: 'doux',   label: 'Rouge doux',    color: '#e5484d' },
+    { id: 'orange', label: 'Rouge orangé',  color: '#ff5530' },
+    { id: 'cyan',   label: 'Cyan (ancien)', color: '#4fd1c5' },
   ];
   const box = document.createElement('div');
   box.className = 'picker';
-  box.innerHTML = '<p>accent : <b></b></p><div class="swatches"></div>';
+  box.innerHTML = '<p>accent : <b></b></p><div class="swatches"></div>' +
+    '<p>titre :</p><div class="picker-row">' +
+    '<button data-title="retro">rétro</button><button data-title="sobre">sobre</button></div>';
   const name = box.querySelector('b');
   const row = box.querySelector('.swatches');
+  const save = (k, v) => { try { localStorage.setItem(k, v); } catch (e) {} };
+  const load = (k, d) => { try { return localStorage.getItem(k) || d; } catch (e) { return d; } };
 
-  function apply(id) {
+  function applyAccent(id) {
     const a = ACCENTS.find(x => x.id === id) || ACCENTS[0];
-    if (a.id === 'cyan') document.documentElement.removeAttribute('data-accent');
-    else document.documentElement.setAttribute('data-accent', a.id);
+    if (a.id === 'rouge') root.removeAttribute('data-accent');
+    else root.setAttribute('data-accent', a.id);
     name.textContent = a.label;
     row.querySelectorAll('.swatch').forEach(s => s.setAttribute('aria-pressed', s.dataset.id === a.id));
-    try { localStorage.setItem('accent', a.id); } catch (e) {}
+    save('accent-v2', a.id);
     document.dispatchEvent(new Event('accentchange'));
+  }
+  function applyTitle(t) {
+    root.setAttribute('data-title', t);
+    box.querySelectorAll('[data-title]').forEach(b => b.setAttribute('aria-pressed', b.dataset.title === t));
+    save('title-style', t);
   }
 
   ACCENTS.forEach(a => {
@@ -125,12 +134,13 @@ document.getElementById('year').textContent = new Date().getFullYear();
     b.className = 'swatch'; b.dataset.id = a.id;
     b.style.setProperty('--c', a.color);
     b.setAttribute('aria-label', a.label); b.title = a.label;
-    b.addEventListener('click', () => apply(a.id));
+    b.addEventListener('click', () => applyAccent(a.id));
     row.appendChild(b);
   });
+  box.querySelectorAll('.picker-row button').forEach(b =>
+    b.addEventListener('click', () => applyTitle(b.dataset.title)));
   document.body.appendChild(box);
 
-  let saved = 'cyan';
-  try { saved = localStorage.getItem('accent') || 'cyan'; } catch (e) {}
-  apply(saved);
+  applyAccent(load('accent-v2', 'rouge'));
+  applyTitle(load('title-style', 'retro'));
 })();
