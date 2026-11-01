@@ -98,11 +98,9 @@ document.getElementById('year').textContent = new Date().getFullYear();
 // ===== TEMPORAIRE — sélecteur de couleur d'accent (à supprimer une fois le choix fait) =====
 (() => {
   const ACCENTS = [
-    { id: 'cyan',   label: 'Cyan',           color: '#4fd1c5' },
-    { id: 'vert',   label: 'Vert terminal',  color: '#7ee787' },
-    { id: 'violet', label: 'Violet',         color: '#b39dfa' },
-    { id: 'ambre',  label: 'Ambre',          color: '#f0b35a' },
-    { id: 'bleu',   label: 'Bleu',           color: '#6cb6ff' },
+    { id: 'vif',      label: 'Rouge vif',      color: '#e11d2e' },
+    { id: 'profond',  label: 'Rouge profond',  color: '#c8102e' },
+    { id: 'lumineux', label: 'Rouge lumineux', color: '#ff2340' },
   ];
   const box = document.createElement('div');
   box.className = 'picker';
@@ -112,11 +110,11 @@ document.getElementById('year').textContent = new Date().getFullYear();
 
   function apply(id) {
     const a = ACCENTS.find(x => x.id === id) || ACCENTS[0];
-    if (a.id === 'cyan') document.documentElement.removeAttribute('data-accent');
+    if (a.id === 'vif') document.documentElement.removeAttribute('data-accent');
     else document.documentElement.setAttribute('data-accent', a.id);
     name.textContent = a.label;
     row.querySelectorAll('.swatch').forEach(s => s.setAttribute('aria-pressed', s.dataset.id === a.id));
-    try { localStorage.setItem('accent', a.id); } catch (e) {}
+    try { localStorage.setItem('accent-rouge', a.id); } catch (e) {}
     document.dispatchEvent(new Event('accentchange'));
   }
 
@@ -130,7 +128,7 @@ document.getElementById('year').textContent = new Date().getFullYear();
   });
   document.body.appendChild(box);
 
-  let saved = 'cyan';
-  try { saved = localStorage.getItem('accent') || 'cyan'; } catch (e) {}
+  let saved = 'vif';
+  try { saved = localStorage.getItem('accent-rouge') || 'vif'; } catch (e) {}
   apply(saved);
 })();

@@ -9,8 +9,8 @@
   --border-hi: #2f3d4f;
   --text:      #d6dde6;
   --text-dim:  #8593a3;
-  --accent:    #4fd1c5;   /* couleur principale (cyan par défaut) */
-  --accent-rgb: 79, 209, 197; /* même couleur en R,G,B — utilisée par le fond animé */
+  --accent:    #e11d2e;   /* couleur principale : rouge vif */
+  --accent-rgb: 225, 29, 46; /* même couleur en R,G,B — utilisée par le fond animé */
   --accent-2:  #7aa2f7;   /* couleur secondaire */
   --ok:        #9ece6a;
   --mono: "JetBrains Mono", ui-monospace, monospace;
@@ -80,7 +80,7 @@ main { max-width: var(--maxw); margin: 0 auto; padding: 0 16px; }
   display: inline-block; padding: 11px 22px; border-radius: var(--radius);
   font-weight: 500; font-size: 0.95rem; transition: all .2s;
 }
-.btn-primary { background: var(--accent); color: var(--bg); }
+.btn-primary { background: var(--accent); color: #fff; }
 .btn-primary:hover { filter: brightness(1.1); transform: translateY(-1px); }
 .btn-ghost { border: 1px solid var(--border-hi); color: var(--text); }
 .btn-ghost:hover { border-color: var(--accent); color: var(--accent); }
@@ -189,10 +189,8 @@ main { max-width: var(--maxw); margin: 0 auto; padding: 0 16px; }
    TEMPORAIRE — sélecteur de couleur pour choisir l'accent.
    Une fois la couleur choisie : on la met dans :root et on supprime ce bloc.
    ========================================================== */
-[data-accent="vert"]   { --accent: #7ee787; --accent-rgb: 126, 231, 135; --accent-2: #79c0ff; }
-[data-accent="violet"] { --accent: #b39dfa; --accent-rgb: 179, 157, 250; --accent-2: #7aa2f7; }
-[data-accent="ambre"]  { --accent: #f0b35a; --accent-rgb: 240, 179, 90;  --accent-2: #8ab4f8; }
-[data-accent="bleu"]   { --accent: #6cb6ff; --accent-rgb: 108, 182, 255; --accent-2: #a5b4fc; }
+[data-accent="profond"]   { --accent: #c8102e; --accent-rgb: 200, 16, 46; }
+[data-accent="lumineux"]  { --accent: #ff2340; --accent-rgb: 255, 35, 64; }
 
 .picker {
   position: fixed; z-index: 20;
