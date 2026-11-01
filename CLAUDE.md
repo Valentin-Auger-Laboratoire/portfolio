@@ -52,3 +52,4 @@ data-tags possibles : reseau, ia, dev (plusieurs séparés par un espace).
 - [x] Déployer sur GitHub Pages
 - [x] Couleur d'accent choisie : rouge profond #c8102e (sélecteur retiré)
 - Bouton principal : texte blanc avec contour noir (text-shadow) — demandé par Valentin.
+- Grand bouton rouge "Télécharger mon CV (PDF)" en bas de la carte Contact → assets/cv.pdf (fichier à fournir par Valentin).
