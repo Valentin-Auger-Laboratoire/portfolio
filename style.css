@@ -1,22 +1,23 @@
 /* ==========================================================
-   Portfolio — thème "dashboard d'ingénieur" (dark)
+   Portfolio — Valentin Auger
+   Palette : noir / gris / blanc + rouge profond pour les éléments importants.
    Toutes les couleurs sont dans :root → modifier ici seulement.
    ========================================================== */
 :root {
-  --bg:        #0a0e14;
-  --bg-panel:  rgba(17, 23, 32, 0.78);
-  --border:    #1e2733;
-  --border-hi: #2f3d4f;
-  --text:      #d6dde6;
-  --text-dim:  #8593a3;
-  --accent:    #c8102e;   /* couleur principale : rouge profond */
-  --accent-rgb: 200, 16, 46; /* même couleur en R,G,B — utilisée par le fond animé */
-  --accent-2:  #7aa2f7;   /* couleur secondaire */
-  --ok:        #9ece6a;
+  --bg:        #0c0c0d;   /* noir du fond */
+  --bg-panel:  #161618;   /* cartes */
+  --border:    #262628;
+  --border-hi: #3a3a3d;
+  --text:      #f2f2f2;   /* blanc */
+  --text-dim:  #9b9b9f;   /* gris */
+  --light:     #ececec;   /* côté clair de l'accueil */
+  --accent:    #c8102e;   /* rouge profond */
+  --accent-2:  #c9c9cc;   /* gris clair (libellés, étiquettes) */
   --mono: "JetBrains Mono", ui-monospace, monospace;
   --sans: "Inter", system-ui, sans-serif;
   --radius: 8px;
   --maxw: 1100px;
+  --gutter: max(16px, calc((100vw - var(--maxw)) / 2));
   color-scheme: dark;
 }
 
@@ -33,19 +34,12 @@ body {
 a { color: inherit; text-decoration: none; }
 ul, ol { list-style: none; }
 
-#network-bg {
-  position: fixed; inset: 0;
-  width: 100%; height: 100%;
-  z-index: -1;
-  opacity: 0.55;
-}
-
 /* ---------- Barre du haut ---------- */
 .topbar {
   position: sticky; top: env(safe-area-inset-top, 0px); z-index: 10;
   display: flex; align-items: center; justify-content: space-between;
   padding: 14px max(16px, calc((100% - var(--maxw)) / 2));
-  background: rgba(10, 14, 20, 0.85);
+  background: rgba(12, 12, 13, 0.92);
   backdrop-filter: blur(8px);
   border-bottom: 1px solid var(--border);
 }
@@ -65,11 +59,41 @@ main { max-width: var(--maxw); margin: 0 auto; padding: 0 16px; }
 .section-title span { font-family: var(--mono); font-size: 0.9rem; color: var(--accent); }
 .section-title::after { content: ""; flex: 1; height: 1px; background: var(--border); align-self: center; }
 
-/* ---------- Accueil ---------- */
+/* ---------- Accueil (écran scindé) ---------- */
 .hero {
-  min-height: calc(100vh - 64px);
-  display: grid; grid-template-columns: 1.3fr 1fr; gap: 56px; align-items: center;
+  position: relative;
+  min-height: calc(100vh - 57px);
+  display: grid; grid-template-columns: 1.25fr 1fr;
 }
+.hero-left {
+  display: flex; align-items: center;
+  padding: 80px 48px 140px var(--gutter);
+  /* photo : déposer assets/photo.jpg — le voile sombre garde le texte lisible */
+  background:
+    linear-gradient(90deg, rgba(12,12,13,0.92) 0%, rgba(12,12,13,0.75) 60%, rgba(12,12,13,0.55) 100%),
+    url("assets/photo.jpg") center / cover no-repeat,
+    var(--bg);
+}
+.hero-right {
+  display: flex; align-items: center; justify-content: center;
+  padding: 80px var(--gutter) 140px 48px;
+  background: var(--light);
+}
+.hero-right .status-panel { width: 100%; max-width: 440px; box-shadow: 0 24px 48px rgba(0,0,0,0.18); }
+
+/* Trait d'ECG : ligne rouge + battement centré sur la jonction */
+.ecg {
+  position: absolute; left: 0; right: 0; bottom: 56px; height: 60px;
+  color: var(--accent); pointer-events: none;
+}
+.ecg::before, .ecg::after {
+  content: ""; position: absolute; top: 29px; height: 2px; background: currentColor;
+}
+.ecg::before { left: 0; right: calc(100% - var(--split) + 80px); }
+.ecg::after  { left: calc(var(--split) + 80px); right: 0; }
+.ecg svg { position: absolute; top: 0; left: calc(var(--split) - 80px); display: block; }
+.hero { --split: 55.5556%; } /* = 1.25 / (1.25 + 1) : position de la jonction */
+
 .eyebrow { font-family: var(--mono); color: var(--accent); font-size: 0.95rem; margin-bottom: 10px; }
 .hero h1 {
   font-size: clamp(2.4rem, 6vw, 3.8rem); line-height: 1.1; font-weight: 700; letter-spacing: -0.02em;
@@ -102,17 +126,16 @@ main { max-width: var(--maxw); margin: 0 auto; padding: 0 16px; }
 .status-panel {
   background: var(--bg-panel); border: 1px solid var(--border);
   border-radius: var(--radius); font-family: var(--mono); font-size: 0.88rem;
-  backdrop-filter: blur(6px);
 }
 .panel-head { display: flex; align-items: center; gap: 6px; padding: 10px 14px; border-bottom: 1px solid var(--border); }
 .dot { width: 10px; height: 10px; border-radius: 50%; }
-.dot-red { background: #f7768e; } .dot-yellow { background: #e0af68; } .dot-green { background: var(--ok); }
+.dot { background: var(--border-hi); }
 .panel-title { margin-left: 10px; color: var(--text-dim); }
 .panel-body { padding: 16px 18px; display: grid; gap: 10px; }
 .panel-body div { display: grid; grid-template-columns: 110px 1fr; }
 .panel-body dt { color: var(--accent-2); }
 .panel-body dt::after { content: ":"; }
-.panel-body .ok { color: var(--ok); }
+.panel-body .ok { color: var(--accent); font-weight: 500; }
 
 /* ---------- À propos ---------- */
 .about { max-width: 70ch; color: var(--text-dim); display: grid; gap: 14px; }
@@ -187,7 +210,10 @@ main { max-width: var(--maxw); margin: 0 auto; padding: 0 16px; }
 
 /* ---------- Responsive ---------- */
 @media (max-width: 820px) {
-  .hero { grid-template-columns: 1fr; gap: 36px; min-height: auto; padding: 64px 0 24px; }
+  .hero { grid-template-columns: 1fr; min-height: auto; }
+  .hero-left { padding: 64px 16px; }
+  .hero-right { padding: 40px 16px 110px; }
+  .ecg { bottom: 32px; --split: 50%; }
   .menu-toggle { display: block; }
   .nav {
     display: none; position: absolute; top: 100%; left: 0; right: 0;

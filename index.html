@@ -11,9 +11,6 @@
   <link rel="stylesheet" href="style.css">
 </head>
 <body>
-  <!-- Fond animé : graphe de nœuds (remplace l'ancienne image fond-tech.png) -->
-  <canvas id="network-bg" aria-hidden="true"></canvas>
-
   <header class="topbar">
     <a href="#accueil" class="logo">Valentin Auger</a>
     <button class="menu-toggle" aria-label="Ouvrir le menu" aria-expanded="false">☰</button>
@@ -26,35 +23,49 @@
     </nav>
   </header>
 
+  <!-- ACCUEIL : écran scindé en deux -->
+  <section id="accueil" class="hero">
+    <!-- Côté gauche : nom + photo en fond (mettre la photo dans assets/photo.jpg) -->
+    <div class="hero-left">
+        <div class="hero-text">
+          <p class="eyebrow">Élève ingénieur</p>
+          <h1>Valentin Auger</h1>
+          <p class="tagline">Réseaux, intelligence artificielle et développement logiciel.
+            Je conçois des systèmes qui fonctionnent, et je documente comment.</p>
+          <div class="hero-actions">
+            <a href="#projets" class="btn btn-primary">Voir les projets</a>
+            <a href="assets/cv.pdf" class="btn btn-ghost" download>Télécharger le CV</a>
+          </div>
+        </div>
+    </div>
+
+    <!-- Côté droit : fond clair + fiche résumé -->
+    <div class="hero-right">
+        <aside class="status-panel" aria-label="Résumé">
+          <div class="panel-head">
+            <span class="dot"></span><span class="dot"></span><span class="dot"></span>
+            <span class="panel-title">status.sh</span>
+          </div>
+          <dl class="panel-body">
+            <div><dt>école</dt><dd>École Publique d'Ingénieurs de la Santé et du Numérique (EPISEN)</dd></div>
+            <div><dt>année</dt><dd>2<sup>e</sup> année cycle ingénieur</dd></div>
+            <div><dt>focus</dt><dd>Réseaux · IA · Systèmes</dd></div>
+            <div><dt>recherche</dt><dd class="ok">Stage — été 2027</dd></div>
+            <div><dt>lieu</dt><dd>Ville, France</dd></div>
+          </dl>
+        </aside>
+    </div>
+
+    <!-- Trait d'ECG rouge à la jonction des deux côtés (touche "santé") -->
+    <div class="ecg" aria-hidden="true">
+      <svg viewBox="0 0 160 60" width="160" height="60">
+        <polyline points="0,30 40,30 52,30 58,22 64,30 72,30 78,6 86,54 92,30 104,30 112,24 120,30 160,30"
+                  fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round" stroke-linecap="round"/>
+      </svg>
+    </div>
+  </section>
+
   <main>
-    <!-- ACCUEIL -->
-    <section id="accueil" class="hero">
-      <div class="hero-text">
-        <p class="eyebrow">Élève ingénieur</p>
-        <h1>Valentin Auger</h1>
-        <p class="tagline">Réseaux, intelligence artificielle et développement logiciel.
-          Je conçois des systèmes qui fonctionnent, et je documente comment.</p>
-        <div class="hero-actions">
-          <a href="#projets" class="btn btn-primary">Voir les projets</a>
-          <a href="assets/cv.pdf" class="btn btn-ghost" download>Télécharger le CV</a>
-        </div>
-      </div>
-
-      <aside class="status-panel" aria-label="Résumé">
-        <div class="panel-head">
-          <span class="dot dot-red"></span><span class="dot dot-yellow"></span><span class="dot dot-green"></span>
-          <span class="panel-title">status.sh</span>
-        </div>
-        <dl class="panel-body">
-          <div><dt>école</dt><dd>École Publique d'Ingénieurs de la Santé et du Numérique (EPISEN)</dd></div>
-          <div><dt>année</dt><dd>2<sup>e</sup> année cycle ingénieur</dd></div>
-          <div><dt>focus</dt><dd>Réseaux · IA · Systèmes</dd></div>
-          <div><dt>recherche</dt><dd class="ok">Stage — été 2027</dd></div>
-          <div><dt>lieu</dt><dd>Ville, France</dd></div>
-        </dl>
-      </aside>
-    </section>
-
     <!-- À PROPOS -->
     <section id="apropos" class="section">
       <h2 class="section-title"><span>01</span> À propos</h2>
