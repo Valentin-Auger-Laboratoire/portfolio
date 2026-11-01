@@ -17,7 +17,11 @@
 
 ## Choix de design (validés)
 - Thème sobre ingénieur (avec une touche santé). Palette : NOIR / GRIS / BLANC + rouge profond pour les éléments importants. Pas de bleu.
-- Accueil scindé en deux : gauche noir (nom + photo en fond : assets/photo.jpg), droite gris clair (fiche status.sh). Trait d'ECG rouge à la jonction.
+- Accueil scindé en deux (seulement l'accueil, le reste du site reste noir uni) :
+  gauche = nom + photo de Valentin (assets/photo.jpg), droite = image ingénierie santé / robots (assets/fond-sante.jpg) + fiche status.sh.
+  Les deux photos passent en noir et blanc via CSS (filter: grayscale). Proportions : --left / --right dans .hero.
+- Trait d'ECG : essayé puis REFUSÉ par Valentin.
+- Références aimées : accueils de portfolio photo N&B plein cadre d'un côté, texte de l'autre.
 - Fond animé (réseau de nœuds) SUPPRIMÉ : Valentin le trouvait pas pro / pas personnalisé.
 - Nom en grand : blanc, contour noir + ombre décalée. Logo en haut à gauche : "Valentin Auger".
 - Polices : Inter (texte) + JetBrains Mono (accents techniques).

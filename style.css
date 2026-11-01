@@ -61,38 +61,36 @@ main { max-width: var(--maxw); margin: 0 auto; padding: 0 16px; }
 
 /* ---------- Accueil (écran scindé) ---------- */
 .hero {
+  --left: 1.25fr;   /* largeur du côté nom/photo  → changer ces deux valeurs */
+  --right: 1fr;     /* largeur du côté image santé    pour régler la séparation */
   position: relative;
   min-height: calc(100vh - 57px);
-  display: grid; grid-template-columns: 1.25fr 1fr;
+  display: grid; grid-template-columns: var(--left) var(--right);
+}
+.hero-left, .hero-right { position: relative; isolation: isolate; display: flex; align-items: center; }
+/* Les photos sont posées sur des calques ::before et passées en noir et blanc */
+.hero-left::before, .hero-right::before {
+  content: ""; position: absolute; inset: 0; z-index: -2;
+  background-position: center; background-size: cover; background-repeat: no-repeat;
+  filter: grayscale(1);
 }
 .hero-left {
-  display: flex; align-items: center;
-  padding: 80px 48px 140px var(--gutter);
-  /* photo : déposer assets/photo.jpg — le voile sombre garde le texte lisible */
-  background:
-    linear-gradient(90deg, rgba(12,12,13,0.92) 0%, rgba(12,12,13,0.75) 60%, rgba(12,12,13,0.55) 100%),
-    url("assets/photo.jpg") center / cover no-repeat,
-    var(--bg);
+  padding: 80px 48px 80px var(--gutter);
+  background: var(--bg);
+}
+.hero-left::before { background-image: url("assets/photo.jpg"); }
+/* voile sombre pour garder le nom lisible par-dessus la photo */
+.hero-left::after {
+  content: ""; position: absolute; inset: 0; z-index: -1;
+  background: linear-gradient(90deg, rgba(12,12,13,0.88) 0%, rgba(12,12,13,0.6) 55%, rgba(12,12,13,0.35) 100%);
 }
 .hero-right {
-  display: flex; align-items: center; justify-content: center;
-  padding: 80px var(--gutter) 140px 48px;
+  justify-content: center;
+  padding: 80px var(--gutter) 80px 48px;
   background: var(--light);
 }
-.hero-right .status-panel { width: 100%; max-width: 440px; box-shadow: 0 24px 48px rgba(0,0,0,0.18); }
-
-/* Trait d'ECG : ligne rouge + battement centré sur la jonction */
-.ecg {
-  position: absolute; left: 0; right: 0; bottom: 56px; height: 60px;
-  color: var(--accent); pointer-events: none;
-}
-.ecg::before, .ecg::after {
-  content: ""; position: absolute; top: 29px; height: 2px; background: currentColor;
-}
-.ecg::before { left: 0; right: calc(100% - var(--split) + 80px); }
-.ecg::after  { left: calc(var(--split) + 80px); right: 0; }
-.ecg svg { position: absolute; top: 0; left: calc(var(--split) - 80px); display: block; }
-.hero { --split: 55.5556%; } /* = 1.25 / (1.25 + 1) : position de la jonction */
+.hero-right::before { background-image: url("assets/fond-sante.jpg"); }
+.hero-right .status-panel { width: 100%; max-width: 440px; box-shadow: 0 24px 48px rgba(0,0,0,0.25); }
 
 .eyebrow { font-family: var(--mono); color: var(--accent); font-size: 0.95rem; margin-bottom: 10px; }
 .hero h1 {
@@ -212,8 +210,7 @@ main { max-width: var(--maxw); margin: 0 auto; padding: 0 16px; }
 @media (max-width: 820px) {
   .hero { grid-template-columns: 1fr; min-height: auto; }
   .hero-left { padding: 64px 16px; }
-  .hero-right { padding: 40px 16px 110px; }
-  .ecg { bottom: 32px; --split: 50%; }
+  .hero-right { padding: 40px 16px; }
   .menu-toggle { display: block; }
   .nav {
     display: none; position: absolute; top: 100%; left: 0; right: 0;
