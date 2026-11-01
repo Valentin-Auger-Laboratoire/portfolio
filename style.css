@@ -136,7 +136,13 @@ main { max-width: var(--maxw); margin: 0 auto; padding: 0 16px; }
 .panel-body .ok { color: var(--accent); font-weight: 500; }
 
 /* ---------- À propos ---------- */
-.about { max-width: 70ch; color: var(--text-dim); display: grid; gap: 14px; }
+.about-grid { display: grid; grid-template-columns: 1.4fr 1fr; gap: 48px; align-items: center; }
+.about { max-width: 70ch; min-width: 0; color: var(--text-dim); display: grid; gap: 14px; }
+.about-photo {
+  width: 100%; max-width: 100%; max-height: 440px; object-fit: cover; aspect-ratio: 3 / 4;
+  border: 1px solid var(--border); border-radius: var(--radius);
+  filter: grayscale(1);
+}
 
 /* ---------- Projets ---------- */
 .filters { display: flex; gap: 8px; margin-bottom: 24px; flex-wrap: wrap; }
@@ -191,6 +197,20 @@ main { max-width: var(--maxw); margin: 0 auto; padding: 0 16px; }
 .timeline p { color: var(--text-dim); font-size: 0.94rem; }
 
 /* ---------- Contact ---------- */
+.contact {
+  position: relative; isolation: isolate; overflow: hidden;
+  padding: 56px 40px; border: 1px solid var(--border); border-radius: var(--radius);
+  background: var(--bg-panel);
+}
+.contact::before, .contact::after { content: ""; position: absolute; inset: 0; }
+.contact::before {
+  z-index: -2; background: url("assets/code-ecrans.jpg") center / cover no-repeat;
+  filter: grayscale(1);
+}
+.contact::after {
+  z-index: -1;
+  background: linear-gradient(90deg, rgba(12,12,13,0.94) 0%, rgba(12,12,13,0.8) 55%, rgba(12,12,13,0.55) 100%);
+}
 .contact p { color: var(--text-dim); margin-bottom: 20px; }
 .contact-links { display: grid; gap: 10px; max-width: 520px; }
 .contact-links a {
@@ -211,6 +231,9 @@ main { max-width: var(--maxw); margin: 0 auto; padding: 0 16px; }
   .hero { grid-template-columns: 1fr; min-height: auto; }
   .hero-left { padding: 64px 16px; }
   .hero-right { padding: 40px 16px; }
+  .about-grid { grid-template-columns: 1fr; gap: 28px; }
+  .about-photo { max-height: 360px; }
+  .contact { padding: 36px 20px; }
   .menu-toggle { display: block; }
   .nav {
     display: none; position: absolute; top: 100%; left: 0; right: 0;
