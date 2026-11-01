@@ -21,6 +21,7 @@
   gauche = nom + photo de Valentin (assets/photo.jpg), droite = image ingénierie santé / robots (assets/fond-sante.jpg) + fiche status.sh.
   Les deux photos passent en noir et blanc via CSS (filter: grayscale). Proportions : --left / --right dans .hero.
 - Trait d'ECG : essayé puis REFUSÉ par Valentin.
+- Image droite actuelle : bras robotique (Niryo One), fournie par Valentin, 600x600 (un peu basse résolution). Origine/droits à vérifier.
 - Références aimées : accueils de portfolio photo N&B plein cadre d'un côté, texte de l'autre.
 - Fond animé (réseau de nœuds) SUPPRIMÉ : Valentin le trouvait pas pro / pas personnalisé.
 - Nom en grand : blanc, contour noir + ombre décalée. Logo en haut à gauche : "Valentin Auger".
