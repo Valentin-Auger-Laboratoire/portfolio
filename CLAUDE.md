@@ -19,7 +19,8 @@
 - Thème sombre "dashboard d'ingénieur", minimaliste.
 - Fond : graphe de nœuds animé en canvas (script.js) — remplace l'image fond-tech.png.
 - Polices : Inter (texte) + JetBrains Mono (accents techniques).
-- Couleurs : toutes dans `:root` de style.css (accent cyan #4fd1c5, bleu #7aa2f7).
+- Couleurs : toutes dans `:root` de style.css. Accent = VRAI ROUGE (#e11d2e), surtout pas orangé. Secondaire bleu #7aa2f7 conservé.
+- Valentin a REFUSÉ : lettrage rétro (Shrikhand) sur le titre, couleur crème. Garder le design de base, ne changer que ce qui est demandé.
 - Pas d'illustrations, pas de framework : HTML/CSS/JS pur.
 
 ## Structure
