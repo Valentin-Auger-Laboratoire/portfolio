@@ -36,7 +36,12 @@
 ## Structure
 - index.html — sections : Accueil, À propos, Projets (filtres), Compétences, Parcours, Contact
 - style.css — styles (responsive < 820px)
-- script.js — filtres projets, menu mobile, nav active
+- script.js — filtres projets, menu mobile, nav active, changement de langue
+- i18n.js — traductions ANGLAISES (clé → texte). Le français est dans index.html.
+
+## Bilingue FR / EN (obligatoire : stage de 16 semaines à l'étranger)
+- Sélecteur FR | EN en haut à droite (à gauche sur mobile). Choix mémorisé (localStorage), sinon langue du navigateur.
+- TOUT nouveau texte : ajouter data-i18n="clé" dans index.html + la traduction dans i18n.js. Attributs : data-i18n-attr="alt:clé;aria-label:clé".
 - assets/ — cv.pdf, images de projets
 
 ## Ajouter un projet
@@ -47,7 +52,8 @@ data-tags possibles : reseau, ia, dev (plusieurs séparés par un espace).
 - [x] Nom : Valentin Auger
 - [x] École : EPISEN (École Publique d'Ingénieurs de la Santé et du Numérique) — école d'ingé spécialisée technologies pour la santé
 - [x] Contact : auger32valentin@gmail.com, linkedin.com/in/auger-valentin, github.com/Valentin-Auger-Laboratoire
-- [ ] Remplacer année, ville, recherche (stage/alternance)
+- [x] Recherche : stage à l'étranger de 16 semaines
+- [ ] Remplacer année, ville, période du stage
 - [ ] Ajouter assets/cv-fr.pdf et assets/cv-en.pdf
 - [ ] Renseigner les vrais projets
 - [x] Déployer sur GitHub Pages

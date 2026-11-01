@@ -46,6 +46,20 @@ ul, ol { list-style: none; }
 .nav { display: flex; gap: 36px; }
 .nav a { color: var(--text-dim); font-size: 0.92rem; transition: color .2s; }
 .nav a:hover, .nav a.active { color: var(--accent); }
+/* Sélecteur de langue FR / EN (à droite de la barre) */
+.lang-switch {
+  position: absolute; right: var(--gutter); top: 50%; transform: translateY(-50%);
+  display: flex; border: 1px solid var(--border-hi);
+}
+.lang-switch button {
+  font-family: var(--mono); font-size: 0.78rem; letter-spacing: 0.05em;
+  background: transparent; color: var(--text-dim); border: 0; padding: 5px 10px; cursor: pointer;
+  transition: color .2s, background .2s;
+}
+.lang-switch button + button { border-left: 1px solid var(--border-hi); }
+.lang-switch button:hover { color: var(--text); }
+.lang-switch button[aria-pressed="true"] { background: var(--text); color: var(--bg); font-weight: 500; }
+.lang-switch button:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
 .menu-toggle { display: none; background: none; border: 0; color: var(--text); font-size: 1.4rem; cursor: pointer; }
 
 /* ---------- Mise en page ---------- */
@@ -259,6 +273,7 @@ main { max-width: var(--maxw); margin: 0 auto; padding: 0 16px; }
   .skills-banner { aspect-ratio: 16 / 7; }
   .contact { padding: 36px 20px; }
   .topbar { justify-content: flex-end; }
+  .lang-switch { right: auto; left: 16px; }
   .menu-toggle { display: block; }
   .cv-block { grid-template-columns: 1fr; }
   .nav {
