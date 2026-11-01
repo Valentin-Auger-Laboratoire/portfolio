@@ -35,7 +35,9 @@ data-tags possibles : reseau, ia, dev (plusieurs séparés par un espace).
 
 ## À faire
 - [x] Nom : Valentin Auger
-- [ ] Remplacer école, année, ville, liens, e-mail
+- [x] École : EPISEN (École Publique d'Ingénieurs de la Santé et du Numérique) — école d'ingé spécialisée technologies pour la santé
+- [x] Contact : auger32valentin@gmail.com, linkedin.com/in/auger-valentin, github.com/Valentin-Auger-Laboratoire
+- [ ] Remplacer année, ville, recherche (stage/alternance)
 - [ ] Ajouter cv.pdf dans assets/
 - [ ] Renseigner les vrais projets
 - [x] Déployer sur GitHub Pages
