@@ -178,6 +178,17 @@ main { max-width: var(--maxw); margin: 0 auto; padding: 0 16px; }
 .card-links a:hover { color: var(--accent); border-color: var(--accent); }
 
 /* ---------- Compétences ---------- */
+.skills-banner {
+  position: relative; overflow: hidden; margin-bottom: 24px;
+  border: 1px solid var(--border); border-radius: var(--radius);
+  aspect-ratio: 16 / 5; max-width: 100%;
+}
+.skills-banner img { width: 100%; height: 100%; object-fit: cover; display: block; filter: grayscale(1); }
+/* fondu vers le noir du site en bas du bandeau */
+.skills-banner::after {
+  content: ""; position: absolute; inset: 0;
+  background: linear-gradient(180deg, rgba(12,12,13,0) 40%, rgba(12,12,13,0.85) 100%);
+}
 .skills-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(230px, 1fr)); gap: 20px; }
 .skill-block { background: var(--bg-panel); border: 1px solid var(--border); border-radius: var(--radius); padding: 20px; }
 .skill-block h3 { font-size: 1rem; margin-bottom: 12px; color: var(--accent); font-weight: 600; }
@@ -233,6 +244,7 @@ main { max-width: var(--maxw); margin: 0 auto; padding: 0 16px; }
   .hero-right { padding: 40px 16px; }
   .about-grid { grid-template-columns: 1fr; gap: 28px; }
   .about-photo { max-height: 360px; }
+  .skills-banner { aspect-ratio: 16 / 7; }
   .contact { padding: 36px 20px; }
   .menu-toggle { display: block; }
   .nav {
