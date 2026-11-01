@@ -1,0 +1,182 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Prénom Nom — Élève ingénieur · Réseaux & IA</title>
+  <meta name="description" content="Portfolio de Prénom Nom, élève ingénieur : réseaux, intelligence artificielle et développement.">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <!-- Fond animé : graphe de nœuds (remplace l'ancienne image fond-tech.png) -->
+  <canvas id="network-bg" aria-hidden="true"></canvas>
+
+  <header class="topbar">
+    <a href="#accueil" class="logo"><span class="prompt">~/</span>prenom-nom</a>
+    <button class="menu-toggle" aria-label="Ouvrir le menu" aria-expanded="false">☰</button>
+    <nav class="nav">
+      <a href="#apropos">À propos</a>
+      <a href="#projets">Projets</a>
+      <a href="#competences">Compétences</a>
+      <a href="#parcours">Parcours</a>
+      <a href="#contact">Contact</a>
+    </nav>
+  </header>
+
+  <main>
+    <!-- ACCUEIL -->
+    <section id="accueil" class="hero">
+      <div class="hero-text">
+        <p class="eyebrow">// élève ingénieur</p>
+        <h1>Prénom Nom</h1>
+        <p class="tagline">Réseaux, intelligence artificielle et développement logiciel.
+          Je conçois des systèmes qui fonctionnent, et je documente comment.</p>
+        <div class="hero-actions">
+          <a href="#projets" class="btn btn-primary">Voir les projets</a>
+          <a href="assets/cv.pdf" class="btn btn-ghost" download>Télécharger le CV</a>
+        </div>
+      </div>
+
+      <aside class="status-panel" aria-label="Résumé">
+        <div class="panel-head">
+          <span class="dot dot-red"></span><span class="dot dot-yellow"></span><span class="dot dot-green"></span>
+          <span class="panel-title">status.sh</span>
+        </div>
+        <dl class="panel-body">
+          <div><dt>école</dt><dd>Nom de l'école</dd></div>
+          <div><dt>année</dt><dd>2<sup>e</sup> année cycle ingénieur</dd></div>
+          <div><dt>focus</dt><dd>Réseaux · IA · Systèmes</dd></div>
+          <div><dt>recherche</dt><dd class="ok">Stage — été 2027</dd></div>
+          <div><dt>lieu</dt><dd>Ville, France</dd></div>
+        </dl>
+      </aside>
+    </section>
+
+    <!-- À PROPOS -->
+    <section id="apropos" class="section">
+      <h2 class="section-title"><span>01</span> À propos</h2>
+      <div class="about">
+        <p>Remplace ce texte par 3–4 phrases sur toi : ce qui t'intéresse dans les réseaux et l'IA,
+          le type de problèmes que tu aimes résoudre, et ce que tu cherches (stage, alternance…).</p>
+        <p>Reste factuel : un recruteur doit comprendre en 15 secondes qui tu es et ce que tu sais faire.</p>
+      </div>
+    </section>
+
+    <!-- PROJETS -->
+    <section id="projets" class="section">
+      <h2 class="section-title"><span>02</span> Projets</h2>
+
+      <div class="filters" role="group" aria-label="Filtrer les projets">
+        <button class="filter active" data-filter="all">Tous</button>
+        <button class="filter" data-filter="reseau">Réseaux</button>
+        <button class="filter" data-filter="ia">IA</button>
+        <button class="filter" data-filter="dev">Dev</button>
+      </div>
+
+      <div class="projects-grid">
+        <article class="project-card" data-tags="reseau">
+          <div class="card-top">
+            <span class="card-type">Réseaux</span>
+            <span class="card-date">2026</span>
+          </div>
+          <h3>Infrastructure réseau virtualisée</h3>
+          <p>Conception d'une topologie multi-VLAN avec routage OSPF et pare-feu, simulée sous GNS3.</p>
+          <ul class="tags"><li>GNS3</li><li>OSPF</li><li>VLAN</li><li>pfSense</li></ul>
+          <div class="card-links">
+            <a href="#" target="_blank" rel="noopener">Code ↗</a>
+            <a href="#" target="_blank" rel="noopener">Rapport ↗</a>
+          </div>
+        </article>
+
+        <article class="project-card" data-tags="ia">
+          <div class="card-top">
+            <span class="card-type">IA</span>
+            <span class="card-date">2026</span>
+          </div>
+          <h3>Détection d'anomalies réseau par ML</h3>
+          <p>Classification de trafic suspect à partir de captures réseau, comparaison de plusieurs modèles.</p>
+          <ul class="tags"><li>Python</li><li>scikit-learn</li><li>Wireshark</li></ul>
+          <div class="card-links">
+            <a href="#" target="_blank" rel="noopener">Code ↗</a>
+          </div>
+        </article>
+
+        <article class="project-card" data-tags="dev">
+          <div class="card-top">
+            <span class="card-type">Dev</span>
+            <span class="card-date">2025</span>
+          </div>
+          <h3>Ce portfolio</h3>
+          <p>Site statique en HTML/CSS/JS sans framework, hébergé sur GitHub Pages.</p>
+          <ul class="tags"><li>HTML</li><li>CSS</li><li>JavaScript</li></ul>
+          <div class="card-links">
+            <a href="#" target="_blank" rel="noopener">Code ↗</a>
+          </div>
+        </article>
+      </div>
+    </section>
+
+    <!-- COMPÉTENCES -->
+    <section id="competences" class="section">
+      <h2 class="section-title"><span>03</span> Compétences</h2>
+      <div class="skills-grid">
+        <div class="skill-block">
+          <h3>Réseaux</h3>
+          <ul><li>TCP/IP, routage, VLAN</li><li>Cisco IOS</li><li>Wireshark</li><li>GNS3 / Packet Tracer</li></ul>
+        </div>
+        <div class="skill-block">
+          <h3>Intelligence artificielle</h3>
+          <ul><li>Python, NumPy, pandas</li><li>scikit-learn</li><li>PyTorch</li><li>Jupyter</li></ul>
+        </div>
+        <div class="skill-block">
+          <h3>Développement</h3>
+          <ul><li>C / C++</li><li>Java</li><li>HTML / CSS / JS</li><li>SQL</li></ul>
+        </div>
+        <div class="skill-block">
+          <h3>Outils & systèmes</h3>
+          <ul><li>Linux, Bash</li><li>Git / GitHub</li><li>Docker</li><li>LaTeX</li></ul>
+        </div>
+      </div>
+    </section>
+
+    <!-- PARCOURS -->
+    <section id="parcours" class="section">
+      <h2 class="section-title"><span>04</span> Parcours</h2>
+      <ol class="timeline">
+        <li>
+          <span class="tl-date">2025 — aujourd'hui</span>
+          <h3>Cycle ingénieur — Nom de l'école</h3>
+          <p>Spécialité / majeure. Cours marquants.</p>
+        </li>
+        <li>
+          <span class="tl-date">2023 — 2025</span>
+          <h3>Classe préparatoire / BUT / Licence</h3>
+          <p>Établissement, ville.</p>
+        </li>
+      </ol>
+    </section>
+
+    <!-- CONTACT -->
+    <section id="contact" class="section">
+      <h2 class="section-title"><span>05</span> Contact</h2>
+      <div class="contact">
+        <p>Ouvert aux opportunités de stage. Le plus simple : un e-mail.</p>
+        <ul class="contact-links">
+          <li><a href="mailto:ton.email@exemple.com"><span>email</span>ton.email@exemple.com</a></li>
+          <li><a href="https://github.com/ton-pseudo" target="_blank" rel="noopener"><span>github</span>github.com/ton-pseudo</a></li>
+          <li><a href="https://www.linkedin.com/in/ton-profil" target="_blank" rel="noopener"><span>linkedin</span>linkedin.com/in/ton-profil</a></li>
+        </ul>
+      </div>
+    </section>
+  </main>
+
+  <footer class="footer">
+    <p>© <span id="year"></span> Prénom Nom · Fait à la main, hébergé sur GitHub Pages</p>
+  </footer>
+
+  <script src="script.js"></script>
+</body>
+</html>
