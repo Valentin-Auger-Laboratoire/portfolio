@@ -9,11 +9,9 @@
   --border-hi: #2f3d4f;
   --text:      #d6dde6;
   --text-dim:  #8593a3;
-  --accent:    #f23b2e;   /* couleur principale : rouge "affiche" */
-  --accent-rgb: 242, 59, 46; /* même couleur en R,G,B — utilisée par le fond animé */
-  --accent-2:  #ecd9c6;   /* couleur secondaire : crème chaud */
-  --on-accent: #0b0b0d;   /* texte posé sur la couleur principale */
-  --display: "Shrikhand", "Cooper Black", Georgia, serif; /* lettrage rétro (titre) */
+  --accent:    #4fd1c5;   /* couleur principale (cyan par défaut) */
+  --accent-rgb: 79, 209, 197; /* même couleur en R,G,B — utilisée par le fond animé */
+  --accent-2:  #7aa2f7;   /* couleur secondaire */
   --ok:        #9ece6a;
   --mono: "JetBrains Mono", ui-monospace, monospace;
   --sans: "Inter", system-ui, sans-serif;
@@ -82,7 +80,7 @@ main { max-width: var(--maxw); margin: 0 auto; padding: 0 16px; }
   display: inline-block; padding: 11px 22px; border-radius: var(--radius);
   font-weight: 500; font-size: 0.95rem; transition: all .2s;
 }
-.btn-primary { background: var(--accent); color: var(--on-accent); font-weight: 600; }
+.btn-primary { background: var(--accent); color: var(--bg); }
 .btn-primary:hover { filter: brightness(1.1); transform: translateY(-1px); }
 .btn-ghost { border: 1px solid var(--border-hi); color: var(--text); }
 .btn-ghost:hover { border-color: var(--accent); color: var(--accent); }
@@ -191,23 +189,10 @@ main { max-width: var(--maxw); margin: 0 auto; padding: 0 16px; }
    TEMPORAIRE — sélecteur de couleur pour choisir l'accent.
    Une fois la couleur choisie : on la met dans :root et on supprime ce bloc.
    ========================================================== */
-[data-accent="doux"]   { --accent: #e5484d; --accent-rgb: 229, 72, 77;  }
-[data-accent="orange"] { --accent: #ff5530; --accent-rgb: 255, 85, 48;  }
-[data-accent="cyan"]   { --accent: #4fd1c5; --accent-rgb: 79, 209, 197; --accent-2: #7aa2f7; }
-
-/* Titre rétro façon affiche (option testée via le sélecteur) */
-[data-title="retro"] .hero h1 {
-  font-family: var(--display); font-weight: 400; letter-spacing: 0;
-  color: var(--accent);
-  text-shadow: 0.06em 0.06em 0 #000;
-  line-height: 1.15;
-}
-.picker-row { display: flex; gap: 6px; }
-.picker-row button {
-  font: inherit; color: var(--text-dim); background: transparent; cursor: pointer;
-  border: 1px solid var(--border-hi); border-radius: 999px; padding: 3px 10px;
-}
-.picker-row button[aria-pressed="true"] { color: var(--accent); border-color: var(--accent); }
+[data-accent="vert"]   { --accent: #7ee787; --accent-rgb: 126, 231, 135; --accent-2: #79c0ff; }
+[data-accent="violet"] { --accent: #b39dfa; --accent-rgb: 179, 157, 250; --accent-2: #7aa2f7; }
+[data-accent="ambre"]  { --accent: #f0b35a; --accent-rgb: 240, 179, 90;  --accent-2: #8ab4f8; }
+[data-accent="bleu"]   { --accent: #6cb6ff; --accent-rgb: 108, 182, 255; --accent-2: #a5b4fc; }
 
 .picker {
   position: fixed; z-index: 20;
