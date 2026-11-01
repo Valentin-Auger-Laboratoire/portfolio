@@ -53,4 +53,5 @@ data-tags possibles : reseau, ia, dev (plusieurs séparés par un espace).
 - [x] Déployer sur GitHub Pages
 - [x] Couleur d'accent choisie : rouge profond #c8102e (sélecteur retiré)
 - Bouton principal : texte blanc avec contour noir (text-shadow) — demandé par Valentin.
-- CV : deux grands boutons rouges côte à côte SOUS la carte Contact : "CV Français" (assets/cv-fr.pdf) et "CV English" (assets/cv-en.pdf). PDF à fournir par Valentin.
+- CV : deux boutons rouges côte à côte SOUS la carte Contact, icône fine + "Télécharger le CV / Version française · PDF" (assets/cv-fr.pdf) et "Download my resume / English version · PDF" (assets/cv-en.pdf). Pas de grosses flèches. PDF à fournir par Valentin.
+- Pied de page : nom + phrase "Concevoir la technologie qui prend soin." + liens LinkedIn / GitHub / Haut de page. PAS de ©, d'année ni de mention GitHub Pages.
