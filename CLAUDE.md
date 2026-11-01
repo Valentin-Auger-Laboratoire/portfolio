@@ -34,7 +34,8 @@ Copier un bloc `<article class="project-card" data-tags="...">` dans index.html.
 data-tags possibles : reseau, ia, dev (plusieurs séparés par un espace).
 
 ## À faire
-- [ ] Remplacer les textes "Prénom Nom", école, liens, e-mail
+- [x] Nom : Valentin Auger
+- [ ] Remplacer école, année, ville, liens, e-mail
 - [ ] Ajouter cv.pdf dans assets/
 - [ ] Renseigner les vrais projets
 - [x] Déployer sur GitHub Pages
