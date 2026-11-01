@@ -1,7 +1,7 @@
 # Portfolio — fiche projet (lue automatiquement par Claude Code)
 
 ## Qui / quoi
-- Élève ingénieur·e : réseaux, IA, code, technologies.
+- Élève ingénieur : réseaux, IA, code, technologies. IMPORTANT : son profil est d'abord RÉSEAU, la santé vient en second (contexte de l'école). Éviter le ton slogan / cliché.
 - Objectif : portfolio technique pro (pas marketing), hébergé sur GitHub Pages.
 - Cible : recruteurs / tuteurs de stage.
 - Propriétaire GitHub : Valentin-Auger-Laboratoire (Valentin Auger).
@@ -54,4 +54,4 @@ data-tags possibles : reseau, ia, dev (plusieurs séparés par un espace).
 - [x] Couleur d'accent choisie : rouge profond #c8102e (sélecteur retiré)
 - Bouton principal : texte blanc avec contour noir (text-shadow) — demandé par Valentin.
 - CV : deux boutons rouges côte à côte SOUS la carte Contact, icône fine + "Télécharger le CV / Version française · PDF" (assets/cv-fr.pdf) et "Download my resume / English version · PDF" (assets/cv-en.pdf). Pas de grosses flèches. PDF à fournir par Valentin.
-- Pied de page : nom + phrase "Concevoir aujourd'hui la technologie qui prendra soin de nous demain." + liens LinkedIn / GitHub / Haut de page. PAS de ©, d'année ni de mention GitHub Pages.
+- Pied de page : nom + phrase "Quand le réseau tient, tout le reste suit." (les phrases slogan santé type "technologie qui prend soin" ont été jugées trop clichées) + liens LinkedIn / GitHub / Haut de page. PAS de ©, d'année ni de mention GitHub Pages.
