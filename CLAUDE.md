@@ -53,7 +53,8 @@ data-tags possibles : reseau, ia, dev (plusieurs séparés par un espace).
 - [x] École : EPISEN (École Publique d'Ingénieurs de la Santé et du Numérique) — école d'ingé spécialisée technologies pour la santé
 - [x] Contact : auger32valentin@gmail.com, linkedin.com/in/auger-valentin, github.com/Valentin-Auger-Laboratoire
 - [x] Recherche : stage à l'étranger de 16 semaines
-- [ ] Remplacer année, ville, période du stage
+- [x] Lieu : Périphérie de Paris, France (EN : Paris area, France)
+- [ ] Remplacer année, période du stage
 - [ ] Ajouter assets/cv-fr.pdf et assets/cv-en.pdf
 - [ ] Renseigner les vrais projets
 - [x] Déployer sur GitHub Pages
