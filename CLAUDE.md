@@ -26,7 +26,8 @@
 - Image couloir de serveurs (dessin N&B) : assets/serveurs.jpg, bandeau en haut de la section Compétences.
 - Références aimées : accueils de portfolio photo N&B plein cadre d'un côté, texte de l'autre.
 - Fond animé (réseau de nœuds) SUPPRIMÉ : Valentin le trouvait pas pro / pas personnalisé.
-- Nom en grand : blanc, contour noir + ombre décalée. Logo en haut à gauche : "Valentin Auger".
+- Nom en grand : blanc, contour noir + ombre décalée. Sur-titre "Élève ingénieur" en rouge.
+- Barre du haut : PAS de nom/logo (doublon), juste le menu centré. Accueil : PAS de boutons (refusés, inutiles).
 - Polices : Inter (texte) + JetBrains Mono (accents techniques).
 - Couleurs : toutes dans `:root` de style.css. Accent = rouge profond #c8102e (choisi par Valentin), surtout pas orangé. Secondaire = gris clair #c9c9cc.
 - Valentin a REFUSÉ : lettrage rétro (Shrikhand) sur le titre, couleur crème. Garder le design de base, ne changer que ce qui est demandé.
@@ -47,9 +48,9 @@ data-tags possibles : reseau, ia, dev (plusieurs séparés par un espace).
 - [x] École : EPISEN (École Publique d'Ingénieurs de la Santé et du Numérique) — école d'ingé spécialisée technologies pour la santé
 - [x] Contact : auger32valentin@gmail.com, linkedin.com/in/auger-valentin, github.com/Valentin-Auger-Laboratoire
 - [ ] Remplacer année, ville, recherche (stage/alternance)
-- [ ] Ajouter cv.pdf dans assets/
+- [ ] Ajouter assets/cv-fr.pdf et assets/cv-en.pdf
 - [ ] Renseigner les vrais projets
 - [x] Déployer sur GitHub Pages
 - [x] Couleur d'accent choisie : rouge profond #c8102e (sélecteur retiré)
 - Bouton principal : texte blanc avec contour noir (text-shadow) — demandé par Valentin.
-- Grand bouton rouge "Télécharger mon CV (PDF)" en bas de la carte Contact → assets/cv.pdf (fichier à fournir par Valentin).
+- CV : deux grands boutons rouges côte à côte SOUS la carte Contact : "CV Français" (assets/cv-fr.pdf) et "CV English" (assets/cv-en.pdf). PDF à fournir par Valentin.
