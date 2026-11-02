@@ -54,7 +54,10 @@ data-tags possibles : reseau, ia, dev (plusieurs séparés par un espace).
 - [x] Contact : auger32valentin@gmail.com, linkedin.com/in/auger-valentin, github.com/Valentin-Auger-Laboratoire
 - [x] Recherche : stage à l'étranger de 16 semaines
 - [x] Lieu : Périphérie de Paris, France (EN : Paris area, France)
-- [ ] Remplacer année, période du stage
+- [x] Année : 2e année cycle ingénieur (EPISEN ITS, sept. 2025 – juil. 2028)
+- [x] Parcours (source : LinkedIn de Valentin) : EPISEN ITS 2025–2028 ; CPGE TSI Lycée Robert Doisneau (Corbeil-Essonnes) 2023–2025, crédits ECTS ; Bac STI2D option SIN Lycée Georges Brassens (Évry-Courcouronnes) 2020–2023.
+- [ ] Logos du parcours : doisneau.png OK (recadré d'une capture) ; EPISEN et Brassens = emplacements texte provisoires → demander les vrais logos (assets/logos/episen.png, brassens.png)
+- [ ] Période du stage
 - [ ] Ajouter assets/cv-fr.pdf et assets/cv-en.pdf
 - [ ] Renseigner les vrais projets
 - [x] Déployer sur GitHub Pages
