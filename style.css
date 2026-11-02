@@ -199,7 +199,9 @@ main { max-width: var(--maxw); margin: 0 auto; padding: 0 16px; }
   content: ""; position: absolute; inset: 0;
   background: linear-gradient(180deg, rgba(12,12,13,0) 40%, rgba(12,12,13,0.85) 100%);
 }
-.skills-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(230px, 1fr)); gap: 20px; }
+.skills-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 20px; }
+@media (max-width: 960px) { .skills-grid { grid-template-columns: repeat(2, 1fr); } }
+@media (max-width: 560px) { .skills-grid { grid-template-columns: 1fr; } }
 .skill-block { background: var(--bg-panel); border: 1px solid var(--border); border-radius: var(--radius); padding: 20px; }
 .skill-block h3 { font-size: 1rem; margin-bottom: 12px; color: var(--accent); font-weight: 600; }
 .skill-block li { color: var(--text-dim); font-size: 0.93rem; padding: 3px 0; }
@@ -209,14 +211,8 @@ main { max-width: var(--maxw); margin: 0 auto; padding: 0 16px; }
 .timeline { border-left: 1px solid var(--border-hi); padding-left: 28px; display: grid; gap: 32px; }
 .timeline li { position: relative; display: grid; grid-template-columns: 104px 1fr; gap: 22px; align-items: start; }
 .tl-content { min-width: 0; }
-/* sous-titres "Formation" / "Expérience" dans la section Parcours */
-.tl-group-title {
-  font-family: var(--mono); font-size: 0.78rem; font-weight: 500; letter-spacing: 0.12em;
-  text-transform: uppercase; color: var(--text-dim); margin: 0 0 20px;
-}
-.timeline + .tl-group-title { margin-top: 56px; }
-/* expériences : pas de logo, texte aligné sur celui des formations */
-.timeline-exp .tl-content { grid-column: 2; }
+/* section Expérience : pas de logo, texte aligné sur celui du Parcours */
+.timeline-exp li { grid-template-columns: 1fr; }
 /* logo de l'établissement : carré blanc, passé en noir et blanc comme les photos */
 .tl-logo {
   width: 104px; height: 64px; object-fit: contain; padding: 6px 8px;
