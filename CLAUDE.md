@@ -59,6 +59,7 @@ data-tags possibles : reseau, ia, dev (plusieurs séparés par un espace).
 - [x] Logos du parcours : assets/logos/episen.png, doisneau.png, brassens.png (recadrés des captures LinkedIn de Valentin), affichés en N&B dans un rectangle blanc, SEUL LE NOM de l'établissement est cliquable vers LinkedIn (logos fixes, non cliquables, sans effet au survol — demandé par Valentin) : linkedin.com/school/episen-its, linkedin.com/company/lycee-robert-doisneau (page "entreprise" : pas de page école), linkedin.com/school/lycée-georges-brassens-d-évry-courcouronnes.
 - [x] Expériences (source LinkedIn) intégrées DANS Parcours, sous-titre "Expérience" (pas de section à part : le portfolio reste centré sur les projets) :
   stage Pharmacie des Aunettes, Ris-Orangis (juin–juil. 2026, optimisation back-office) ; stage électronique 123 Cash, Corbeil-Essonnes (déc. 2019, 1 mois).
+- Langues (FR natif, anglais et espagnol pro) : Valentin ne veut PAS les afficher sur le portfolio (ni ligne, ni section, ni version espagnole du site). Elles restent dans le CV.
 - [ ] Période du stage
 - [ ] Ajouter assets/cv-fr.pdf et assets/cv-en.pdf
 - [ ] Renseigner les vrais projets
