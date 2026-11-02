@@ -116,6 +116,8 @@ main { max-width: var(--maxw); margin: 0 auto; padding: 0 16px; }
     4px 4px 0 #000;
 }
 .tagline { color: var(--text-dim); font-size: 1.12rem; max-width: 52ch; margin: 20px 0 32px; }
+/* une idée par ligne ; la dernière se coupe de façon équilibrée si elle est trop longue */
+.tagline span { display: block; text-wrap: balance; }
 
 .btn {
   display: inline-block; padding: 11px 22px; border-radius: var(--radius);
