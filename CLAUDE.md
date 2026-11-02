@@ -60,6 +60,7 @@ data-tags possibles : reseau, ia, dev (plusieurs séparés par un espace).
 - [x] Expériences (source LinkedIn) intégrées DANS Parcours, sous-titre "Expérience" (pas de section à part : le portfolio reste centré sur les projets) :
   stage Pharmacie des Aunettes, Ris-Orangis (juin–juil. 2026, optimisation back-office) ; stage électronique 123 Cash, Corbeil-Essonnes (déc. 2019, 1 mois).
 - Langues (FR natif, anglais et espagnol pro) : Valentin ne veut PAS les afficher sur le portfolio (ni ligne, ni section, ni version espagnole du site). Elles restent dans le CV.
+- [x] Texte À propos rédigé (3 paragraphes FR/EN, inspiré de son LinkedIn) : parcours concret STI2D→TSI, réseaux + sécurité en premier, IA/électronique/robotique à côté, santé = contexte, stage 16 sem. à l'étranger. NB : son LinkedIn parle encore d'alternance (obsolète).
 - [ ] Période du stage
 - [ ] Ajouter assets/cv-fr.pdf et assets/cv-en.pdf
 - [ ] Renseigner les vrais projets
