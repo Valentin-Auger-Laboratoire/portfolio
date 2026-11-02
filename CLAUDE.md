@@ -41,11 +41,11 @@
 - index.html — sections : Accueil, À propos, Projets (filtres), Compétences, Parcours (formation), Expérience, Contact (chaque section a son onglet dans le menu)
 - style.css — styles (responsive < 820px)
 - script.js — filtres projets, menu mobile, nav active, changement de langue
-- i18n.js — traductions ANGLAISES (clé → texte). Le français est dans index.html.
+- traduction-anglais.js (ancien nom : i18n.js, renommé pour être compris tout de suite) — traductions ANGLAISES (clé → texte). Le français est dans index.html.
 
 ## Bilingue FR / EN (obligatoire : stage de 16 semaines à l'étranger)
 - Sélecteur FR | EN en haut à droite (à gauche sur mobile). Choix mémorisé (localStorage), sinon langue du navigateur.
-- TOUT nouveau texte : ajouter data-i18n="clé" dans index.html + la traduction dans i18n.js. Attributs : data-i18n-attr="alt:clé;aria-label:clé".
+- TOUT nouveau texte : ajouter data-i18n="clé" dans index.html + la traduction dans traduction-anglais.js. Attributs : data-i18n-attr="alt:clé;aria-label:clé".
 - assets/ — cv.pdf, images de projets
 
 ## Ajouter un projet

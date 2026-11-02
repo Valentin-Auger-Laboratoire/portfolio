@@ -35,7 +35,7 @@ document.querySelectorAll('main section[id]').forEach(s => observer.observe(s));
 
 
 // ===== Langue FR / EN =====
-// Le français est dans index.html ; l'anglais dans i18n.js (window.I18N_EN).
+// Le français est dans index.html ; l'anglais dans traduction-anglais.js (window.I18N_EN).
 (() => {
   const EN = window.I18N_EN || {};
   const textEls = [...document.querySelectorAll('[data-i18n]')];
