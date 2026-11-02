@@ -228,6 +228,11 @@ main { max-width: var(--maxw); margin: 0 auto; padding: 0 16px; }
 .timeline h3 { font-size: 1.05rem; font-weight: 600; margin: 2px 0 4px; }
 .timeline p { color: var(--text-dim); font-size: 0.94rem; max-width: 70ch; }
 .timeline .tl-school { color: var(--text); opacity: 0.85; margin-bottom: 4px; }
+/* nom de l'établissement cliquable → LinkedIn */
+.tl-school a { border-bottom: 1px solid var(--border-hi); transition: color .2s, border-color .2s; }
+.tl-school a::after { content: " ↗"; font-size: 0.8em; color: var(--text-dim); }
+.tl-school a:hover { color: var(--accent); border-color: var(--accent); }
+.tl-school a:hover::after { color: var(--accent); }
 
 /* ---------- Contact ---------- */
 .contact {
