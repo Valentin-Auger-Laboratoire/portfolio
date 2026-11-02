@@ -1,4 +1,4 @@
-# Portfolio — fiche projet (lue automatiquement par Claude Code)
+# Portfolio — fiche projet (notes de travail : choix validés, déploiement, à faire)
 
 ## Qui / quoi
 - Élève ingénieur : réseaux, IA, code, technologies. IMPORTANT : son profil est d'abord RÉSEAU, la santé vient en second (contexte de l'école). Éviter le ton slogan / cliché.
@@ -38,6 +38,7 @@
 - Pas d'illustrations, pas de framework : HTML/CSS/JS pur.
 
 ## Structure
+- FICHE-PROJET.md — cette fiche (ancien nom : CLAUDE.md). Chargée automatiquement par Claude via .claude/CLAUDE.md (qui l'importe). NE PAS supprimer .claude/CLAUDE.md.
 - index.html — sections : Accueil, À propos, Projets (filtres), Compétences, Parcours (formation), Expérience, Contact (chaque section a son onglet dans le menu)
 - style.css — styles (responsive < 820px)
 - script.js — filtres projets, menu mobile, nav active, changement de langue
