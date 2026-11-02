@@ -17,7 +17,7 @@ window.I18N_EN = {
   'nav.contact': 'Contact',
 
   'hero.eyebrow': 'Engineering student',
-  'hero.tagline': 'Networks and electronics. I test, I build, I document.<br>Here are the projects from my experimentation lab, and how I built them.',
+  'hero.tagline': 'Networks, electronics and mechanics. I test, I build, I document.<br>Here are the projects from my experimentation lab, and how I built them.',
 
   'status.label': 'Summary',
   'status.school': 'School',
