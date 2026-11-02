@@ -209,6 +209,14 @@ main { max-width: var(--maxw); margin: 0 auto; padding: 0 16px; }
 .timeline { border-left: 1px solid var(--border-hi); padding-left: 28px; display: grid; gap: 32px; }
 .timeline li { position: relative; display: grid; grid-template-columns: 104px 1fr; gap: 22px; align-items: start; }
 .tl-content { min-width: 0; }
+/* sous-titres "Formation" / "Expérience" dans la section Parcours */
+.tl-group-title {
+  font-family: var(--mono); font-size: 0.78rem; font-weight: 500; letter-spacing: 0.12em;
+  text-transform: uppercase; color: var(--text-dim); margin: 0 0 20px;
+}
+.timeline + .tl-group-title { margin-top: 56px; }
+/* expériences : pas de logo, texte aligné sur celui des formations */
+.timeline-exp .tl-content { grid-column: 2; }
 /* logo de l'établissement : carré blanc, passé en noir et blanc comme les photos */
 .tl-logo {
   width: 104px; height: 64px; object-fit: contain; padding: 6px 8px;
@@ -223,6 +231,7 @@ main { max-width: var(--maxw); margin: 0 auto; padding: 0 16px; }
 .timeline h3 { font-size: 1.05rem; font-weight: 600; margin: 2px 0 4px; }
 .timeline p { color: var(--text-dim); font-size: 0.94rem; max-width: 70ch; }
 .timeline .tl-school { color: var(--text); opacity: 0.85; margin-bottom: 4px; }
+.timeline-exp li::before { top: 6px; }
 /* nom de l'établissement cliquable → LinkedIn */
 .tl-school a { border-bottom: 1px solid var(--border-hi); transition: color .2s, border-color .2s; }
 .tl-school a::after { content: " ↗"; font-size: 0.8em; color: var(--text-dim); }
@@ -288,6 +297,7 @@ main { max-width: var(--maxw); margin: 0 auto; padding: 0 16px; }
   .timeline li { grid-template-columns: 76px 1fr; gap: 14px; }
   .timeline li::before { left: -25px; top: 18px; }
   .tl-logo { width: 76px; height: 48px; padding: 4px 6px; }
+  .timeline-exp li::before { top: 6px; }
     .topbar { justify-content: flex-end; }
   .lang-switch { right: auto; left: 16px; }
   .menu-toggle { display: block; }
