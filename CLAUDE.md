@@ -18,7 +18,7 @@
 ## Choix de design (validés)
 - Thème sobre ingénieur (avec une touche santé). Palette : NOIR / GRIS / BLANC + rouge profond pour les éléments importants. Pas de bleu.
 - Accueil scindé en deux (seulement l'accueil, le reste du site reste noir uni) :
-  gauche = nom + photo de Valentin (assets/photo.jpg), droite = image ingénierie santé / robots (assets/fond-sante.jpg) + fiche résumé (rectangle simple, angles droits, semi-transparent + flou, libellés en gras avec majuscule ; PAS de barre façon fenêtre Mac).
+  gauche = nom + photo de Valentin (assets/photo.jpg), droite = image ingénierie santé / robots (assets/fond-sante.jpg) + fiche résumé (rectangle simple, angles droits, semi-transparent + flou, libellés en gras avec majuscule ; PAS de barre façon fenêtre Mac ; légèrement décalée vers la droite via transform, sauf sur mobile).
   Les deux photos passent en noir et blanc via CSS (filter: grayscale). Proportions : --left / --right dans .hero.
 - Photo de Valentin (costume, N&B) : assets/photo.jpg = sens d'ORIGINE, recadré à gauche ; calée à GAUCHE du bloc gauche (il regarde vers son nom), fondu vers la droite ; le texte est poussé à droite de la photo. Sur téléphone : photo atténuée (opacity .35). assets/photo-original.jpg = photo complète.
 - Zone entre la photo et le côté droit : image de code (fournie par Valentin) RETOURNÉE en miroir, assets/code-hero.jpg (474x270, petite), en fond assombri (brightness .55) sous la photo, fondu depuis la gauche.
