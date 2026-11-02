@@ -9,6 +9,7 @@
   (MedPredict, GaitAnalysis, MedScan, VitalWatch IoT, SecureHealth Exchange FHIR, Vision-ECG).
 
 ## Déploiement
+- Commits : auteur "Valentin-Auger-Laboratoire <Valentin-Auger-Laboratoire@users.noreply.github.com>" (JAMAIS le Gmail perso valentin32auger@gmail.com ; les anciens commits jusqu'à 6302b0b le contiennent encore).
 - Dépôt : https://github.com/Valentin-Auger-Laboratoire/portfolio (branche `main`)
 - Site en ligne : https://valentin-auger-laboratoire.github.io/portfolio/
 - GitHub Pages : déploiement depuis `main`, dossier `/ (root)`. Chaque push met le site à jour (~1 min).
