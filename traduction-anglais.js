@@ -43,6 +43,7 @@ window.I18N_EN = {
   'tag.network': 'Networks',
   'tag.health': 'Health app',
   'tag.data': 'Data',
+  'projects.code': 'View the code ↗',
   'projects.context': 'Course project · EPISEN, HCI module',
   'p1.date': 'Mar 2026',
   'p1.title': 'Medical follow-up: from V1 to a health-focused UX',
