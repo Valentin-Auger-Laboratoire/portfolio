@@ -27,6 +27,7 @@
 - Références aimées : accueils de portfolio photo N&B plein cadre d'un côté, texte de l'autre.
 - Fond animé (réseau de nœuds) SUPPRIMÉ : Valentin le trouvait pas pro / pas personnalisé.
 - Nom en grand : blanc, contour noir + ombre décalée. Sur-titre "Élève ingénieur" en rouge.
+- Phrase sous le nom : "Réseaux, IA et électronique, appliqués à la santé. Je monte des systèmes de bout en bout, et je documente comment." (garder "je documente comment" : Valentin y tient).
 - Barre du haut : PAS de nom/logo (doublon), juste le menu centré. Accueil : PAS de boutons (refusés, inutiles).
 - Polices : Inter (texte) + JetBrains Mono (accents techniques).
 - Couleurs : toutes dans `:root` de style.css. Accent = rouge profond #c8102e (choisi par Valentin), surtout pas orangé. Secondaire = gris clair #c9c9cc.
