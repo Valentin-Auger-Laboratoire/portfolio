@@ -6,7 +6,7 @@
 // ==========================================================
 window.I18N_EN = {
   'meta.title': 'Valentin Auger — Engineering student · Networks & AI',
-  'meta.description': 'Portfolio of Valentin Auger, engineering student: networks, artificial intelligence and software development.',
+  'meta.description': 'Portfolio of Valentin Auger, engineering student: networks, artificial intelligence, electronics and health.',
 
   'nav.menu': 'Open menu',
   'nav.about': 'About',
@@ -17,7 +17,7 @@ window.I18N_EN = {
   'nav.contact': 'Contact',
 
   'hero.eyebrow': 'Engineering student',
-  'hero.tagline': 'Networks, artificial intelligence and software development. I build systems that work, and I document how.',
+  'hero.tagline': 'Networks, AI and electronics, applied to health. I build systems end to end, and I document how.',
 
   'status.label': 'Summary',
   'status.school': 'School',
