@@ -202,6 +202,15 @@ main { max-width: var(--maxw); margin: 0 auto; padding: 0 16px; }
 .card-context { font-family: var(--mono); font-size: 0.78rem; color: var(--text-dim); }
 .card-link { font-size: 0.9rem; font-weight: 500; color: var(--text); white-space: nowrap; transition: color .2s; }
 .card-link:hover { color: var(--accent); }
+/* carte mise en avant sur toute la largeur (projet visitable en ligne) */
+.project-card--wide { grid-column: 1 / -1; }
+.card-links { display: flex; gap: 20px; flex-wrap: wrap; }
+/* le lien secondaire reste cliquable au-dessus du lien qui couvre la carte */
+.card-link--secondary { position: relative; z-index: 1; color: var(--text-dim); }
+.card-link--secondary::after { content: none; }
+.card-link--secondary:hover { color: var(--accent); }
+.project-card:hover .card-link--secondary { color: var(--text-dim); }
+.project-card:hover .card-link--secondary:hover { color: var(--accent); }
 /* toute la carte est cliquable (le lien s'étend sur la carte) */
 .project-card { position: relative; cursor: pointer; }
 .card-link::after { content: ""; position: absolute; inset: 0; border-radius: inherit; }
