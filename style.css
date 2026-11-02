@@ -116,8 +116,6 @@ main { max-width: var(--maxw); margin: 0 auto; padding: 0 16px; }
     4px 4px 0 #000;
 }
 .tagline { color: var(--text-dim); font-size: 1.12rem; max-width: 52ch; margin: 20px 0 32px; }
-.tagline a { color: var(--text); border-bottom: 1px solid var(--border-hi); transition: color .2s, border-color .2s; }
-.tagline a:hover { color: var(--accent); border-color: var(--accent); }
 
 .btn {
   display: inline-block; padding: 11px 22px; border-radius: var(--radius);
