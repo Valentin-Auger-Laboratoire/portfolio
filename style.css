@@ -82,7 +82,7 @@ main { max-width: var(--maxw); margin: 0 auto; padding: 0 16px; }
 }
 .hero-left, .hero-right { position: relative; isolation: isolate; display: flex; align-items: center; }
 /* Les photos sont posées sur des calques ::before et passées en noir et blanc */
-.hero-left::before, .hero-right::before {
+.hero-right::before {
   content: ""; position: absolute; inset: 0; z-index: -2;
   background-position: center; background-size: cover; background-repeat: no-repeat;
   filter: grayscale(1);
@@ -91,11 +91,18 @@ main { max-width: var(--maxw); margin: 0 auto; padding: 0 16px; }
   padding: 80px 48px 80px var(--gutter);
   background: var(--bg);
 }
-.hero-left::before { background-image: url("assets/photo.jpg"); }
+/* photo de Valentin : en entier (hauteur du bloc), calée à droite, fondu vers la gauche */
+.hero-photo {
+  position: absolute; top: 0; right: 0; z-index: -2;
+  height: 100%; width: auto; max-width: 70%; object-fit: cover; object-position: center top;
+  filter: grayscale(1);
+  -webkit-mask-image: linear-gradient(90deg, transparent 0%, #000 45%);
+  mask-image: linear-gradient(90deg, transparent 0%, #000 45%);
+}
 /* voile sombre pour garder le nom lisible par-dessus la photo */
 .hero-left::after {
   content: ""; position: absolute; inset: 0; z-index: -1;
-  background: linear-gradient(90deg, rgba(12,12,13,0.88) 0%, rgba(12,12,13,0.6) 55%, rgba(12,12,13,0.35) 100%);
+  background: linear-gradient(90deg, rgba(12,12,13,0.6) 0%, rgba(12,12,13,0.35) 50%, rgba(12,12,13,0.1) 100%);
 }
 .hero-right {
   justify-content: center;
@@ -105,7 +112,7 @@ main { max-width: var(--maxw); margin: 0 auto; padding: 0 16px; }
 .hero-right::before { background-image: url("assets/fond-sante.jpg"); }
 .hero-right .status-panel { width: 100%; max-width: 440px; box-shadow: 0 24px 48px rgba(0,0,0,0.25); }
 
-.eyebrow { font-family: var(--mono); color: var(--accent); font-size: 0.95rem; margin-bottom: 10px; }
+.eyebrow { font-family: var(--mono); color: var(--accent); font-size: 0.95rem; margin-bottom: 10px;  text-shadow: 0 1px 8px rgba(0,0,0,0.9);}
 .hero h1 {
   font-size: clamp(2.4rem, 6vw, 3.8rem); line-height: 1.1; font-weight: 700; letter-spacing: -0.02em;
   color: #fff;
@@ -115,7 +122,7 @@ main { max-width: var(--maxw); margin: 0 auto; padding: 0 16px; }
     0 -2px 0 #000, 0 2px 0 #000, -2px 0 0 #000, 2px 0 0 #000,
     4px 4px 0 #000;
 }
-.tagline { color: var(--text-dim); font-size: 1.12rem; max-width: 52ch; margin: 20px 0 32px; }
+.tagline { color: var(--text-dim); font-size: 1.12rem; max-width: 52ch; margin: 20px 0 32px;  text-shadow: 0 1px 10px rgba(0,0,0,0.9), 0 0 2px rgba(0,0,0,0.8);}
 /* une idée par ligne ; la dernière se coupe de façon équilibrée si elle est trop longue */
 .tagline span { display: block; text-wrap: balance; }
 
