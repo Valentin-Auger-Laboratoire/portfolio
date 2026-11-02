@@ -209,11 +209,6 @@ main { max-width: var(--maxw); margin: 0 auto; padding: 0 16px; }
 .timeline { border-left: 1px solid var(--border-hi); padding-left: 28px; display: grid; gap: 32px; }
 .timeline li { position: relative; display: grid; grid-template-columns: 104px 1fr; gap: 22px; align-items: start; }
 .tl-content { min-width: 0; }
-/* logo cliquable → page LinkedIn de l'établissement */
-.tl-logo-link { display: block; line-height: 0; }
-.tl-logo-link .tl-logo { transition: border-color .2s, transform .2s; }
-.tl-logo-link:hover .tl-logo { border-color: var(--accent); transform: translateY(-2px); }
-.tl-logo-link:focus-visible { outline: 2px solid var(--accent); outline-offset: 3px; }
 /* logo de l'établissement : carré blanc, passé en noir et blanc comme les photos */
 .tl-logo {
   width: 104px; height: 64px; object-fit: contain; padding: 6px 8px;
