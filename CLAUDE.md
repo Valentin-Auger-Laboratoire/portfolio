@@ -56,7 +56,7 @@ data-tags possibles : reseau, ia, dev (plusieurs séparés par un espace).
 - [x] Lieu : Périphérie de Paris, France (EN : Paris area, France)
 - [x] Année : 2e année cycle ingénieur (EPISEN ITS, sept. 2025 – juil. 2028)
 - [x] Parcours (source : LinkedIn de Valentin) : EPISEN ITS 2025–2028 ; CPGE TSI Lycée Robert Doisneau (Corbeil-Essonnes) 2023–2025, crédits ECTS ; Bac STI2D option SIN Lycée Georges Brassens (Évry-Courcouronnes) 2020–2023.
-- [ ] Logos du parcours : doisneau.png OK (recadré d'une capture) ; EPISEN et Brassens = emplacements texte provisoires → demander les vrais logos (assets/logos/episen.png, brassens.png)
+- [x] Logos du parcours : assets/logos/episen.png, doisneau.png, brassens.png (recadrés des captures LinkedIn de Valentin), affichés en N&B dans un rectangle blanc, cliquables vers LinkedIn : linkedin.com/school/episen-its, linkedin.com/company/lycee-robert-doisneau (page "entreprise" : pas de page école), linkedin.com/school/lycée-georges-brassens-d-évry-courcouronnes.
 - [ ] Période du stage
 - [ ] Ajouter assets/cv-fr.pdf et assets/cv-en.pdf
 - [ ] Renseigner les vrais projets
