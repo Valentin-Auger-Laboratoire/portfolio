@@ -81,51 +81,55 @@
 
       <div class="filters" role="group" data-i18n-attr="aria-label:projects.filterLabel" aria-label="Filtrer les projets">
         <button class="filter active" data-filter="all" data-i18n="projects.all">Tous</button>
-        <button class="filter" data-filter="reseau" data-i18n="tag.network">Réseaux</button>
-        <button class="filter" data-filter="ia" data-i18n="tag.ai">IA</button>
-        <button class="filter" data-filter="dev" data-i18n="tag.dev">Dev</button>
+        <button class="filter" data-filter="sante" data-i18n="tag.health">Application santé</button>
+        <button class="filter" data-filter="data" data-i18n="tag.data">Données</button>
       </div>
 
       <div class="projects-grid">
-        <article class="project-card" data-tags="reseau">
+        <article class="project-card" data-tags="sante">
           <div class="card-top">
-            <span class="card-type" data-i18n="tag.network">Réseaux</span>
-            <span class="card-date">2026</span>
+            <span class="card-type" data-i18n="tag.health">Application santé</span>
+            <span class="card-date" data-i18n="p1.date">Mars 2026</span>
           </div>
-          <h3 data-i18n="p1.title">Infrastructure réseau virtualisée</h3>
-          <p data-i18n="p1.desc">Conception d'une topologie multi-VLAN avec routage OSPF et pare-feu, simulée sous GNS3.</p>
-          <ul class="tags"><li>GNS3</li><li>OSPF</li><li>VLAN</li><li>pfSense</li></ul>
-          <div class="card-links">
-            <a href="#" target="_blank" rel="noopener">Code ↗</a>
-            <a href="#" target="_blank" rel="noopener" data-i18n="projects.report">Rapport ↗</a>
-          </div>
+          <h3 data-i18n="p1.title">Suivi médical : de la V1 à une interface pensée UX santé</h3>
+          <p data-i18n="p1.desc">Application de suivi des actions médicales (ajout, marquage, suppression, sauvegarde JSON), puis une V2 retravaillée selon les principes UX du soin : code couleur clair, refus des saisies vides, confirmation avant toute suppression, messages de retour explicites.</p>
+          <ul class="tags"><li>Python</li><li>PyQt6</li><li>Feuilles de style Qt</li><li>JSON</li></ul>
+          <p class="card-context" data-i18n="projects.context">Projet de cours · EPISEN, module IHM</p>
         </article>
 
-        <article class="project-card" data-tags="ia">
+        <article class="project-card" data-tags="sante">
           <div class="card-top">
-            <span class="card-type" data-i18n="tag.ai">IA</span>
-            <span class="card-date">2026</span>
+            <span class="card-type" data-i18n="tag.health">Application santé</span>
+            <span class="card-date" data-i18n="p2.date">Avril 2026</span>
           </div>
-          <h3 data-i18n="p2.title">Détection d'anomalies réseau par ML</h3>
-          <p data-i18n="p2.desc">Classification de trafic suspect à partir de captures réseau, comparaison de plusieurs modèles.</p>
-          <ul class="tags"><li>Python</li><li>scikit-learn</li><li>Wireshark</li></ul>
-          <div class="card-links">
-            <a href="#" target="_blank" rel="noopener">Code ↗</a>
-          </div>
+          <h3 data-i18n="p2.title">Salle d'attente : une appli, deux architectures (MVP / MVVM)</h3>
+          <p data-i18n="p2.desc">Gestion des patients en salle d'attente (nom, âge, motif) codée deux fois pour comparer les patrons : présentateur qui pilote une vue passive en MVP, ViewModel à signaux auquel la vue s'abonne en MVVM. Validation des saisies et messages de retour colorés.</p>
+          <ul class="tags"><li>Python</li><li>PyQt6</li><li>MVP</li><li>MVVM</li><li>Signaux / slots</li></ul>
+          <p class="card-context" data-i18n="projects.context">Projet de cours · EPISEN, module IHM</p>
         </article>
 
-        <article class="project-card" data-tags="dev">
+        <article class="project-card" data-tags="sante">
           <div class="card-top">
-            <span class="card-type" data-i18n="tag.dev">Dev</span>
-            <span class="card-date">2025</span>
+            <span class="card-type" data-i18n="tag.health">Application santé</span>
+            <span class="card-date" data-i18n="p3.date">Avril 2026</span>
           </div>
-          <h3 data-i18n="p3.title">Ce portfolio</h3>
-          <p data-i18n="p3.desc">Site statique en HTML/CSS/JS sans framework, hébergé sur GitHub Pages.</p>
-          <ul class="tags"><li>HTML</li><li>CSS</li><li>JavaScript</li></ul>
-          <div class="card-links">
-            <a href="#" target="_blank" rel="noopener">Code ↗</a>
-          </div>
+          <h3 data-i18n="p3.title">Monitoring de patients : détection des cas critiques</h3>
+          <p data-i18n="p3.desc">Lecture d'un fichier de constantes patients, extraction des champs par expressions régulières, détection des patients critiques (FC > 100 bpm ou T° > 38,5 °C) et affichage dans une interface. Exceptions personnalisées pour les lignes invalides. Version retravaillée après l'examen.</p>
+          <ul class="tags"><li>Python</li><li>PyQt5</li><li>MVC</li><li>Regex</li><li>Exceptions</li></ul>
+          <p class="card-context" data-i18n="projects.context">Projet de cours · EPISEN, module IHM</p>
         </article>
+
+        <article class="project-card" data-tags="data">
+          <div class="card-top">
+            <span class="card-type" data-i18n="tag.data">Données</span>
+            <span class="card-date" data-i18n="p4.date">Avril 2026</span>
+          </div>
+          <h3 data-i18n="p4.title">Web scraping : du HTML statique aux pages dynamiques</h3>
+          <p data-i18n="p4.desc">Chaîne complète d'extraction de données : page statique avec BeautifulSoup, limites du scraping classique face au JavaScript, pilotage de Chrome avec Selenium, extraction robuste qui ignore les fiches incomplètes, puis export JSON et CSV.</p>
+          <ul class="tags"><li>Python</li><li>requests</li><li>BeautifulSoup</li><li>Selenium</li><li>CSV / JSON</li></ul>
+          <p class="card-context" data-i18n="projects.context">Projet de cours · EPISEN, module IHM</p>
+        </article>
+
       </div>
     </section>
 

@@ -50,8 +50,9 @@
 - assets/ — cv.pdf, images de projets
 
 ## Ajouter un projet
-Copier un bloc `<article class="project-card" data-tags="...">` dans index.html.
-data-tags possibles : reseau, ia, dev (plusieurs séparés par un espace).
+Copier un bloc `<article class="project-card" data-tags="...">` dans index.html (+ clés pN.date/title/desc dans traduction-anglais.js).
+data-tags possibles : sante, data (filtres "Application santé" / "Données"). Ajouter un filtre seulement s'il a au moins un projet.
+Grille projets : 2 colonnes (1 sur mobile).
 
 ## À faire
 - [x] Nom : Valentin Auger
@@ -69,7 +70,9 @@ data-tags possibles : reseau, ia, dev (plusieurs séparés par un espace).
 - [x] Compétences : 9 blocs en grille 3x3 (C / C++ retiré à la demande de Valentin ; Réseaux, Infrastructure & auto-hébergement, IA, Développement, Applications mobiles, CAO & fabrication, Sciences de l'ingénieur, Santé & données sensibles, Méthodes & savoir-être). Le bloc Santé vient de son stage en pharmacie : données de santé, RGPD, parc informatique, contact patients, interface soignants/patients/technique. Sources : ses dires (Android Studio, Flutter, PHP, VS Code, SolidWorks, Fusion 360, impression 3D, serveur domotique, NAS, routeur/switch, mécanique, SI) + son CV anglais (JS, back-end, SQL/MySQL, data security, Excel, gestion de projet, soft skills).
 - [ ] Période du stage
 - [ ] Ajouter assets/cv-fr.pdf et assets/cv-en.pdf
-- [ ] Renseigner les vrais projets
+- [x] Projets (source : resume-projets.md du dossier EPISEN, cours ECUE 235, 2026) : 4 cartes = Suivi médical UX V1→V2, Salle d'attente MVP/MVVM, Monitoring patients (version reprise après examen ; le rendu d'examen ne s'exécute pas), Web scraping. Écartés : exercices PyQt, exemples de cours, ECUE 234 (pas ses projets). Pas de lien "Code" (code non publié). Pas d'images (aucune capture dans le dossier → à demander).
+  ⚠️ SSH_sur_Python_3.py (dans son dossier EPISEN) contient un mot de passe en clair : ne jamais le publier.
+- [ ] Captures d'écran des projets + un projet réseau perso (serveur domotique / NAS / réseau maison)
 - [x] Déployer sur GitHub Pages
 - [x] Couleur d'accent choisie : rouge profond #c8102e (sélecteur retiré)
 - Bouton principal : texte blanc avec contour noir (text-shadow) — demandé par Valentin.
