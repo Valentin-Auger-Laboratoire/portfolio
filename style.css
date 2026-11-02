@@ -193,7 +193,9 @@ main { max-width: var(--maxw); margin: 0 auto; padding: 0 16px; }
 .filter:hover { color: var(--text); border-color: var(--border-hi); }
 .filter.active { color: var(--accent); border-color: var(--accent); }
 
-.projects-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); gap: 20px; }
+.projects-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 20px; }
+@media (max-width: 820px) { .projects-grid { grid-template-columns: 1fr; } }
+.card-context { font-family: var(--mono); font-size: 0.78rem !important; color: var(--text-dim); border-top: 1px solid var(--border); padding-top: 12px; flex: none !important; }
 .project-card {
   background: var(--bg-panel); border: 1px solid var(--border); border-radius: var(--radius);
   padding: 22px; display: flex; flex-direction: column; gap: 12px;
