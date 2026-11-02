@@ -207,19 +207,20 @@ main { max-width: var(--maxw); margin: 0 auto; padding: 0 16px; }
 
 /* ---------- Parcours ---------- */
 .timeline { border-left: 1px solid var(--border-hi); padding-left: 28px; display: grid; gap: 32px; }
-.timeline li { position: relative; display: grid; grid-template-columns: 56px 1fr; gap: 20px; align-items: start; }
+.timeline li { position: relative; display: grid; grid-template-columns: 104px 1fr; gap: 22px; align-items: start; }
 .tl-content { min-width: 0; }
+/* logo cliquable → page LinkedIn de l'établissement */
+.tl-logo-link { display: block; line-height: 0; }
+.tl-logo-link .tl-logo { transition: border-color .2s, transform .2s; }
+.tl-logo-link:hover .tl-logo { border-color: var(--accent); transform: translateY(-2px); }
+.tl-logo-link:focus-visible { outline: 2px solid var(--accent); outline-offset: 3px; }
 /* logo de l'établissement : carré blanc, passé en noir et blanc comme les photos */
 .tl-logo {
-  width: 56px; height: 56px; object-fit: contain; padding: 6px;
-  background: #fff; border: 1px solid var(--border); filter: grayscale(1);
-}
-.tl-logo-text {
-  display: grid; place-items: center; padding: 0;
-  font-family: var(--mono); font-size: 0.62rem; font-weight: 600; letter-spacing: 0.04em; color: #111;
+  width: 104px; height: 64px; object-fit: contain; padding: 6px 8px;
+  background: #fff; border: 1px solid var(--border); filter: grayscale(1) contrast(1.15);
 }
 .timeline li::before {
-  content: ""; position: absolute; left: -33px; top: 24px;
+  content: ""; position: absolute; left: -33px; top: 28px;
   width: 9px; height: 9px; border-radius: 50%;
   background: var(--bg); border: 2px solid var(--accent);
 }
@@ -284,11 +285,10 @@ main { max-width: var(--maxw); margin: 0 auto; padding: 0 16px; }
   .skills-banner { aspect-ratio: 16 / 7; }
   .contact { padding: 36px 20px; }
   .timeline { margin-left: 6px; padding-left: 20px; }
-  .timeline li { grid-template-columns: 44px 1fr; gap: 14px; }
+  .timeline li { grid-template-columns: 76px 1fr; gap: 14px; }
   .timeline li::before { left: -25px; top: 18px; }
-  .tl-logo { width: 44px; height: 44px; padding: 4px; }
-  .tl-logo-text { font-size: 0.5rem; padding: 0; }
-  .topbar { justify-content: flex-end; }
+  .tl-logo { width: 76px; height: 48px; padding: 4px 6px; }
+    .topbar { justify-content: flex-end; }
   .lang-switch { right: auto; left: 16px; }
   .menu-toggle { display: block; }
   .cv-block { grid-template-columns: 1fr; }
