@@ -103,6 +103,15 @@ main { max-width: var(--maxw); margin: 0 auto; padding: 0 16px; }
 .hero-left { justify-content: flex-end; }
 .hero-left .hero-text { max-width: 30rem; }
 /* voile sombre pour garder le nom lisible par-dessus la photo */
+/* image de code (retournée en miroir) qui comble la zone entre la photo et le côté droit ;
+   elle passe SOUS la photo et apparaît en fondu depuis la gauche */
+.hero-left::before {
+  content: ""; position: absolute; inset: 0; z-index: -3;
+  background: url("assets/code-hero.jpg") right center / cover no-repeat;
+  filter: grayscale(1) brightness(0.55);
+  -webkit-mask-image: linear-gradient(90deg, transparent 0%, transparent 20%, #000 55%);
+  mask-image: linear-gradient(90deg, transparent 0%, transparent 20%, #000 55%);
+}
 .hero-left::after {
   content: ""; position: absolute; inset: 0; z-index: -1;
   background: linear-gradient(270deg, rgba(12,12,13,0.6) 0%, rgba(12,12,13,0.35) 50%, rgba(12,12,13,0.1) 100%);
