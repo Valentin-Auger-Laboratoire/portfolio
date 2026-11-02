@@ -73,6 +73,17 @@ window.I18N_EN = {
   'background.e3school': 'Lycée Georges Brassens, Évry-Courcouronnes',
   'background.e3desc': 'Technology-track high school diploma, specialization in Information Systems and Digital Technology.',
 
+  'background.education': 'Education',
+  'background.experience': 'Experience',
+  'exp.e1date': 'Jun — Jul 2026 · 2 months',
+  'exp.e1title': 'Intern — back-office optimization',
+  'exp.e1place': 'Pharmacie des Aunettes (pharmacy), Ris-Orangis, France',
+  'exp.e1desc': 'Studied and implemented a procedure to optimize the back office: analysis of existing workflows and tools to improve internal management and day-to-day data handling. First-hand observation of information flows and digital needs in a healthcare setting.',
+  'exp.e2date': 'Dec 2019 · 1 month',
+  'exp.e2title': 'Electronics intern',
+  'exp.e2place': '123 Cash, Corbeil-Essonnes, France',
+  'exp.e2desc': 'Diagnosis and repair of electronic equipment, maintenance and stock management. Customer reception and after-sales service.',
+
   'contact.title': '<span>05</span> Contact',
   'contact.intro': 'Looking for a 16-week internship abroad. The easiest way to reach me is by email.',
 
