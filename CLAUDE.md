@@ -20,7 +20,7 @@
 - Accueil scindé en deux (seulement l'accueil, le reste du site reste noir uni) :
   gauche = nom + photo de Valentin (assets/photo.jpg), droite = image ingénierie santé / robots (assets/fond-sante.jpg) + fiche résumé (rectangle simple, angles droits, semi-transparent + flou, libellés en gras avec majuscule ; PAS de barre façon fenêtre Mac).
   Les deux photos passent en noir et blanc via CSS (filter: grayscale). Proportions : --left / --right dans .hero.
-- Photo de Valentin (costume, N&B) : assets/photo.jpg = version RETOURNÉE en miroir (pour qu'il regarde vers son nom) ; assets/photo-original.jpg = sens d'origine. Affichée via <img class="hero-photo"> calée à droite du bloc gauche, hauteur 100 %, fondu vers la gauche (mask-image). Ombre légère sous le texte pour la lisibilité.
+- Photo de Valentin (costume, N&B) : assets/photo.jpg = version RETOURNÉE en miroir (pour qu'il regarde vers son nom) et recadrée à droite (pour le décaler loin du texte) ; assets/photo-original.jpg = sens d'origine. Affichée via <img class="hero-photo"> calée à droite du bloc gauche, hauteur 100 %, fondu vers la gauche (mask-image). Ombre légère sous le texte pour la lisibilité.
 - Trait d'ECG : essayé puis REFUSÉ par Valentin.
 - Image droite actuelle : bras robotique (Niryo One), fournie par Valentin, 600x600 (un peu basse résolution). Origine/droits à vérifier.
 - Images "code" (fournies par Valentin) : assets/code-main.jpg à côté du texte À propos, assets/code-ecrans.jpg en fond de la carte Contact (N&B + voile sombre).
