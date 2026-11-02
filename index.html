@@ -83,9 +83,26 @@
         <button class="filter active" data-filter="all" data-i18n="projects.all">Tous</button>
         <button class="filter" data-filter="sante" data-i18n="tag.health">Application santé</button>
         <button class="filter" data-filter="data" data-i18n="tag.data">Données</button>
+        <button class="filter" data-filter="web" data-i18n="tag.web">Web</button>
       </div>
 
       <div class="projects-grid">
+        <article class="project-card project-card--wide" data-tags="web">
+          <div class="card-top">
+            <span class="card-type" data-i18n="tag.web">Web</span>
+            <span class="card-date" data-i18n="p5.date">Mars 2026</span>
+          </div>
+          <h3 data-i18n="p5.title">Site vitrine multi-pages de l'EPISEN</h3>
+          <p data-i18n="p5.desc">Site responsive de cinq pages (accueil, formations, enseignants, présentation, contact) construit avec Bootstrap 5 : barre de navigation commune, grille de cartes cliquables, chiffres clés, image de fond plein écran et pied de page fixé en Flexbox. Styles regroupés dans une seule feuille CSS. Projet étudiant, site non officiel.</p>
+          <ul class="tags"><li>HTML5</li><li>CSS3</li><li>Bootstrap 5</li><li>JavaScript</li><li>Responsive</li></ul>
+          <div class="card-foot">
+            <span class="card-context" data-i18n="projects.contextWeb">Intégration web · site en ligne</span>
+            <span class="card-links">
+              <a class="card-link card-link--secondary" href="https://github.com/Valentin-Auger-Laboratoire/site-episen" target="_blank" rel="noopener" data-i18n="projects.code">Voir le code ↗</a>
+              <a class="card-link" href="https://valentin-auger-laboratoire.github.io/site-episen/" target="_blank" rel="noopener" data-i18n="projects.site">Voir le site ↗</a>
+            </span>
+          </div>
+        </article>
         <article class="project-card" data-tags="sante">
           <div class="card-top">
             <span class="card-type" data-i18n="tag.health">Application santé</span>

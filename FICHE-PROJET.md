@@ -51,7 +51,7 @@
 
 ## Ajouter un projet
 Copier un bloc `<article class="project-card" data-tags="...">` dans index.html (+ clés pN.date/title/desc dans traduction-anglais.js).
-data-tags possibles : sante, data (filtres "Application santé" / "Données"). Ajouter un filtre seulement s'il a au moins un projet.
+data-tags possibles : sante, data, web (filtres "Application santé" / "Données" / "Web"). Ajouter un filtre seulement s'il a au moins un projet.
 Grille projets : 2 colonnes (1 sur mobile).
 
 ## À faire
@@ -71,6 +71,7 @@ Grille projets : 2 colonnes (1 sur mobile).
 - [ ] Période du stage
 - [ ] Ajouter assets/cv-fr.pdf et assets/cv-en.pdf
 - [x] Projets (source : resume-projets.md du dossier EPISEN, cours ECUE 235, 2026) : 4 cartes = Suivi médical UX V1→V2, Salle d'attente MVP/MVVM, Monitoring patients (version reprise après examen ; le rendu d'examen ne s'exécute pas), Web scraping. Écartés : exercices PyQt, exemples de cours, ECUE 234 (pas ses projets). Code publié dans le dépôt PUBLIC github.com/Valentin-Auger-Laboratoire/projets-episen (un dossier par projet : suivi-medical-ux, salle-attente-mvp-mvvm, monitoring-patients, web-scraping) ; chaque carte entière est cliquable vers son dossier ("Voir le code ↗"). Pas d'images (aucune capture dans le dossier → à demander).
+- [x] Projet 5 : site vitrine EPISEN (Bootstrap 5, mars 2026), dépôt PUBLIC séparé github.com/Valentin-Auger-Laboratoire/site-episen, site en ligne (GitHub Pages) valentin-auger-laboratoire.github.io/site-episen/. Nettoyé : pas de noms/photos d'enseignants (avatars + "Enseignant·e N", intitulés génériques), pas de pages copiées du site officiel, pas de vidéo ; bandeau "Projet étudiant — site non officiel" sur chaque page. Carte en pleine largeur en tête de grille, 2 liens (site + code). Contexte (cours ? seul ?) non confirmé par Valentin.
   ⚠️ SSH_sur_Python_3.py (dans son dossier EPISEN) contient un mot de passe en clair : ne jamais le publier.
 - [ ] Captures d'écran des projets + un projet réseau perso (serveur domotique / NAS / réseau maison)
 - [x] Déployer sur GitHub Pages
