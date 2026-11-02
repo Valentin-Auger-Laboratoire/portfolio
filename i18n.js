@@ -25,7 +25,7 @@ window.I18N_EN = {
   'status.year': 'Year',
   'status.yearValue': '2<sup>nd</sup> year, engineering degree',
   'status.focus': 'Focus',
-  'status.focusValue': 'Networks · AI · Electronics · Health',
+  'status.focusValue': 'Networks · AI · Electronics · Mechanics · Health',
   'status.search': 'Looking for',
   'status.searchValue': 'Internship abroad — 16 weeks',
   'status.location': 'Location',
