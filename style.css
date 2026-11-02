@@ -88,7 +88,7 @@ main { max-width: var(--maxw); margin: 0 auto; padding: 0 16px; }
   filter: grayscale(1);
 }
 .hero-left {
-  padding: 80px 48px 80px var(--gutter);
+  padding: 80px 48px 80px 48px;
   background: var(--bg);
 }
 /* photo de Valentin : en entier (hauteur du bloc), calée à GAUCHE, fondu vers la droite ;
@@ -101,7 +101,7 @@ main { max-width: var(--maxw); margin: 0 auto; padding: 0 16px; }
   mask-image: linear-gradient(270deg, transparent 0%, #000 45%);
 }
 .hero-left { justify-content: flex-end; }
-.hero-left .hero-text { max-width: 30rem; }
+.hero-left .hero-text { max-width: max(30rem, 39vw); }
 /* voile sombre pour garder le nom lisible par-dessus la photo */
 /* image de code (retournée en miroir) qui comble la zone entre la photo et le côté droit ;
    elle passe SOUS la photo et apparaît en fondu depuis la gauche */
@@ -129,9 +129,9 @@ main { max-width: var(--maxw); margin: 0 auto; padding: 0 16px; }
 }
 .hero-right .status-panel { width: 100%; max-width: 440px; box-shadow: 0 24px 48px rgba(0,0,0,0.25); }
 
-.eyebrow { font-family: var(--mono); color: var(--accent); font-size: 0.95rem; margin-bottom: 10px;  text-shadow: 0 1px 8px rgba(0,0,0,0.9);}
+.eyebrow { font-family: var(--mono); color: var(--accent); font-size: clamp(0.95rem, 1.11vw, 1.35rem); margin-bottom: 10px;  text-shadow: 0 1px 8px rgba(0,0,0,0.9);}
 .hero h1 {
-  font-size: clamp(2.4rem, 6vw, 3.8rem); line-height: 1.1; font-weight: 700; letter-spacing: -0.02em;
+  font-size: clamp(2.4rem, 4.45vw, 5.4rem); line-height: 1.1; font-weight: 700; letter-spacing: -0.02em;
   color: #fff;
   /* même effet que le bouton rouge : contour noir + ombre décalée (épaisseur adaptée à la taille) */
   text-shadow:
@@ -139,7 +139,7 @@ main { max-width: var(--maxw); margin: 0 auto; padding: 0 16px; }
     0 -2px 0 #000, 0 2px 0 #000, -2px 0 0 #000, 2px 0 0 #000,
     4px 4px 0 #000;
 }
-.tagline { color: var(--text-dim); font-size: 1.12rem; max-width: 52ch; margin: 20px 0 32px;  text-shadow: 0 1px 10px rgba(0,0,0,0.9), 0 0 2px rgba(0,0,0,0.8);}
+.tagline { color: var(--text-dim); font-size: clamp(1.05rem, 1.25vw, 1.55rem); max-width: none; margin: 20px 0 32px;  text-shadow: 0 1px 10px rgba(0,0,0,0.9), 0 0 2px rgba(0,0,0,0.8);}
 /* une idée par ligne ; la dernière se coupe de façon équilibrée si elle est trop longue */
 .tagline span { display: block; text-wrap: balance; }
 
