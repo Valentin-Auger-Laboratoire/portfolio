@@ -122,6 +122,22 @@
             </span>
           </div>
         </article>
+        <article class="project-card project-card--wide" data-tags="reseau web">
+          <div class="card-top">
+            <span class="card-type" data-i18n="tag.network">Réseaux</span>
+            <span class="card-date" data-i18n="p15.date">Nov. 2026</span>
+          </div>
+          <h3 data-i18n="p15.title">Générateur de configuration Cisco et VyOS, avec analyse des règles de pare-feu</h3>
+          <p data-i18n="p15.desc">Outil web qui écrit la configuration d'un site à partir d'une description : routeur Cisco en router-on-a-stick (sous-interfaces 802.1Q, DHCP, OSPF, SSH v2) et switch d'accès (VLAN, trunk, ports), ou pare-feu VyOS (interfaces, rulesets par zone, forward filter, stateful). Avant de générer, il vérifie les données : chevauchements d'adresses, VLAN réservés ou en double, ports attribués deux fois, adresses qui ne sont pas des réseaux. Côté VyOS, il repère les règles jamais atteintes car masquées par une règle précédente, les rulesets en double sur une même interface et les interfaces non filtrées. Les exemples reprennent le PoC de téléradiologie, dont la règle 40 en doublon de l'annexe d'origine. Aucun mot de passe n'est saisi : un marqueur est laissé à la place.</p>
+          <ul class="tags"><li>Cisco IOS</li><li>VyOS</li><li>VLAN / 802.1Q</li><li>OSPF</li><li>Pare-feu</li><li>JavaScript</li></ul>
+          <div class="card-foot">
+            <span class="card-context" data-i18n="projects.contextTool">Outil web · projet personnel</span>
+            <span class="card-links">
+              <a class="card-link card-link--secondary" href="https://github.com/Valentin-Auger-Laboratoire/portfolio/tree/main/outils/generateur-config" target="_blank" rel="noopener" data-i18n="projects.code">Voir le code ↗</a>
+              <a class="card-link" href="outils/generateur-config/index.html" data-i18n="projects.tool">Essayer l'outil ↗</a>
+            </span>
+          </div>
+        </article>
         <article class="project-card project-card--wide" data-tags="sante">
           <div class="card-top">
             <span class="card-type" data-i18n="tag.health">Application santé</span>
