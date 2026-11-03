@@ -1,0 +1,303 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Simulateur PoC réseau — démo</title>
+  <meta name="description" content="Simulateur de flux sur la topologie du PoC réseau de téléradiologie : chemin des paquets et décision du pare-feu VyOS.">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --bg: #0c0c0d; --panel: #161618; --border: #262628; --border-hi: #3a3a3d;
+      --text: #f2f2f2; --dim: #9b9b9f; --accent: #c8102e; --ok: #8fd18f; --warn: #e0a458;
+      --z-site: #3a3a3d; --z-dmz: #5a1a22; --z-ext: #2a2a2e; --z-fw: #4a4a4e;
+      --mono: "JetBrains Mono", ui-monospace, monospace; --sans: "Inter", system-ui, sans-serif;
+      color-scheme: dark;
+    }
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    body { background: var(--bg); color: var(--text); font-family: var(--sans); line-height: 1.55; -webkit-font-smoothing: antialiased; }
+    .wrap { max-width: 1180px; margin: 0 auto; padding: 24px max(16px, env(safe-area-inset-right, 0px)) 48px max(16px, env(safe-area-inset-left, 0px)); }
+    .top { display: flex; justify-content: space-between; align-items: center; gap: 12px; flex-wrap: wrap; margin-bottom: 24px; }
+    .back { font-size: 0.9rem; color: var(--dim); text-decoration: none; }
+    .back:hover { color: var(--accent); }
+    .lang { display: flex; border: 1px solid var(--border-hi); }
+    .lang button { font: 500 0.78rem var(--mono); letter-spacing: .05em; background: none; color: var(--dim); border: 0; padding: 5px 10px; cursor: pointer; }
+    .lang button + button { border-left: 1px solid var(--border-hi); }
+    .lang button[aria-pressed="true"] { background: var(--text); color: var(--bg); }
+    .eyebrow { font: 500 0.82rem var(--mono); color: var(--accent); letter-spacing: .04em; }
+    h1 { font-size: clamp(1.6rem, 3.4vw, 2.3rem); line-height: 1.15; margin: 6px 0 10px; text-wrap: balance; }
+    .intro { color: var(--dim); max-width: 78ch; }
+    .note { margin-top: 12px; font: 0.8rem var(--mono); color: var(--dim); border-left: 2px solid var(--accent); padding-left: 10px; max-width: 100ch; }
+    .note a { color: var(--text); }
+
+    .panel { background: var(--panel); border: 1px solid var(--border); border-radius: 8px; padding: 18px; }
+    .panel h2 { font: 600 0.78rem var(--mono); letter-spacing: .12em; text-transform: uppercase; color: var(--dim); margin-bottom: 12px; }
+    .controls { margin-top: 28px; display: grid; grid-template-columns: repeat(3, minmax(0,1fr)) auto; gap: 12px; align-items: end; }
+    .controls label { display: grid; gap: 6px; font: 500 0.78rem var(--mono); color: var(--dim); }
+    select { width: 100%; font: 0.9rem var(--sans); background: var(--bg); color: var(--text); border: 1px solid var(--border-hi); border-radius: 6px; padding: 9px 10px; }
+    .swap { font: 500 0.85rem var(--sans); background: none; color: var(--text); border: 1px solid var(--border-hi); border-radius: 6px; padding: 9px 12px; cursor: pointer; }
+    .swap:hover { border-color: var(--accent); color: var(--accent); }
+    select:focus-visible, button:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+    .presets { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 14px; }
+    .presets span { font: 0.78rem var(--mono); color: var(--dim); align-self: center; margin-right: 4px; }
+    .preset { font: 0.78rem var(--mono); background: none; color: var(--dim); border: 1px solid var(--border); border-radius: 999px; padding: 5px 12px; cursor: pointer; }
+    .preset:hover { color: var(--text); border-color: var(--border-hi); }
+
+    .layout { display: grid; grid-template-columns: minmax(0, 1.35fr) minmax(0, 1fr); gap: 20px; margin-top: 20px; align-items: start; }
+    .layout > *, .controls > * { min-width: 0; }
+    select { min-width: 0; text-overflow: ellipsis; }
+    .diagram svg { width: 100%; height: auto; display: block; }
+    .zone rect { stroke: var(--border-hi); stroke-width: 1; }
+    .zone text { font: 600 11px var(--mono); fill: var(--dim); letter-spacing: .06em; }
+    .link { stroke: #4a4a4e; stroke-width: 2; }
+    .link.on { stroke: var(--text); stroke-width: 3.5; }
+    .link.on.drop { stroke: var(--accent); stroke-dasharray: 6 5; }
+    .node circle, .node rect { fill: #1d1d20; stroke: #5a5a5e; stroke-width: 1.5; }
+    .node text { font: 500 11px var(--mono); fill: var(--text); }
+    .node .ip { fill: var(--dim); font-size: 10px; }
+    .node.on circle, .node.on rect { stroke: var(--text); stroke-width: 2.5; }
+    .node.src circle { fill: #2b2b30; }
+    .node.fw rect { fill: #2a1418; stroke: var(--accent); }
+    .node.fw.on rect { stroke-width: 3; }
+    .iface { font: 10px var(--mono); fill: var(--dim); }
+
+    .verdict { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; }
+    .badge { font: 700 0.95rem var(--mono); padding: 6px 14px; border-radius: 6px; letter-spacing: .05em; }
+    .badge.accept { background: rgba(143, 209, 143, .15); color: var(--ok); border: 1px solid rgba(143, 209, 143, .4); }
+    .badge.drop { background: rgba(200, 16, 46, .15); color: #ff6b81; border: 1px solid rgba(200, 16, 46, .5); }
+    .pkt { font: 0.82rem var(--mono); color: var(--dim); overflow-wrap: anywhere; }
+    .steps { list-style: none; margin-top: 14px; display: grid; gap: 6px; counter-reset: s; }
+    .steps li { counter-increment: s; font-size: 0.88rem; display: grid; grid-template-columns: 22px 1fr; gap: 8px; }
+    .steps li::before { content: counter(s); font: 600 0.75rem var(--mono); color: var(--bg); background: var(--dim); border-radius: 50%; width: 20px; height: 20px; display: grid; place-items: center; margin-top: 1px; }
+    .steps li.fw::before { background: var(--accent); color: #fff; }
+    .rules { margin-top: 16px; overflow-x: auto; }
+    .rules table { width: 100%; border-collapse: collapse; font: 0.8rem var(--mono); font-variant-numeric: tabular-nums; }
+    .rules th, .rules td { text-align: left; padding: 6px 8px; border-bottom: 1px solid var(--border); white-space: nowrap; vertical-align: top; }
+    .rules td:nth-child(2) { white-space: normal; overflow-wrap: anywhere; }
+    .rules th { color: var(--dim); font-weight: 500; }
+    .rules tr.hit td { background: rgba(242, 242, 242, .08); color: var(--text); font-weight: 600; }
+    .rules tr.hit td:first-child { box-shadow: inset 3px 0 0 var(--accent); }
+    .rules caption { text-align: left; color: var(--dim); font: 0.78rem var(--mono); margin-bottom: 6px; }
+    .notes { margin-top: 16px; display: grid; gap: 8px; }
+    .notes p { font-size: 0.85rem; color: var(--dim); border-left: 2px solid var(--border-hi); padding-left: 10px; }
+    .notes p.warn { border-color: var(--warn); color: #e8c49a; }
+
+    @media (max-width: 900px) { .layout { grid-template-columns: 1fr; } .controls { grid-template-columns: 1fr 1fr; } }
+    @media (max-width: 480px) { .controls { grid-template-columns: 1fr; } }
+  </style>
+</head>
+<body>
+  <div class="wrap">
+    <div class="top">
+      <a class="back" href="../../index.html#projets" data-t="back">← Retour au portfolio</a>
+      <div class="lang" role="group" aria-label="Langue / Language">
+        <button type="button" data-lang="fr" aria-pressed="true">FR</button>
+        <button type="button" data-lang="en" aria-pressed="false">EN</button>
+      </div>
+    </div>
+
+    <p class="eyebrow" data-t="eyebrow">Démo interactive · réseau et sécurité</p>
+    <h1 data-t="title">Simulateur de flux sur l'infrastructure de téléradiologie</h1>
+    <p class="intro" data-t="intro">Choisissez une machine source, une destination et un service : le simulateur trace le chemin du paquet dans la maquette et montre quelle règle du pare-feu VyOS l'accepte ou le bloque.</p>
+    <p class="note" data-t="note">Modèle construit à partir des configurations réelles du projet (vyos.conf et routeurs Cisco). La maquette d'origine tourne sous GNS3 : <a href="https://github.com/Valentin-Auger-Laboratoire/poc-reseau-teleradiologie" target="_blank" rel="noopener">voir le projet ↗</a></p>
+
+    <div class="panel controls-panel" style="margin-top:28px">
+      <div class="controls" style="margin-top:0">
+        <label><span data-t="src">Source</span><select id="src"></select></label>
+        <label><span data-t="dst">Destination</span><select id="dst"></select></label>
+        <label><span data-t="svc">Service</span><select id="svc"></select></label>
+        <button type="button" class="swap" id="swap" data-t="swap">⇄ Inverser</button>
+      </div>
+      <div class="presets" id="presets"><span data-t="presets">Tests du rapport :</span></div>
+    </div>
+
+    <div class="layout">
+      <div class="panel diagram">
+        <svg id="svg" viewBox="0 0 900 600" role="img" aria-label="Topologie du réseau"></svg>
+      </div>
+      <div class="panel" id="result" aria-live="polite"></div>
+    </div>
+  </div>
+
+  <script src="reseau.js"></script>
+  <script>
+  (() => {
+    'use strict';
+    const R = window.ReseauPoC;
+    const T = {
+      fr: {
+        back: '← Retour au portfolio', eyebrow: 'Démo interactive · réseau et sécurité',
+        title: "Simulateur de flux sur l'infrastructure de téléradiologie",
+        intro: 'Choisissez une machine source, une destination et un service : le simulateur trace le chemin du paquet dans la maquette et montre quelle règle du pare-feu VyOS l\'accepte ou le bloque.',
+        note: 'Modèle construit à partir des configurations réelles du projet (vyos.conf et routeurs Cisco). La maquette d\'origine tourne sous GNS3 : <a href="https://github.com/Valentin-Auger-Laboratoire/poc-reseau-teleradiologie" target="_blank" rel="noopener">voir le projet ↗</a>',
+        src: 'Source', dst: 'Destination', svc: 'Service', swap: '⇄ Inverser', presets: 'Tests du rapport :',
+        accept: 'ACCEPTÉ', drop: 'BLOQUÉ', path: 'Chemin du paquet', fwIn: 'Pare-feu VyOS : entrée par', fwOut: 'sortie par',
+        noRs: 'aucun ruleset appliqué sur cette interface', ruleset: 'Ruleset', rule: 'Règle', action: 'Action', match: 'Condition',
+        any: 'tout', def: 'par défaut', hitDefault: 'Aucune règle ne correspond : action par défaut',
+        zParis: 'SITE PARIS', zLyon: 'SITE LYON', zMars: 'SITE MARSEILLE', zDmz: 'DMZ', zCloud: 'CLOUD HDS', zRadio: 'EXTRANET RADIOLOGUES', zEtabli: 'EXTRANET ÉTABLISSEMENTS', zFw: 'ZONE PARE-FEU',
+        notes: {
+          same: 'Source et destination identiques.',
+          sameVlan: 'Même VLAN : le trafic reste dans le switch, sans passer par le routeur.',
+          interVlan: 'VLAN différents sur le même site : routage inter-VLAN par le routeur (router-on-a-stick, sous-interfaces 802.1Q).',
+          imagerie: 'Le VLAN 40 IMAGERIE est prévu pour être isolé ; aucune ACL ne le filtre encore dans la maquette (piste d\'amélioration).',
+          ospfSites: 'Trafic entre sites : routé par OSPF (area 0) sur les liens WAN, sans passer par le pare-feu.',
+          ospfInit: 'Le voisinage OSPF Lyon–Marseille sur le lien direct est resté en INIT dans la maquette : le trafic passe par le switch WAN (limite documentée).',
+          noFilterSites: 'Le trafic venant des sites entre par eth2, où aucun ruleset n\'est appliqué : il est accepté quel que soit le service. Point d\'amélioration : filtrer aussi vers la DMZ (outbound-interface eth4).',
+          noFilterCloud: 'Le trafic venant du Cloud entre par eth1, où aucun ruleset n\'est appliqué : il est accepté.',
+          t05: 'Selon cette configuration, la règle 30 de RADIO-IN accepte tout l\'ICMP. Le blocage observé au test T05 (ICMP 3/13) vient donc d\'une règle absente de l\'annexe : écart documenté dans les limites du projet.',
+          dropped: 'Paquet rejeté par le pare-feu : les zones externes sont en refus par défaut.',
+          stateful: 'Pare-feu stateful : la réponse est autorisée automatiquement (state-policy established/related).',
+          clair: 'Service non chiffré dans le PoC (HTTP / DICOM 104) : HTTPS et DICOM TLS sont prévus en production.',
+        },
+        presetsList: [['T01', 'pc-paris', 'pc-lyon', 'icmp'], ['T03', 'pc-paris', 'web-dmz', 'icmp'], ['T04', 'vm-radio', 'web-dmz', 'icmp'], ['T05', 'vm-radio', 'pc-paris', 'icmp'], ['T07', 'vm-radio', 'web-dmz', 'http'], ['T08', 'vm-etabli', 'web-dmz', 'http'], ['Radio → LAN SSH', 'vm-radio', 'pc-paris', 'ssh'], ['Établissement → Cloud', 'vm-etabli', 'pc-cloud', 'https']],
+      },
+      en: {
+        back: '← Back to portfolio', eyebrow: 'Interactive demo · networking and security',
+        title: 'Traffic simulator for the teleradiology infrastructure',
+        intro: 'Pick a source machine, a destination and a service: the simulator traces the packet path through the lab and shows which VyOS firewall rule accepts or blocks it.',
+        note: 'Model built from the project\'s real configurations (vyos.conf and Cisco routers). The original lab runs on GNS3: <a href="https://github.com/Valentin-Auger-Laboratoire/poc-reseau-teleradiologie" target="_blank" rel="noopener">view the project ↗</a>',
+        src: 'Source', dst: 'Destination', svc: 'Service', swap: '⇄ Swap', presets: 'Report tests:',
+        accept: 'ACCEPTED', drop: 'BLOCKED', path: 'Packet path', fwIn: 'VyOS firewall: in on', fwOut: 'out on',
+        noRs: 'no ruleset applied on this interface', ruleset: 'Ruleset', rule: 'Rule', action: 'Action', match: 'Condition',
+        any: 'any', def: 'default', hitDefault: 'No rule matches: default action',
+        zParis: 'PARIS SITE', zLyon: 'LYON SITE', zMars: 'MARSEILLE SITE', zDmz: 'DMZ', zCloud: 'HDS CLOUD', zRadio: 'RADIOLOGISTS EXTRANET', zEtabli: 'FACILITIES EXTRANET', zFw: 'FIREWALL ZONE',
+        notes: {
+          same: 'Source and destination are the same.',
+          sameVlan: 'Same VLAN: traffic stays in the switch, without going through the router.',
+          interVlan: 'Different VLANs on the same site: inter-VLAN routing by the router (router-on-a-stick, 802.1Q sub-interfaces).',
+          imagerie: 'VLAN 40 IMAGING is meant to be isolated; no ACL filters it yet in the lab (improvement point).',
+          ospfSites: 'Traffic between sites: routed by OSPF (area 0) over the WAN links, without going through the firewall.',
+          ospfInit: 'The Lyon–Marseille OSPF adjacency on the direct link stayed in INIT in the lab: traffic goes through the WAN switch (documented limitation).',
+          noFilterSites: 'Traffic from the sites comes in on eth2, where no ruleset is applied: it is accepted whatever the service. Improvement point: also filter towards the DMZ (outbound-interface eth4).',
+          noFilterCloud: 'Traffic from the Cloud comes in on eth1, where no ruleset is applied: it is accepted.',
+          t05: 'With this configuration, RADIO-IN rule 30 accepts all ICMP. The block observed in test T05 (ICMP 3/13) therefore comes from a rule missing from the appendix: a gap documented in the project\'s limitations.',
+          dropped: 'Packet rejected by the firewall: external zones are default-deny.',
+          stateful: 'Stateful firewall: the reply is allowed automatically (state-policy established/related).',
+          clair: 'Unencrypted service in the PoC (HTTP / DICOM 104): HTTPS and DICOM TLS are planned for production.',
+        },
+        presetsList: [['T01', 'pc-paris', 'pc-lyon', 'icmp'], ['T03', 'pc-paris', 'web-dmz', 'icmp'], ['T04', 'vm-radio', 'web-dmz', 'icmp'], ['T05', 'vm-radio', 'pc-paris', 'icmp'], ['T07', 'vm-radio', 'web-dmz', 'http'], ['T08', 'vm-etabli', 'web-dmz', 'http'], ['Radio → LAN SSH', 'vm-radio', 'pc-paris', 'ssh'], ['Facility → Cloud', 'vm-etabli', 'pc-cloud', 'https']],
+      },
+    };
+    let lang = 'fr';
+    try { lang = localStorage.getItem('lang') || ((navigator.language || 'fr').toLowerCase().startsWith('fr') ? 'fr' : 'en'); } catch (e) {}
+    const $ = (id) => document.getElementById(id);
+
+    // ---------- Topologie (positions dans le viewBox 900x600) ----------
+    const N = {
+      'VyOS': [450, 290, 'fw'], 'SW-WAN': [450, 395, 'sw'],
+      'R-Paris': [150, 470, 'r'], 'R-Lyon': [450, 500, 'r'], 'R-Marseille': [750, 470, 'r'],
+      'R-DMZ': [150, 200, 'r'], 'R-Cloud': [450, 150, 'r'], 'R-Ext-Radio': [750, 200, 'r'], 'R-Ext-Etabli': [750, 330, 'r'],
+    };
+    const HOSTPOS = {
+      'pc-paris': [80, 555], 'srv-paris': [220, 555], 'pc-lyon': [390, 570], 'irm-lyon': [510, 570], 'pc-marseille': [750, 555],
+      'web-dmz': [70, 120], 'pc-cloud': [450, 60], 'vm-radio': [850, 130], 'vm-etabli': [850, 330],
+    };
+    const HOSTROUTER = { 'pc-paris': 'R-Paris', 'srv-paris': 'R-Paris', 'pc-lyon': 'R-Lyon', 'irm-lyon': 'R-Lyon', 'pc-marseille': 'R-Marseille', 'web-dmz': 'R-DMZ', 'pc-cloud': 'R-Cloud', 'vm-radio': 'R-Ext-Radio', 'vm-etabli': 'R-Ext-Etabli' };
+    const LINKS = [
+      ['VyOS', 'SW-WAN', 'eth2'], ['VyOS', 'R-DMZ', 'eth4'], ['VyOS', 'R-Cloud', 'eth1'], ['VyOS', 'R-Ext-Radio', 'eth3'], ['VyOS', 'R-Ext-Etabli', 'eth5'],
+      ['SW-WAN', 'R-Paris'], ['SW-WAN', 'R-Lyon'], ['SW-WAN', 'R-Marseille'],
+      ['R-Paris', 'R-Lyon'], ['R-Lyon', 'R-Marseille'], ['R-Paris', 'R-Marseille'],
+      ...Object.entries(HOSTROUTER).map(([h, r]) => ['host:' + h, r]),
+    ];
+    const pos = (id) => id.startsWith('host:') ? HOSTPOS[id.slice(5)] : N[id];
+
+    function drawSvg(res) {
+      const t = T[lang];
+      const onNodes = new Set(res ? res.path : []);
+      const onLinks = new Set();
+      if (res) for (let i = 0; i < res.path.length - 1; i++) onLinks.add([res.path[i], res.path[i + 1]].sort().join('|'));
+      const drop = res && res.verdict === 'drop';
+      const zones = [
+        [20, 425, 270, 165, t.zParis], [315, 445, 270, 150, t.zLyon], [610, 425, 270, 165, t.zMars],
+        [20, 85, 240, 150, t.zDmz], [330, 20, 240, 165, t.zCloud], [640, 95, 250, 140, t.zRadio], [640, 255, 250, 120, t.zEtabli],
+        [345, 245, 210, 190, t.zFw],
+      ];
+      let s = zones.map(([x, y, w, h, l], i) => `<g class="zone"><rect x="${x}" y="${y}" width="${w}" height="${h}" rx="8" fill="${i === 3 ? 'rgba(200,16,46,.08)' : i === 7 ? 'rgba(200,16,46,.05)' : 'rgba(255,255,255,.025)'}"/><text x="${x + 10}" y="${i < 3 || i === 7 ? y + h - 9 : y + 18}">${l}</text></g>`).join('');
+      // Liens : tronqués jusqu'au point de rupture si bloqué
+      let dropIdx = drop ? res.path.indexOf('VyOS') : -1;
+      LINKS.forEach(([a, b, lbl]) => {
+        const key = [a, b].sort().join('|'), on = onLinks.has(key);
+        let cls = 'link' + (on ? ' on' : '');
+        if (on && drop && res.path.indexOf(a) >= dropIdx && res.path.indexOf(b) >= dropIdx) cls += ' drop';
+        const [x1, y1] = pos(a), [x2, y2] = pos(b);
+        s += `<line class="${cls}" x1="${x1}" y1="${y1}" x2="${x2}" y2="${y2}"/>`;
+        if (lbl) s += `<text class="iface" x="${x1 + (x2 - x1) * 0.32 + 4}" y="${y1 + (y2 - y1) * 0.32 - 4}">${lbl}</text>`;
+      });
+      Object.entries(N).forEach(([id, [x, y, k]]) => {
+        const on = onNodes.has(id) ? ' on' : '';
+        if (k === 'fw') s += `<g class="node fw${on}"><rect x="${x - 46}" y="${y - 20}" width="92" height="40" rx="6"/><text x="${x}" y="${y + 4}" text-anchor="middle">VyOS</text></g>`;
+        else if (k === 'sw') s += `<g class="node${on}"><rect x="${x - 40}" y="${y - 13}" width="80" height="26" rx="4"/><text x="${x}" y="${y + 4}" text-anchor="middle">SW-WAN</text></g>`;
+        else s += `<g class="node${on}"><circle cx="${x}" cy="${y}" r="17"/><text x="${x}" y="${y - 24}" text-anchor="middle">${id}</text></g>`;
+      });
+      Object.entries(HOSTPOS).forEach(([id, [x, y]]) => {
+        const hid = 'host:' + id, on = onNodes.has(hid) ? ' on' : '', src = res && res.path[0] === hid ? ' src' : '';
+        const short = { 'pc-paris': 'PC', 'srv-paris': 'SRV', 'pc-lyon': 'PC', 'irm-lyon': 'IRM', 'pc-marseille': 'PC', 'web-dmz': 'WEB', 'pc-cloud': 'PC', 'vm-radio': 'VM', 'vm-etabli': 'VM' }[id];
+        s += `<g class="node${on}${src}"><rect x="${x - 22}" y="${y - 12}" width="44" height="24" rx="4"/><text x="${x}" y="${y + 4}" text-anchor="middle">${short}</text><text class="ip" x="${x}" y="${y + (y > 500 ? -18 : 26)}" text-anchor="middle">${R.HOSTS[id].ip}</text></g>`;
+      });
+      $('svg').innerHTML = s;
+    }
+
+    const nodeName = (id) => id.startsWith('host:') ? R.HOSTS[id.slice(5)].label[lang] + ' — ' + R.HOSTS[id.slice(5)].ip : id;
+    function cond(r) {
+      const t = T[lang], parts = [];
+      if (r.proto) parts.push(r.proto.toUpperCase() + (r.dport ? ' ' + r.dport : ''));
+      if (r.src) parts.push('src ' + r.src);
+      if (r.dst) parts.push('dst ' + r.dst);
+      return parts.join(' · ') || t.any;
+    }
+
+    function run() {
+      const t = T[lang];
+      const res = R.simulate($('src').value, $('dst').value, $('svc').value);
+      drawSvg(res);
+      const p = res.pkt;
+      let h = `<div class="verdict"><span class="badge ${res.verdict}">${t[res.verdict]}</span><span class="pkt">${p.src} → ${p.dst} · ${p.proto.toUpperCase()}${p.port ? ' ' + p.port : ''}</span></div>`;
+      h += `<h2 style="margin-top:18px">${t.path}</h2><ol class="steps">`;
+      const stopAt = res.verdict === 'drop' ? res.path.indexOf('VyOS') : res.path.length - 1;
+      res.path.slice(0, stopAt + 1).forEach((n) => {
+        if (n === 'VyOS') h += `<li class="fw"><span>${t.fwIn} <b>${res.inIf}</b> · ${res.firewall.ruleset ? t.ruleset + ' <b>' + res.firewall.ruleset + '</b>' : t.noRs}${res.verdict === 'accept' ? ' · ' + t.fwOut + ' <b>' + res.outIf + '</b>' : ''}</span></li>`;
+        else h += `<li><span>${nodeName(n)}</span></li>`;
+      });
+      h += '</ol>';
+      if (res.firewall && res.firewall.ruleset) {
+        const rs = R.RULESETS[res.firewall.ruleset];
+        h += `<div class="rules"><table><caption>${t.ruleset} ${res.firewall.ruleset} (vyos.conf)</caption><thead><tr><th>${t.rule}</th><th>${t.match}</th><th>${t.action}</th></tr></thead><tbody>`;
+        rs.rules.forEach((r) => { h += `<tr class="${res.firewall.rule === r.n ? 'hit' : ''}"><td>${r.n}</td><td>${cond(r)}</td><td>${r.action}</td></tr>`; });
+        h += `<tr class="${res.firewall.rule === 'default' ? 'hit' : ''}"><td>${t.def}</td><td>${t.any}</td><td>${rs.def}</td></tr></tbody></table></div>`;
+      }
+      h += '<div class="notes">' + res.notes.map((k) => `<p class="${['t05', 'ospfInit', 'noFilterSites', 'imagerie'].includes(k) ? 'warn' : ''}">${t.notes[k]}</p>`).join('') + '</div>';
+      $('result').innerHTML = h;
+    }
+
+    function fillSelects() {
+      const keep = { src: $('src').value || 'vm-radio', dst: $('dst').value || 'web-dmz', svc: $('svc').value || 'https' };
+      const opts = (o) => Object.entries(o).map(([k, v]) => `<option value="${k}">${v.label[lang]}${v.ip ? ' — ' + v.ip : ''}</option>`).join('');
+      $('src').innerHTML = opts(R.HOSTS); $('dst').innerHTML = opts(R.HOSTS); $('svc').innerHTML = opts(R.SERVICES);
+      $('src').value = keep.src; $('dst').value = keep.dst; $('svc').value = keep.svc;
+      const pr = $('presets'); pr.querySelectorAll('.preset').forEach((b) => b.remove());
+      T[lang].presetsList.forEach(([l, s, d, v]) => {
+        const b = document.createElement('button'); b.type = 'button'; b.className = 'preset'; b.textContent = l;
+        b.addEventListener('click', () => { $('src').value = s; $('dst').value = d; $('svc').value = v; run(); });
+        pr.appendChild(b);
+      });
+    }
+
+    function setLang(l) {
+      lang = l; document.documentElement.lang = l;
+      document.querySelectorAll('[data-t]').forEach((el) => { const v = T[l][el.dataset.t]; if (typeof v === 'string') el.innerHTML = v; });
+      document.title = l === 'fr' ? 'Simulateur PoC réseau — démo' : 'Network PoC simulator — demo';
+      document.querySelectorAll('.lang button').forEach((b) => b.setAttribute('aria-pressed', b.dataset.lang === l));
+      try { localStorage.setItem('lang', l); } catch (e) {}
+      fillSelects(); run();
+    }
+
+    ['src', 'dst', 'svc'].forEach((id) => $(id).addEventListener('change', run));
+    $('swap').addEventListener('click', () => { const a = $('src').value; $('src').value = $('dst').value; $('dst').value = a; run(); });
+    document.querySelectorAll('.lang button').forEach((b) => b.addEventListener('click', () => setLang(b.dataset.lang)));
+    setLang(lang);
+  })();
+  </script>
+</body>
+</html>
