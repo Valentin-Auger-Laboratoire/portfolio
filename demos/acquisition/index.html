@@ -1,0 +1,405 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Oscilloscope virtuel des TP</title>
+  <meta name="description" content="Démo des TP d'acquisition biomédicale : pouls par capteur piézoélectrique et résistance cutanée par pont de Wheatstone, simulés sur un oscilloscope virtuel avec les valeurs des montages.">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --bg: #0c0c0d; --panel: #161618; --border: #262628; --border-hi: #3a3a3d;
+      --text: #f2f2f2; --dim: #9b9b9f; --muted: #6c6c70; --accent: #c8102e; --line: #c9c9cc; --warn: #e0a458; --good: #8fd18f;
+      --ch1: #e5484d; --ch2: #f1d04b;
+      --mono: "JetBrains Mono", ui-monospace, monospace; --sans: "Inter", system-ui, sans-serif;
+      color-scheme: dark;
+    }
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    body { background: var(--bg); color: var(--text); font-family: var(--sans); line-height: 1.55; -webkit-font-smoothing: antialiased; }
+    .wrap { max-width: 1280px; margin: 0 auto; padding: 24px max(16px, env(safe-area-inset-right, 0px)) 48px max(16px, env(safe-area-inset-left, 0px)); }
+    .top { display: flex; justify-content: space-between; align-items: center; gap: 12px; flex-wrap: wrap; margin-bottom: 24px; }
+    .back { font-size: 0.9rem; color: var(--dim); text-decoration: none; }
+    .back:hover { color: var(--accent); }
+    .lang { display: flex; border: 1px solid var(--border-hi); }
+    .lang button { font: 500 0.78rem var(--mono); letter-spacing: .05em; background: none; color: var(--dim); border: 0; padding: 5px 10px; cursor: pointer; }
+    .lang button + button { border-left: 1px solid var(--border-hi); }
+    .lang button[aria-pressed="true"] { background: var(--text); color: var(--bg); }
+    .eyebrow { font: 500 0.82rem var(--mono); color: var(--accent); letter-spacing: .04em; }
+    h1 { font-size: clamp(1.6rem, 3.4vw, 2.3rem); line-height: 1.15; margin: 6px 0 10px; text-wrap: balance; }
+    .intro { color: var(--dim); max-width: 82ch; }
+    .tabs { display: flex; gap: 8px; margin: 26px 0 16px; flex-wrap: wrap; }
+    .tab { font: 0.85rem var(--mono); background: none; color: var(--dim); border: 1px solid var(--border); border-radius: 999px; padding: 6px 14px; cursor: pointer; }
+    .tab[aria-selected="true"] { color: var(--accent); border-color: var(--accent); }
+    .grid { display: grid; grid-template-columns: 350px minmax(0, 1fr); gap: 20px; align-items: start; }
+    .panel { background: var(--panel); border: 1px solid var(--border); border-radius: 8px; padding: 18px; min-width: 0; }
+    .panel + .panel { margin-top: 16px; }
+    h2 { font: 600 0.78rem var(--mono); letter-spacing: .12em; text-transform: uppercase; color: var(--dim); margin-bottom: 12px; }
+    h3 { font: 600 0.74rem var(--mono); letter-spacing: .08em; text-transform: uppercase; color: var(--dim); margin: 16px 0 10px; padding-top: 12px; border-top: 1px solid var(--border); }
+    .fields { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px 12px; }
+    .full { grid-column: 1 / -1; }
+    label.f { display: grid; gap: 5px; font: 500 0.74rem var(--mono); color: var(--dim); min-width: 0; }
+    .inp { display: flex; align-items: center; min-width: 0; border: 1px solid var(--border-hi); border-radius: 6px; background: var(--bg); }
+    .inp select, .inp input { flex: 1; width: 100%; min-width: 0; font: 0.86rem var(--mono); background: none; color: var(--text); border: 0; padding: 7px 8px; }
+    .inp select option { background: var(--bg); }
+    .inp span { font: 0.74rem var(--mono); color: var(--muted); padding-right: 9px; white-space: nowrap; }
+    .inp:focus-within { outline: 2px solid var(--accent); outline-offset: 2px; }
+    button:focus-visible, input[type=range]:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+    .rng { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 4px 10px; align-items: center; font: 500 0.74rem var(--mono); color: var(--dim); }
+    .rng input { grid-column: 1 / -1; width: 100%; accent-color: var(--accent); }
+    .rng b { font-weight: 500; color: var(--text); }
+    .seg { display: flex; gap: 6px; flex-wrap: wrap; }
+    .seg button, .btn { font: 500 0.82rem var(--sans); background: none; color: var(--text); border: 1px solid var(--border-hi); border-radius: 6px; padding: 6px 11px; cursor: pointer; }
+    .seg button[aria-pressed="true"] { border-color: var(--text); }
+    .btn:hover, .seg button:hover { border-color: var(--accent); color: var(--accent); }
+    .btn.on { background: var(--accent); border-color: var(--accent); color: #fff; }
+    .check { font-size: 0.84rem; display: flex; gap: 8px; align-items: center; margin-top: 10px; }
+    .check input { accent-color: var(--accent); }
+    .row { display: flex; gap: 8px; flex-wrap: wrap; }
+    .hint { font-size: 0.8rem; color: var(--dim); margin-top: 8px; }
+    .presets { margin-top: 16px; padding-top: 12px; border-top: 1px solid var(--border); }
+    .presets p { font: 0.75rem var(--mono); color: var(--dim); margin-bottom: 8px; }
+    [hidden] { display: none !important; }
+
+    .scope { background: #0a0d0b; border: 1px solid #2b2f2c; border-radius: 6px; padding: 10px; }
+    .scope-bar { display: flex; justify-content: space-between; gap: 10px; flex-wrap: wrap; font: 0.74rem var(--mono); color: var(--dim); margin-bottom: 8px; align-items: center; }
+    .scope-bar .ch1 { color: var(--ch1); } .scope-bar .ch2 { color: var(--ch2); }
+    canvas { width: 100%; height: auto; display: block; background: #050706; border-radius: 3px; }
+    .scope-ctrl { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 10px; margin-top: 10px; }
+    .meas { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 10px; margin-top: 12px; }
+    .m { border: 1px solid var(--border); border-radius: 6px; padding: 8px 10px; min-width: 0; }
+    .m dt { font: 0.7rem var(--mono); color: var(--dim); }
+    .m dd { font: 600 1.05rem var(--mono); font-variant-numeric: tabular-nums; overflow-wrap: anywhere; }
+    .m.ch1 dd { color: var(--ch1); } .m.ch2 dd { color: var(--ch2); }
+    .kv { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 6px 16px; font: 0.82rem var(--mono); font-variant-numeric: tabular-nums; }
+    .kv dt { color: var(--dim); } .kv dd { text-align: right; }
+    .kv .w { color: var(--warn); } .kv .g { color: var(--good); }
+    .note { font-size: 0.82rem; color: var(--dim); margin-top: 12px; }
+    .note p + p { margin-top: 6px; }
+    @media (max-width: 1000px) { .grid { grid-template-columns: minmax(0, 1fr); } }
+    @media (max-width: 640px) { .scope-ctrl, .meas { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+  </style>
+</head>
+<body>
+  <div class="wrap">
+    <div class="top">
+      <a class="back" href="../../index.html#projets" data-t="back">← Retour au portfolio</a>
+      <div class="lang" role="group" aria-label="Langue / Language">
+        <button type="button" data-lang="fr" aria-pressed="true">FR</button>
+        <button type="button" data-lang="en" aria-pressed="false">EN</button>
+      </div>
+    </div>
+    <p class="eyebrow" data-t="eyebrow">Démo · électronique analogique</p>
+    <h1 data-t="title">Oscilloscope virtuel des TP d'acquisition biomédicale</h1>
+    <p class="intro" data-t="intro">Les deux montages des TP simulés en temps réel, avec les valeurs de composants utilisées : la voie 1 (rouge) montre le signal brut, la voie 2 (jaune) le signal filtré, comme à l'oscilloscope du laboratoire. Changez un composant et observez l'effet sur le signal.</p>
+
+    <div class="tabs" role="tablist">
+      <button type="button" class="tab" role="tab" data-view="pouls" aria-selected="true" data-t="tabPouls">Pouls (capteur piézoélectrique)</button>
+      <button type="button" class="tab" role="tab" data-view="peau" aria-selected="false" data-t="tabPeau">Résistance cutanée (pont de Wheatstone)</button>
+    </div>
+
+    <div class="grid">
+      <div>
+        <!-- ===== Pouls ===== -->
+        <div class="panel" id="ctl-pouls">
+          <h2 data-t="sourceT">Source</h2>
+          <div class="seg" id="srcSeg">
+            <button type="button" data-src="finger" aria-pressed="true" data-t="sFinger">Tapotements du doigt</button>
+            <button type="button" data-src="carotid" aria-pressed="false" data-t="sCarotid">Pouls à la carotide</button>
+          </div>
+          <div class="rng" style="margin-top:12px"><span data-t="fBpm">Fréquence cardiaque</span><b id="bpmV"></b><input type="range" id="bpm" min="40" max="160" step="1" value="72"></div>
+          <h3 data-t="convT">Convertisseur charge-tension</h3>
+          <div class="fields">
+            <label class="f"><span>Rf</span><span class="inp"><select id="Rf"></select></span></label>
+            <label class="f"><span>Cf</span><span class="inp"><select id="Cf"></select></span></label>
+          </div>
+          <h3 data-t="filtT">Filtre passe-bas RC</h3>
+          <div class="fields">
+            <label class="f"><span>R</span><span class="inp"><select id="pR"></select></span></label>
+            <label class="f"><span>C</span><span class="inp"><select id="pC"></select></span></label>
+          </div>
+          <label class="check"><input type="checkbox" id="pLoad" checked> <span data-t="load">Tenir compte de l'entrée 1 MΩ de l'oscilloscope</span></label>
+          <div class="rng" style="margin-top:10px"><span data-t="fNoise">Bruit ambiant</span><b id="pNoiseV"></b><input type="range" id="pNoise" min="0" max="60" step="1" value="20"></div>
+          <div class="presets"><p data-t="presets">Montages :</p><div class="row" id="presetsP"></div></div>
+        </div>
+
+        <!-- ===== Peau ===== -->
+        <div class="panel" id="ctl-peau" hidden>
+          <h2 data-t="bridgeT">Pont de Wheatstone</h2>
+          <div class="rng"><span data-t="fR0">Résistance de la peau au repos</span><b id="R0V"></b><input type="range" id="R0" min="50" max="1000" step="5" value="250"></div>
+          <div class="rng" style="margin-top:10px"><span>R3</span><b id="R3V"></b><input type="range" id="R3" min="50" max="1000" step="5" value="200"></div>
+          <div class="row" style="margin-top:8px"><button type="button" class="btn" id="balance" data-t="balance">Équilibrer le pont (R3 = Rpeau)</button></div>
+          <p class="hint" data-t="bridgeHint">R1 = R2 = 330 kΩ (V+ = 2,5 V), E = 5 V. Dans le TP, R3 était fixe (200 kΩ).</p>
+          <h3 data-t="ampT">Amplificateur différentiel et filtre</h3>
+          <div class="rng"><span data-t="fGain">Gain de l'amplificateur</span><b id="gainV"></b><input type="range" id="gain" min="1" max="20" step="0.5" value="6"></div>
+          <div class="fields" style="margin-top:10px">
+            <label class="f"><span>R</span><span class="inp"><select id="sR"></select></span></label>
+            <label class="f"><span>C</span><span class="inp"><select id="sC"></select></span></label>
+          </div>
+          <label class="check"><input type="checkbox" id="sLoad" checked> <span data-t="load">Tenir compte de l'entrée 1 MΩ de l'oscilloscope</span></label>
+          <h3 data-t="actT">Expériences</h3>
+          <div class="row">
+            <button type="button" class="btn" id="stim" data-t="stim">Stimulus (stress)</button>
+            <button type="button" class="btn" id="salt" data-t="saltB">Eau salée</button>
+            <button type="button" class="btn" id="dry" data-t="dry">Sécher la peau</button>
+            <button type="button" class="btn" id="move" data-t="move">Bouger les électrodes</button>
+            <button type="button" class="btn" id="t110" data-t="t110">Test sinus 110 Hz</button>
+          </div>
+          <div class="presets"><p data-t="presets">Montages :</p><div class="row" id="presetsS"></div></div>
+        </div>
+      </div>
+
+      <div>
+        <div class="panel">
+          <h2 data-t="scopeT">Oscilloscope</h2>
+          <div class="scope">
+            <div class="scope-bar"><span><span class="ch1">■ <span data-t="ch1">Voie 1 : brut</span></span> &nbsp; <span class="ch2">■ <span data-t="ch2">Voie 2 : filtré</span></span></span><span id="scale"></span></div>
+            <canvas id="cv" width="1000" height="560" aria-label="oscilloscope"></canvas>
+          </div>
+          <div class="scope-ctrl">
+            <label class="f"><span data-t="tdiv">Temps / div</span><span class="inp"><select id="tdiv"></select></span></label>
+            <label class="f"><span data-t="v1div">Voie 1 / div</span><span class="inp"><select id="v1"></select></span></label>
+            <label class="f"><span data-t="v2div">Voie 2 / div</span><span class="inp"><select id="v2"></select></span></label>
+            <label class="f"><span>&nbsp;</span><span class="row"><button type="button" class="btn" id="run" data-t="stop">Arrêt</button><button type="button" class="btn" id="auto" data-t="auto">Auto</button></span></label>
+          </div>
+          <dl class="meas" id="meas"></dl>
+        </div>
+        <div class="panel">
+          <h2 data-t="calcT">Ce que disent les calculs</h2>
+          <dl class="kv" id="calc"></dl>
+          <div class="note" id="note"></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script src="acq.js"></script>
+  <script>
+  (() => {
+    'use strict';
+    const A = window.Acquisition, $ = (id) => document.getElementById(id);
+    const esc = (s) => String(s).replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+    const T = {
+      fr: {
+        back: '← Retour au portfolio', eyebrow: 'Démo · électronique analogique', title: "Oscilloscope virtuel des TP d'acquisition biomédicale",
+        intro: "Les deux montages des TP simulés en temps réel, avec les valeurs de composants utilisées : la voie 1 (rouge) montre le signal brut, la voie 2 (jaune) le signal filtré, comme à l'oscilloscope du laboratoire. Changez un composant et observez l'effet sur le signal.",
+        tabPouls: 'Pouls (capteur piézoélectrique)', tabPeau: 'Résistance cutanée (pont de Wheatstone)',
+        sourceT: 'Source', sFinger: 'Tapotements du doigt', sCarotid: 'Pouls à la carotide', fBpm: 'Fréquence cardiaque', convT: 'Convertisseur charge-tension', filtT: 'Filtre passe-bas RC',
+        load: "Tenir compte de l'entrée 1 MΩ de l'oscilloscope", fNoise: 'Bruit ambiant', presets: 'Montages :', pTp: 'Montage du TP', pBetter: 'Amélioration proposée',
+        bridgeT: 'Pont de Wheatstone', fR0: 'Résistance de la peau au repos', balance: 'Équilibrer le pont (R3 = Rpeau)', bridgeHint: 'R1 = R2 = 330 kΩ (V+ = 2,5 V), E = 5 V. Dans le TP, R3 était fixe (200 kΩ).',
+        ampT: 'Amplificateur différentiel et filtre', fGain: "Gain de l'amplificateur", actT: 'Expériences', stim: 'Stimulus (stress)', saltB: 'Eau salée', dry: 'Sécher la peau', move: 'Bouger les électrodes', t110: 'Test sinus 110 Hz',
+        sTp: 'Montage du TP', sBetter: 'Avec potentiomètre et filtre à 0,5 Hz',
+        scopeT: 'Oscilloscope', ch1: 'Voie 1 : brut', ch2: 'Voie 2 : filtré', tdiv: 'Temps / div', v1div: 'Voie 1 / div', v2div: 'Voie 2 / div', stop: 'Arrêt', run: 'Marche', auto: 'Auto',
+        mPp1: 'V1 crête à crête', mMean1: 'V1 moyenne', mPp2: 'V2 crête à crête', mMean2: 'V2 moyenne', calcT: 'Ce que disent les calculs',
+        cFcConv: 'Fréquence basse du convertisseur 1/(2π·Rf·Cf)', cFcFilt: 'Fréquence de coupure du filtre', cF0: 'Fréquence du pouls', cGain: 'Gain du filtre au pouls',
+        cR: 'Résistance de la peau', cVp: 'V+ (référence)', cVm: 'V− (branche de la peau)', cVd: 'Déséquilibre V+ − V−', cI: 'Courant dans la peau', cAtt50: 'Atténuation à 50 Hz', cAtt110: 'Atténuation à 110 Hz',
+        okConv: 'sous la fréquence du pouls : vrai convertisseur de charge', badConv: 'bien au-dessus du pouls : le montage dérive le signal (pics)',
+        badGain: 'le filtre atténue le pouls lui-même', okGain: 'le pouls passe',
+        notePouls: "<p>Modèle : la charge du capteur est proportionnelle à la force (sensibilité calibrée pour retrouver ≈ 1,2 V crête à crête au doigt, comme mesuré). Le convertisseur suit Vs = −(Q/Cf)·sτ/(1+sτ) avec τ = Rf·Cf, le filtre est un RC du premier ordre, éventuellement chargé par l'entrée 1 MΩ de l'oscilloscope.</p><p>Avec les valeurs du TP, on retrouve les deux limites notées dans le compte rendu : le convertisseur dérive le signal (il ne garde que les variations rapides) et le filtre à 0,34 Hz atténue déjà le pouls. L'amélioration proposée (Rf plus grande, filtre vers 10 Hz) fait apparaître le pouls à la carotide.</p>",
+        notePeau: "<p>Modèle : pont de Wheatstone (E = 5 V, R1 = R2 = 330 kΩ), amplificateur différentiel de gain réglable (≈ 6 estimé en TP), filtre RC chargé ou non par l'oscilloscope. La peau suit une résistance de repos, des réponses phasiques au stress, l'effet de l'eau salée et des artefacts de mouvement ; le secteur ajoute du 50 Hz.</p><p>Le test à 110 Hz reproduit la validation du TP : ≈ 60 mV crête à crête en sortie d'ampli, voie filtrée plate (≈ −40 dB).</p>",
+        nb: 'Simulation pédagogique : les signaux sont générés, ce ne sont pas les enregistrements du TP.',
+      },
+      en: {
+        back: '← Back to portfolio', eyebrow: 'Demo · analogue electronics', title: 'Virtual oscilloscope for the biomedical acquisition labs',
+        intro: 'Both lab circuits simulated in real time with the component values used: channel 1 (red) shows the raw signal, channel 2 (yellow) the filtered one, as on the lab oscilloscope. Change a component and watch the effect on the signal.',
+        tabPouls: 'Pulse (piezoelectric sensor)', tabPeau: 'Skin resistance (Wheatstone bridge)',
+        sourceT: 'Source', sFinger: 'Finger taps', sCarotid: 'Carotid pulse', fBpm: 'Heart rate', convT: 'Charge amplifier', filtT: 'RC low-pass filter',
+        load: 'Include the 1 MΩ oscilloscope input', fNoise: 'Ambient noise', presets: 'Circuits:', pTp: 'Lab circuit', pBetter: 'Proposed improvement',
+        bridgeT: 'Wheatstone bridge', fR0: 'Skin resistance at rest', balance: 'Balance the bridge (R3 = Rskin)', bridgeHint: 'R1 = R2 = 330 kΩ (V+ = 2.5 V), E = 5 V. In the lab, R3 was fixed (200 kΩ).',
+        ampT: 'Differential amplifier and filter', fGain: 'Amplifier gain', actT: 'Experiments', stim: 'Stimulus (stress)', saltB: 'Salt water', dry: 'Dry the skin', move: 'Move the electrodes', t110: '110 Hz sine test',
+        sTp: 'Lab circuit', sBetter: 'With potentiometer and 0.5 Hz filter',
+        scopeT: 'Oscilloscope', ch1: 'Channel 1: raw', ch2: 'Channel 2: filtered', tdiv: 'Time / div', v1div: 'Channel 1 / div', v2div: 'Channel 2 / div', stop: 'Stop', run: 'Run', auto: 'Auto',
+        mPp1: 'V1 peak-to-peak', mMean1: 'V1 mean', mPp2: 'V2 peak-to-peak', mMean2: 'V2 mean', calcT: 'What the calculations say',
+        cFcConv: 'Charge amplifier low frequency 1/(2π·Rf·Cf)', cFcFilt: 'Filter cut-off frequency', cF0: 'Pulse frequency', cGain: 'Filter gain at the pulse',
+        cR: 'Skin resistance', cVp: 'V+ (reference)', cVm: 'V− (skin branch)', cVd: 'Imbalance V+ − V−', cI: 'Current through the skin', cAtt50: 'Attenuation at 50 Hz', cAtt110: 'Attenuation at 110 Hz',
+        okConv: 'below the pulse frequency: a real charge amplifier', badConv: 'far above the pulse: the circuit differentiates the signal (spikes)',
+        badGain: 'the filter attenuates the pulse itself', okGain: 'the pulse gets through',
+        notePouls: '<p>Model: sensor charge proportional to force (sensitivity calibrated to about 1.2 V peak-to-peak with finger taps, as measured). The charge amplifier follows Vout = −(Q/Cf)·sτ/(1+sτ) with τ = Rf·Cf, the filter is a first-order RC, optionally loaded by the 1 MΩ oscilloscope input.</p><p>With the lab values, both limitations from the report appear: the charge amplifier differentiates the signal (only fast changes remain) and the 0.34 Hz filter already attenuates the pulse. The proposed improvement (larger Rf, filter around 10 Hz) makes the carotid pulse visible.</p>',
+        notePeau: '<p>Model: Wheatstone bridge (E = 5 V, R1 = R2 = 330 kΩ), differential amplifier with adjustable gain (about 6 estimated in the lab), RC filter optionally loaded by the oscilloscope. The skin follows a resting resistance, phasic stress responses, the salt water effect and motion artefacts; mains adds 50 Hz.</p><p>The 110 Hz test reproduces the lab check: about 60 mV peak-to-peak at the amplifier output, flat filtered channel (about −40 dB).</p>',
+        nb: 'Teaching simulation: the signals are generated, they are not the lab recordings.',
+      },
+    };
+    let lang = 'fr';
+    try { lang = localStorage.getItem('lang') || ((navigator.language || 'fr').toLowerCase().startsWith('fr') ? 'fr' : 'en'); } catch (e) {}
+    if (!T[lang]) lang = 'fr';
+    const t = (k) => T[lang][k];
+    const num = (v, d) => v.toLocaleString(lang === 'fr' ? 'fr-FR' : 'en-GB', { maximumFractionDigits: d, minimumFractionDigits: 0 });
+    function si(v, unit) {
+      const P = [[1e9, 'G'], [1e6, 'M'], [1e3, 'k'], [1, ''], [1e-3, 'm'], [1e-6, 'µ'], [1e-9, 'n'], [1e-12, 'p']];
+      if (v === 0) return '0 ' + unit;
+      for (const [m, s] of P) if (Math.abs(v) >= m * 0.9999) { const x = v / m; return num(x, Math.abs(x) < 10 ? 2 : Math.abs(x) < 100 ? 1 : 0) + ' ' + s + unit; }
+      return num(v / 1e-12, 2) + ' p' + unit;
+    }
+
+    // ---------- Listes de composants ----------
+    const RES = [10e3, 33e3, 100e3, 330e3, 1e6, 3.3e6, 10e6, 100e6, 1e9];
+    const CAP = [10e-12, 100e-12, 1e-9, 10e-9, 47e-9, 100e-9, 0.47e-6, 1e-6, 4.7e-6];
+    const fillSel = (id, list, unit, val) => { const s = $(id); s.innerHTML = list.map((v) => '<option value="' + v + '">' + esc(si(v, unit)) + '</option>').join(''); s.value = String(val); };
+    const TDIV = [0.01, 0.02, 0.05, 0.1, 0.2, 0.5, 1, 2];
+    const VDIV = [0.001, 0.002, 0.005, 0.01, 0.02, 0.05, 0.1, 0.2, 0.5, 1, 2];
+
+    const PP = { pTp: { Rf: 1e6, Cf: 10e-12, R: 1e6, C: 0.47e-6 }, pBetter: { Rf: 1e9, Cf: 1e-9, R: 33e3, C: 0.47e-6 } };
+    const SP = { sTp: { R3: 200, R: 330e3, C: 0.47e-6 }, sBetter: { R3: null, R: 330e3, C: 1e-6 } };
+
+    let view = 'pouls', mode = 'finger', sim = null, running = true, test110 = false;
+    const st = { tdiv: { pouls: 0.5, peau: 1 }, v1: { pouls: 0.2, peau: 0.2 }, v2: { pouls: 0.01, peau: 0.2 } };
+    let buf1 = [], buf2 = [];
+
+    function build() {
+      if (view === 'pouls') {
+        sim = A.PulseSim({ mode, bpm: +$('bpm').value, Rf: +$('Rf').value, Cf: +$('Cf').value, R: +$('pR').value, C: +$('pC').value, loaded: $('pLoad').checked, noise: +$('pNoise').value / 1000, hum: +$('pNoise').value / 2000 });
+      } else {
+        sim = A.SkinSim({ E: 5, R1: 330e3, R2: 330e3, R3: +$('R3').value * 1e3, R0: +$('R0').value * 1e3, gain: +$('gain').value, R: +$('sR').value, C: +$('sC').value, loaded: $('sLoad').checked, noise: 0.004, hum: 0.02, test110 });
+      }
+      // préchauffe : remplit l'écran sans attendre
+      buf1 = []; buf2 = [];
+      const n = Math.round(st.tdiv[view] * 10 * A.FS);
+      for (let i = 0; i < n; i++) push(sim.step());
+      labels(); calc();
+    }
+    function push([a, b]) { buf1.push(a); buf2.push(b); const n = Math.round(st.tdiv[view] * 10 * A.FS); if (buf1.length > n) { buf1.splice(0, buf1.length - n); buf2.splice(0, buf2.length - n); } }
+
+    // ---------- Dessin de l'écran ----------
+    const cv = $('cv'), ctx = cv.getContext('2d');
+    function draw() {
+      const W = cv.width, H = cv.height;
+      ctx.fillStyle = '#050706'; ctx.fillRect(0, 0, W, H);
+      ctx.strokeStyle = '#1b231e'; ctx.lineWidth = 1;
+      for (let i = 1; i < 10; i++) { ctx.beginPath(); ctx.moveTo((W * i) / 10 + 0.5, 0); ctx.lineTo((W * i) / 10 + 0.5, H); ctx.stroke(); }
+      for (let i = 1; i < 8; i++) { ctx.beginPath(); ctx.moveTo(0, (H * i) / 8 + 0.5); ctx.lineTo(W, (H * i) / 8 + 0.5); ctx.stroke(); }
+      ctx.strokeStyle = '#2c3a31'; ctx.beginPath(); ctx.moveTo(0, H / 2 + 0.5); ctx.lineTo(W, H / 2 + 0.5); ctx.moveTo(W / 2 + 0.5, 0); ctx.lineTo(W / 2 + 0.5, H); ctx.stroke();
+      const n = Math.round(st.tdiv[view] * 10 * A.FS);
+      const tr = (buf, vdiv, color, off) => {
+        const mean = off;
+        ctx.strokeStyle = color; ctx.lineWidth = 1.6; ctx.beginPath();
+        const per = n / W, start = n - buf.length;
+        if (per < 2) {
+          // peu de points par pixel : on relie les échantillons
+          const y = (v) => H / 2 - ((v - mean) / vdiv) * (H / 8);
+          buf.forEach((v, i) => { const x = ((i + start) / n) * W; i ? ctx.lineTo(x, y(v)) : ctx.moveTo(x, y(v)); });
+          ctx.stroke(); return;
+        }
+        for (let x = 0; x < W; x++) {
+          const i0 = Math.floor(x * per) - start, i1 = Math.floor((x + 1) * per) - start;
+          if (i1 <= 0) continue;
+          let mn = Infinity, mx = -Infinity;
+          for (let i = Math.max(0, i0); i < Math.min(buf.length, Math.max(i1, i0 + 1)); i++) { const v = buf[i]; if (v < mn) mn = v; if (v > mx) mx = v; }
+          const y = (v) => H / 2 - ((v - mean) / vdiv) * (H / 8);
+          ctx.moveTo(x + 0.5, y(mx)); ctx.lineTo(x + 0.5, y(mn) + 0.6);
+        }
+        ctx.stroke();
+      };
+      // centrage : chaque voie est centrée sur sa moyenne (couplage AC de l'affichage), comme pour lire les variations
+      const m1 = A.measure(buf1), m2 = A.measure(buf2);
+      tr(buf1, st.v1[view], '#e5484d', view === 'peau' ? m1.mean : 0);
+      tr(buf2, st.v2[view], '#f1d04b', view === 'peau' ? m2.mean : 0);
+      const cell = (k, v, cls) => '<div class="m ' + cls + '"><dt>' + esc(t(k)) + '</dt><dd>' + esc(si(v, 'V')) + '</dd></div>';
+      $('meas').innerHTML = cell('mPp1', m1.pp, 'ch1') + cell('mMean1', m1.mean, 'ch1') + cell('mPp2', m2.pp, 'ch2') + cell('mMean2', m2.mean, 'ch2');
+    }
+    function labels() {
+      $('scale').textContent = si(st.tdiv[view], 's') + '/div · V1 ' + si(st.v1[view], 'V') + '/div · V2 ' + si(st.v2[view], 'V') + '/div' + (view === 'peau' ? ' · AC' : '');
+      $('tdiv').value = String(st.tdiv[view]); $('v1').value = String(st.v1[view]); $('v2').value = String(st.v2[view]);
+    }
+    function autoScale() {
+      const pick = (pp) => VDIV.find((v) => v * 6 >= pp) || VDIV[VDIV.length - 1];
+      st.v1[view] = pick(A.measure(buf1).pp); st.v2[view] = pick(A.measure(buf2).pp); labels();
+    }
+
+    // ---------- Calculs affichés ----------
+    function calc() {
+      const row = (k, v, cls) => '<dt>' + esc(t(k)) + '</dt><dd class="' + (cls || '') + '">' + esc(v) + '</dd>';
+      if (view === 'pouls') {
+        const i = sim.info(), conv = i.fcConv < i.f0 / 2;
+        $('calc').innerHTML = row('cFcConv', si(i.fcConv, 'Hz')) + '<dt></dt><dd class="' + (conv ? 'g' : 'w') + '">' + esc(conv ? t('okConv') : t('badConv')) + '</dd>' +
+          row('cFcFilt', si(i.fcFilter, 'Hz')) + row('cF0', num(i.f0, 2) + ' Hz (' + $('bpm').value + ' bpm)') +
+          row('cGain', num(i.gainAtPulse, 2) + ' (' + num(20 * Math.log10(i.gainAtPulse), 1) + ' dB) — ' + (i.gainAtPulse < 0.7 ? t('badGain') : t('okGain')), i.gainAtPulse < 0.7 ? 'w' : 'g');
+        $('note').innerHTML = t('notePouls') + '<p>' + esc(t('nb')) + '</p>';
+      } else {
+        const i = sim.info();
+        $('calc').innerHTML = row('cR', si(sim.rSkin, 'Ω')) + row('cVp', si(sim.vPlus, 'V')) + row('cVm', si(sim.vMinus, 'V')) + row('cVd', si(sim.vPlus - sim.vMinus, 'V')) +
+          row('cI', si(sim.current, 'A')) + row('cFcFilt', si(i.fcFilter, 'Hz')) + row('cAtt50', num(i.att50, 1) + ' dB') + row('cAtt110', num(i.att110, 1) + ' dB');
+        $('note').innerHTML = t('notePeau') + '<p>' + esc(t('nb')) + '</p>';
+      }
+    }
+
+    // ---------- Boucle temps réel ----------
+    let last = 0, acc = 0, tick = 0;
+    function frame(ts) {
+      if (running && sim) {
+        const dt = last ? Math.min(0.1, (ts - last) / 1000) : 0;
+        acc += dt * A.FS;
+        const n = Math.floor(acc); acc -= n;
+        for (let i = 0; i < n; i++) push(sim.step());
+        draw();
+        if (view === 'peau' && ++tick % 10 === 0) calc();
+      }
+      last = ts; requestAnimationFrame(frame);
+    }
+
+    // ---------- Contrôles ----------
+    function setRange(id, lbl, fmt) { $(id + 'V') && ($(id + 'V').textContent = fmt($(id).value)); }
+    function refreshLabels() {
+      setRange('bpm', '', (v) => v + ' bpm'); setRange('pNoise', '', (v) => v + ' mV');
+      setRange('R0', '', (v) => si(v * 1e3, 'Ω')); setRange('R3', '', (v) => si(v * 1e3, 'Ω')); setRange('gain', '', (v) => '× ' + num(+v, 1));
+    }
+    ['bpm', 'pNoise', 'R0', 'R3', 'gain'].forEach((id) => $(id).addEventListener('input', () => { refreshLabels(); build(); }));
+    ['Rf', 'Cf', 'pR', 'pC', 'sR', 'sC'].forEach((id) => $(id).addEventListener('change', build));
+    ['pLoad', 'sLoad'].forEach((id) => $(id).addEventListener('change', build));
+    document.querySelectorAll('#srcSeg button').forEach((b) => b.addEventListener('click', () => {
+      mode = b.dataset.src; document.querySelectorAll('#srcSeg button').forEach((x) => x.setAttribute('aria-pressed', x === b));
+      st.v1.pouls = mode === 'finger' ? 0.2 : 0.05; st.v2.pouls = mode === 'finger' ? 0.01 : 0.005; build();
+    }));
+    $('balance').addEventListener('click', () => { $('R3').value = $('R0').value; refreshLabels(); build(); });
+    $('stim').addEventListener('click', () => sim && sim.stimulus && sim.stimulus());
+    $('salt').addEventListener('click', () => sim && sim.salt && sim.salt());
+    $('dry').addEventListener('click', () => sim && sim.dry && sim.dry());
+    $('move').addEventListener('click', () => sim && sim.move && sim.move());
+    $('t110').addEventListener('click', () => {
+      test110 = !test110; $('t110').classList.toggle('on', test110);
+      if (test110) { st.tdiv.peau = 0.01; st.v1.peau = 0.02; st.v2.peau = 0.02; } else { st.tdiv.peau = 1; st.v1.peau = 0.2; st.v2.peau = 0.2; }
+      build();
+    });
+    $('tdiv').addEventListener('change', () => { st.tdiv[view] = +$('tdiv').value; build(); });
+    $('v1').addEventListener('change', () => { st.v1[view] = +$('v1').value; labels(); });
+    $('v2').addEventListener('change', () => { st.v2[view] = +$('v2').value; labels(); });
+    $('run').addEventListener('click', () => { running = !running; $('run').textContent = running ? t('stop') : t('run'); });
+    $('auto').addEventListener('click', autoScale);
+    function setView(v) {
+      view = v;
+      document.querySelectorAll('.tab').forEach((x) => x.setAttribute('aria-selected', x.dataset.view === v));
+      $('ctl-pouls').hidden = v !== 'pouls'; $('ctl-peau').hidden = v !== 'peau';
+      try { history.replaceState(null, '', '#' + v); } catch (e) {}
+      build();
+    }
+    document.querySelectorAll('.tab').forEach((b) => b.addEventListener('click', () => setView(b.dataset.view)));
+    function renderPresets() {
+      const bp = $('presetsP'); bp.innerHTML = '';
+      Object.entries(PP).forEach(([k, o]) => { const b = document.createElement('button'); b.type = 'button'; b.className = 'btn'; b.textContent = t(k);
+        b.addEventListener('click', () => { $('Rf').value = o.Rf; $('Cf').value = o.Cf; $('pR').value = o.R; $('pC').value = o.C; build(); }); bp.appendChild(b); });
+      const bs = $('presetsS'); bs.innerHTML = '';
+      Object.entries(SP).forEach(([k, o]) => { const b = document.createElement('button'); b.type = 'button'; b.className = 'btn'; b.textContent = t(k);
+        b.addEventListener('click', () => { $('R3').value = o.R3 == null ? $('R0').value : o.R3; $('sR').value = o.R; $('sC').value = o.C; refreshLabels(); build(); }); bs.appendChild(b); });
+    }
+    function setLang(l) {
+      lang = l; document.documentElement.lang = l;
+      document.querySelectorAll('[data-t]').forEach((el) => { const v = T[l][el.dataset.t]; if (typeof v === 'string') el.innerHTML = v; });
+      $('run').textContent = running ? t('stop') : t('run');
+      document.title = l === 'fr' ? 'Oscilloscope virtuel des TP' : 'Lab virtual oscilloscope';
+      document.querySelectorAll('.lang button').forEach((b) => b.setAttribute('aria-pressed', b.dataset.lang === l));
+      try { localStorage.setItem('lang', l); } catch (e) {}
+      fillSel('tdiv', TDIV, 's', st.tdiv[view]); fillSel('v1', VDIV, 'V', st.v1[view]); fillSel('v2', VDIV, 'V', st.v2[view]);
+      const keep = (id, list, unit, def) => { const v = $(id).value || def; fillSel(id, list, unit, v); };
+      keep('Rf', RES, 'Ω', 1e6); keep('Cf', CAP, 'F', 10e-12); keep('pR', RES, 'Ω', 1e6); keep('pC', CAP, 'F', 0.47e-6); keep('sR', RES, 'Ω', 330e3); keep('sC', CAP, 'F', 0.47e-6);
+      refreshLabels(); renderPresets(); build();
+    }
+    document.querySelectorAll('.lang button').forEach((b) => b.addEventListener('click', () => setLang(b.dataset.lang)));
+    if (window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches) running = false;
+    view = location.hash === '#peau' ? 'peau' : 'pouls';
+    setLang(lang);
+    setView(view);
+    requestAnimationFrame(frame);
+  })();
+  </script>
+</body>
+</html>
