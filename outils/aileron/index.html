@@ -1,0 +1,454 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Analyse d'un aileron par éléments finis</title>
+  <meta name="description" content="Analyse par éléments finis d'un aileron arrière de voiture : appui aérodynamique, réactions aux supports, effort tranchant, moment fléchissant, déformée, contraintes et coefficient de sécurité.">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --bg: #0c0c0d; --panel: #161618; --border: #262628; --border-hi: #3a3a3d;
+      --text: #f2f2f2; --dim: #9b9b9f; --muted: #6c6c70; --accent: #c8102e; --line: #c9c9cc; --warn: #e0a458; --good: #8fd18f;
+      --mono: "JetBrains Mono", ui-monospace, monospace; --sans: "Inter", system-ui, sans-serif;
+      color-scheme: dark;
+    }
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    body { background: var(--bg); color: var(--text); font-family: var(--sans); line-height: 1.55; -webkit-font-smoothing: antialiased; }
+    .wrap { max-width: 1280px; margin: 0 auto; padding: 24px max(16px, env(safe-area-inset-right, 0px)) 48px max(16px, env(safe-area-inset-left, 0px)); }
+    .top { display: flex; justify-content: space-between; align-items: center; gap: 12px; flex-wrap: wrap; margin-bottom: 24px; }
+    .back { font-size: 0.9rem; color: var(--dim); text-decoration: none; }
+    .back:hover { color: var(--accent); }
+    .lang { display: flex; border: 1px solid var(--border-hi); }
+    .lang button { font: 500 0.78rem var(--mono); letter-spacing: .05em; background: none; color: var(--dim); border: 0; padding: 5px 10px; cursor: pointer; }
+    .lang button + button { border-left: 1px solid var(--border-hi); }
+    .lang button[aria-pressed="true"] { background: var(--text); color: var(--bg); }
+    .eyebrow { font: 500 0.82rem var(--mono); color: var(--accent); letter-spacing: .04em; }
+    h1 { font-size: clamp(1.6rem, 3.4vw, 2.3rem); line-height: 1.15; margin: 6px 0 10px; text-wrap: balance; }
+    .intro { color: var(--dim); max-width: 82ch; }
+    .grid { display: grid; grid-template-columns: 360px minmax(0, 1fr); gap: 20px; align-items: start; margin-top: 26px; }
+    .panel { background: var(--panel); border: 1px solid var(--border); border-radius: 8px; padding: 18px; min-width: 0; }
+    .panel + .panel { margin-top: 16px; }
+    h2 { font: 600 0.78rem var(--mono); letter-spacing: .12em; text-transform: uppercase; color: var(--dim); margin-bottom: 12px; }
+    h3 { font: 600 0.74rem var(--mono); letter-spacing: .08em; text-transform: uppercase; color: var(--dim); margin: 18px 0 10px; padding-top: 14px; border-top: 1px solid var(--border); }
+    .fields { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px 12px; }
+    .full { grid-column: 1 / -1; }
+    label.f { display: grid; gap: 5px; font: 500 0.74rem var(--mono); color: var(--dim); min-width: 0; }
+    .inp { display: flex; align-items: center; min-width: 0; border: 1px solid var(--border-hi); border-radius: 6px; background: var(--bg); }
+    .inp input, .inp select { flex: 1; width: 100%; min-width: 0; font: 0.9rem var(--mono); background: none; color: var(--text); border: 0; padding: 8px 9px; }
+    .inp select option { background: var(--bg); }
+    .inp span { font: 0.74rem var(--mono); color: var(--muted); padding-right: 9px; white-space: nowrap; }
+    .inp:focus-within { outline: 2px solid var(--accent); outline-offset: 2px; }
+    button:focus-visible, input[type=range]:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+    .seg { display: flex; gap: 6px; flex-wrap: wrap; }
+    .seg button { font: 0.8rem var(--mono); background: none; color: var(--dim); border: 1px solid var(--border); border-radius: 6px; padding: 6px 10px; cursor: pointer; }
+    .seg button[aria-pressed="true"] { color: var(--text); border-color: var(--text); }
+    .seglbl { font: 500 0.74rem var(--mono); color: var(--dim); margin: 10px 0 6px; }
+    .btn { font: 500 0.85rem var(--sans); background: none; color: var(--text); border: 1px solid var(--border-hi); border-radius: 6px; padding: 7px 12px; cursor: pointer; }
+    .btn:hover { border-color: var(--accent); color: var(--accent); }
+    .row { display: flex; gap: 8px; flex-wrap: wrap; }
+    .hint { font-size: 0.8rem; color: var(--dim); margin-top: 8px; }
+    .presets { margin-top: 18px; padding-top: 14px; border-top: 1px solid var(--border); }
+    .presets p { font: 0.75rem var(--mono); color: var(--dim); margin-bottom: 8px; }
+    .kpis { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 10px; }
+    .kpi { border: 1px solid var(--border); border-radius: 6px; padding: 10px 12px; min-width: 0; }
+    .kpi dt { font: 0.72rem var(--mono); color: var(--dim); }
+    .kpi dd { font: 600 1.3rem var(--sans); font-variant-numeric: tabular-nums; margin-top: 2px; overflow-wrap: anywhere; }
+    .kpi dd small { font: 400 0.78rem var(--mono); color: var(--dim); margin-left: 3px; }
+    .kpi .sub { font: 0.72rem var(--mono); color: var(--muted); margin-top: 2px; }
+    .kpi.main dd { color: var(--accent); }
+    .kpi .st { font: 600 0.7rem var(--mono); letter-spacing: .04em; margin-top: 4px; }
+    .st.ok { color: var(--good); } .st.warn { color: var(--warn); } .st.err { color: var(--accent); }
+    .issues { list-style: none; display: grid; gap: 6px; margin-top: 14px; }
+    .issues li { font-size: 0.86rem; display: grid; grid-template-columns: auto minmax(0, 1fr); gap: 10px; align-items: baseline; padding: 7px 10px; border: 1px solid var(--border); border-radius: 6px; }
+    .issues .lv { font: 600 0.68rem var(--mono); letter-spacing: .06em; text-transform: uppercase; padding: 1px 6px; border-radius: 3px; border: 1px solid var(--warn); color: var(--warn); }
+    .issues .err .lv { background: var(--accent); border-color: var(--accent); color: #fff; }
+    .view { width: 100%; height: auto; display: block; margin-top: 14px; }
+    .view text { font: 11px var(--mono); fill: var(--dim); }
+    .view .undef { fill: none; stroke: var(--border-hi); stroke-dasharray: 4 4; }
+    .view .load { stroke: var(--line); stroke-width: 1.2; }
+    .view .loadline { fill: none; stroke: var(--line); stroke-width: 1.2; }
+    .view .sup { fill: #2a2a2e; stroke: var(--line); stroke-width: 1.2; }
+    .view .react { stroke: var(--accent); stroke-width: 2; }
+    .view .reacttx { fill: var(--accent); }
+    .view .ground { stroke: var(--border-hi); }
+    .scale-row { display: grid; grid-template-columns: auto minmax(0, 1fr) auto; gap: 12px; align-items: center; margin-top: 10px; font: 0.78rem var(--mono); color: var(--dim); }
+    .scale-row input[type=range] { width: 100%; accent-color: var(--accent); }
+    .cbar { display: grid; grid-template-columns: auto minmax(0, 1fr) auto; gap: 10px; align-items: center; font: 0.74rem var(--mono); color: var(--dim); margin-top: 8px; }
+    .cbar i { display: block; height: 10px; border-radius: 2px; background: linear-gradient(90deg, #3a3a3e, #c8102e); }
+    .two { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 18px; align-items: start; }
+    .sect { width: 100%; height: auto; display: block; }
+    .sect text { font: 11px var(--mono); fill: var(--dim); }
+    .kv { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 6px 16px; font: 0.82rem var(--mono); font-variant-numeric: tabular-nums; }
+    .kv dt { color: var(--dim); } .kv dd { text-align: right; }
+    .charts { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 14px 18px; }
+    .chart-box { position: relative; min-width: 0; }
+    .chart-box h4 { font: 500 0.78rem var(--mono); color: var(--dim); margin-bottom: 4px; }
+    .chart { width: 100%; height: 150px; display: block; overflow: visible; }
+    .chart .grid-l { stroke: var(--border); }
+    .chart .zero { stroke: var(--border-hi); }
+    .chart .supl { stroke: var(--muted); stroke-dasharray: 2 3; }
+    .chart .axis-t { font: 10px var(--mono); fill: var(--muted); }
+    .chart .ln { fill: none; stroke: var(--line); stroke-width: 2; stroke-linejoin: round; }
+    .chart .cross { stroke: var(--muted); }
+    .chart .dot { fill: var(--accent); stroke: var(--panel); stroke-width: 2; }
+    .tip { position: absolute; pointer-events: none; font: 0.72rem var(--mono); background: var(--bg); border: 1px solid var(--border-hi); border-radius: 4px; padding: 3px 7px; white-space: nowrap; transform: translate(-50%, -120%); z-index: 2; }
+    .note { font-size: 0.82rem; color: var(--dim); margin-top: 14px; }
+    .note p + p { margin-top: 6px; }
+    @media (max-width: 1040px) { .grid { grid-template-columns: minmax(0, 1fr); } }
+    @media (max-width: 760px) { .kpis { grid-template-columns: repeat(2, minmax(0, 1fr)); } .two, .charts { grid-template-columns: minmax(0, 1fr); } }
+  </style>
+</head>
+<body>
+  <div class="wrap">
+    <div class="top">
+      <a class="back" href="../../index.html#projets" data-t="back">← Retour au portfolio</a>
+      <div class="lang" role="group" aria-label="Langue / Language">
+        <button type="button" data-lang="fr" aria-pressed="true">FR</button>
+        <button type="button" data-lang="en" aria-pressed="false">EN</button>
+      </div>
+    </div>
+    <p class="eyebrow" data-t="eyebrow">Outil mécanique · résistance des matériaux</p>
+    <h1 data-t="title">Analyse d'un aileron arrière par éléments finis</h1>
+    <p class="intro" data-t="intro">L'aileron est soumis à l'appui aérodynamique, qui croît avec le carré de la vitesse. L'outil calcule cette charge, la répartit sur l'envergure, puis résout la flexion de l'aileron sur ses deux supports par la méthode des éléments finis : réactions aux supports, effort tranchant, moment fléchissant, déformée, contraintes et coefficient de sécurité selon le matériau.</p>
+
+    <div class="grid">
+      <div class="panel">
+        <h2 data-t="geoT">Aileron</h2>
+        <div class="fields">
+          <label class="f"><span data-t="fSpan">Envergure</span><span class="inp"><input type="number" id="span" min="100" step="10"><span>mm</span></span></label>
+          <label class="f"><span data-t="fChord">Corde</span><span class="inp"><input type="number" id="chord" min="20" step="5"><span>mm</span></span></label>
+          <label class="f"><span data-t="fNaca">Profil NACA</span><span class="inp"><input type="text" id="naca" maxlength="4" inputmode="numeric" spellcheck="false"></span></label>
+          <label class="f"><span data-t="fSkin">Peau (0 = plein)</span><span class="inp"><input type="number" id="skin" min="0" step="0.5"><span>mm</span></span></label>
+          <label class="f full"><span data-t="fMat">Matériau</span><span class="inp"><select id="material"></select></span></label>
+        </div>
+        <h3 data-t="aeroT">Charge aérodynamique</h3>
+        <div class="fields">
+          <label class="f"><span data-t="fSpeed">Vitesse</span><span class="inp"><input type="number" id="speed" min="1" step="10"><span>km/h</span></span></label>
+          <label class="f"><span data-t="fCl">Coefficient d'appui Cl</span><span class="inp"><input type="number" id="cl" min="0.1" max="3.5" step="0.1"></span></label>
+        </div>
+        <p class="seglbl" data-t="fDist">Répartition sur l'envergure</p>
+        <div class="seg" role="group" id="distSeg">
+          <button type="button" data-dist="elliptic" aria-pressed="true" data-t="dEll">Elliptique</button>
+          <button type="button" data-dist="uniform" aria-pressed="false" data-t="dUni">Uniforme</button>
+        </div>
+        <h3 data-t="supT">Fixation</h3>
+        <div class="fields">
+          <label class="f full"><span data-t="fGap">Entraxe des deux supports</span><span class="inp"><input type="number" id="gap" min="10" step="10"><span>mm</span></span></label>
+        </div>
+        <p class="seglbl" data-t="fSup">Liaison aux supports</p>
+        <div class="seg" role="group" id="supSeg">
+          <button type="button" data-sup="pin" aria-pressed="true" data-t="sPin">Appui simple (pivot)</button>
+          <button type="button" data-sup="fixed" aria-pressed="false" data-t="sFix">Encastrement</button>
+        </div>
+        <p class="hint" data-t="supHint">Pivot : l'aileron peut tourner sur ses supports. Encastrement : supports rigides vissés à plat, plus réaliste pour des cols de cygne serrés.</p>
+        <div class="presets"><p data-t="presets">Exemples :</p><div class="row" id="presets"></div></div>
+      </div>
+
+      <div>
+        <div class="panel" aria-live="polite">
+          <h2 data-t="result">Résultat</h2>
+          <dl class="kpis" id="kpis"></dl>
+          <ul class="issues" id="issues"></ul>
+          <svg class="view" id="view" viewBox="0 0 800 300" role="img" aria-label="Déformée"></svg>
+          <div class="cbar"><span data-t="cbLow">σ = 0</span><i aria-hidden="true"></i><span id="cbHigh"></span></div>
+          <div class="scale-row"><span data-t="ampl">Amplification de la déformée</span><input type="range" id="amp" min="0" max="100" value="60" aria-label="amplification"><span id="ampLbl"></span></div>
+        </div>
+        <div class="panel">
+          <h2 data-t="diagT">Diagrammes le long de l'envergure</h2>
+          <div class="charts">
+            <div class="chart-box"><h4 data-t="cW">Charge répartie (N/m)</h4><svg class="chart" data-k="w"></svg></div>
+            <div class="chart-box"><h4 data-t="cT">Effort tranchant (N)</h4><svg class="chart" data-k="T"></svg></div>
+            <div class="chart-box"><h4 data-t="cM">Moment fléchissant (N·m)</h4><svg class="chart" data-k="M"></svg></div>
+            <div class="chart-box"><h4 data-t="cV">Flèche (mm)</h4><svg class="chart" data-k="v"></svg></div>
+          </div>
+        </div>
+        <div class="panel">
+          <h2 data-t="secT">Section et détails</h2>
+          <div class="two">
+            <svg class="sect" id="sect" viewBox="0 0 360 170" role="img" aria-label="Section"></svg>
+            <dl class="kv" id="details"></dl>
+          </div>
+          <div class="note" data-t="note"></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script src="aileron.js"></script>
+  <script>
+  (() => {
+    'use strict';
+    const A = window.Aileron, $ = (id) => document.getElementById(id);
+    const esc = (s) => String(s).replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+    const T = {
+      fr: {
+        back: '← Retour au portfolio', eyebrow: 'Outil mécanique · résistance des matériaux', title: "Analyse d'un aileron arrière par éléments finis",
+        intro: "L'aileron est soumis à l'appui aérodynamique, qui croît avec le carré de la vitesse. L'outil calcule cette charge, la répartit sur l'envergure, puis résout la flexion de l'aileron sur ses deux supports par la méthode des éléments finis : réactions aux supports, effort tranchant, moment fléchissant, déformée, contraintes et coefficient de sécurité selon le matériau.",
+        geoT: 'Aileron', fSpan: 'Envergure', fChord: 'Corde', fNaca: 'Profil NACA', fSkin: 'Peau (0 = plein)', fMat: 'Matériau',
+        mat: { alu: 'Aluminium 6061-T6', carbon: 'Composite carbone (indicatif)', steel: 'Acier S235', pla: 'PLA imprimé en 3D (maquette)' },
+        aeroT: 'Charge aérodynamique', fSpeed: 'Vitesse', fCl: "Coefficient d'appui Cl", fDist: "Répartition sur l'envergure", dEll: 'Elliptique', dUni: 'Uniforme',
+        supT: 'Fixation', fGap: 'Entraxe des deux supports', fSup: 'Liaison aux supports', sPin: 'Appui simple (pivot)', sFix: 'Encastrement',
+        supHint: "Pivot : l'aileron peut tourner sur ses supports. Encastrement : supports rigides vissés à plat, plus réaliste pour des cols de cygne serrés.",
+        presets: 'Exemples :', pRoad: 'Voiture de sport (alu)', pRace: 'Compétition (carbone)', pModel: 'Maquette imprimée (PLA)', pBad: 'Aileron trop léger (rupture)',
+        result: 'Résultat', kF: 'Appui total', kV: 'Flèche maximale', kS: 'Contrainte maximale', kSF: 'Coefficient de sécurité', eq: '≈ {v} kg', at: 'à {v} mm',
+        stOk: '● résiste', stWarn: '▲ marge faible', stErr: '✕ plastification',
+        cbLow: 'σ = 0', ampl: 'Amplification de la déformée', real: 'réelle', diagT: "Diagrammes le long de l'envergure",
+        cW: 'Charge répartie (N/m)', cT: 'Effort tranchant (N)', cM: 'Moment fléchissant (N·m)', cV: 'Flèche (mm)', posX: 'x',
+        secT: 'Section et détails', dA: 'Aire de la section', dI: 'Moment quadratique I', dEI: 'Rigidité en flexion EI', dMass: "Masse de l'aileron", dSelf: 'Poids propre réparti',
+        dQ: 'Pression dynamique', dR: 'Réaction par support', dRM: "Moment d'encastrement", dMmax: 'Moment maximal', dEl: 'Éléments finis', dRe: 'Limite élastique Re',
+        support: 'support', chord: 'corde', na: 'axe neutre',
+        note: "<p>Méthode : appui F = ½·ρ·v²·S·Cl (ρ = 1,225 kg/m³), réparti de façon elliptique ou uniforme, plus le poids propre. Poutre d'Euler-Bernoulli discrétisée en éléments finis à deux nœuds (flèche et rotation), résolue par K·u = F ; contrainte de flexion σ = M·y / I. Le solveur retrouve les formules de la RDM (poutre sur deux appuis, encastrée, en porte-à-faux) à moins de 10⁻⁶ près.</p><p>Limites : modèle poutre 1D, sans torsion, sans flambement de la peau ni concentration de contraintes aux fixations (la contrainte locale près des vis est plus élevée) ; Cl supposé constant ; supports parfaitement rigides ; valeurs des matériaux indicatives.</p>",
+        lvErr: 'Erreur', lvWarn: 'À vérifier',
+        m: {
+          naca: 'Profil NACA invalide : 4 chiffres, par exemple 0012 ou 6412.', span: 'Envergure invalide.', chord: 'Corde invalide.', skin: 'Épaisseur de peau invalide.',
+          material: 'Matériau invalide.', speed: 'Vitesse invalide.', cl: 'Coefficient Cl invalide (entre 0 et 4).', gap: "L'entraxe des supports doit être positif et inférieur à l'envergure.",
+          skinThick: 'La peau est plus épaisse que le profil : la section serait pleine.',
+          yield: 'Coefficient de sécurité de {v} : la contrainte dépasse la limite élastique, l\'aileron se déforme de façon permanente.',
+          lowSF: 'Coefficient de sécurité de {v} : marge faible pour une pièce soumise aux vibrations et aux chocs (on vise souvent 2 ou plus).',
+          flex: "Flèche de {v} mm : plus de 1 % de l'envergure, l'aileron fléchit visiblement et son incidence change.",
+          overhang: "Supports très rapprochés : les parties en porte-à-faux sont longues et chargent fortement les supports.",
+          pla: 'PLA au-delà de 60 km/h : matériau de maquette, il fluage et casse sous charge prolongée ; résultat uniquement indicatif.',
+        },
+      },
+      en: {
+        back: '← Back to portfolio', eyebrow: 'Mechanical tool · strength of materials', title: 'Finite element analysis of a rear wing',
+        intro: 'The wing carries the aerodynamic downforce, which grows with the square of speed. The tool computes this load, distributes it along the span, then solves the bending of the wing on its two supports with the finite element method: support reactions, shear force, bending moment, deflection, stresses and safety factor for the chosen material.',
+        geoT: 'Wing', fSpan: 'Span', fChord: 'Chord', fNaca: 'NACA profile', fSkin: 'Skin (0 = solid)', fMat: 'Material',
+        mat: { alu: 'Aluminium 6061-T6', carbon: 'Carbon composite (indicative)', steel: 'S235 steel', pla: '3D-printed PLA (scale model)' },
+        aeroT: 'Aerodynamic load', fSpeed: 'Speed', fCl: 'Downforce coefficient Cl', fDist: 'Spanwise distribution', dEll: 'Elliptic', dUni: 'Uniform',
+        supT: 'Mounting', fGap: 'Distance between supports', fSup: 'Support type', sPin: 'Simple support (pin)', sFix: 'Fixed (clamped)',
+        supHint: 'Pin: the wing can rotate on its supports. Fixed: rigid supports bolted flat, more realistic for tightly clamped swan necks.',
+        presets: 'Examples:', pRoad: 'Sports car (aluminium)', pRace: 'Race car (carbon)', pModel: 'Printed scale model (PLA)', pBad: 'Too light a wing (failure)',
+        result: 'Output', kF: 'Total downforce', kV: 'Max deflection', kS: 'Max stress', kSF: 'Safety factor', eq: '≈ {v} kg', at: 'at {v} mm',
+        stOk: '● holds', stWarn: '▲ low margin', stErr: '✕ yields',
+        cbLow: 'σ = 0', ampl: 'Deflection magnification', real: 'true scale', diagT: 'Diagrams along the span',
+        cW: 'Distributed load (N/m)', cT: 'Shear force (N)', cM: 'Bending moment (N·m)', cV: 'Deflection (mm)', posX: 'x',
+        secT: 'Section and details', dA: 'Section area', dI: 'Second moment of area I', dEI: 'Bending stiffness EI', dMass: 'Wing mass', dSelf: 'Distributed self-weight',
+        dQ: 'Dynamic pressure', dR: 'Reaction per support', dRM: 'Fixed-end moment', dMmax: 'Max moment', dEl: 'Finite elements', dRe: 'Yield strength Re',
+        support: 'support', chord: 'chord', na: 'neutral axis',
+        note: '<p>Method: downforce F = ½·ρ·v²·S·Cl (ρ = 1.225 kg/m³), distributed elliptically or uniformly, plus self-weight. Euler-Bernoulli beam discretised into two-node finite elements (deflection and rotation), solved with K·u = F; bending stress σ = M·y / I. The solver matches the classic beam formulas (simply supported, clamped, overhanging) to within 10⁻⁶.</p><p>Limitations: 1D beam model, no torsion, no skin buckling or stress concentration at the mounts (local stress near the bolts is higher); constant Cl; perfectly rigid supports; indicative material values.</p>',
+        lvErr: 'Error', lvWarn: 'Check',
+        m: {
+          naca: 'Invalid NACA profile: 4 digits, e.g. 0012 or 6412.', span: 'Invalid span.', chord: 'Invalid chord.', skin: 'Invalid skin thickness.',
+          material: 'Invalid material.', speed: 'Invalid speed.', cl: 'Invalid Cl (between 0 and 4).', gap: 'The support spacing must be positive and smaller than the span.',
+          skinThick: 'The skin is thicker than the profile: the section would be solid.',
+          yield: 'Safety factor of {v}: stress exceeds the yield strength, the wing deforms permanently.',
+          lowSF: 'Safety factor of {v}: low margin for a part subject to vibration and shocks (2 or more is common).',
+          flex: 'Deflection of {v} mm: more than 1 % of the span, the wing visibly bends and its angle of attack changes.',
+          overhang: 'Supports very close together: long overhangs heavily load the supports.',
+          pla: 'PLA above 60 km/h: a model material that creeps and breaks under sustained load; indicative result only.',
+        },
+      },
+    };
+    let lang = 'fr';
+    try { lang = localStorage.getItem('lang') || ((navigator.language || 'fr').toLowerCase().startsWith('fr') ? 'fr' : 'en'); } catch (e) {}
+    if (!T[lang]) lang = 'fr';
+    const t = (k) => T[lang][k];
+    const num = (v, d) => v.toLocaleString(lang === 'fr' ? 'fr-FR' : 'en-GB', { maximumFractionDigits: d, minimumFractionDigits: 0 });
+    const sig3 = (v) => { const a = Math.abs(v); return num(v, a >= 100 ? 0 : a >= 10 ? 1 : a >= 1 ? 2 : 3); };
+
+    const PRESETS = {
+      pRoad: { span: 1400, chord: 250, naca: '6412', skin: 2, material: 'alu', speed: 250, cl: 1.4, dist: 'elliptic', gap: 800, sup: 'fixed' },
+      pRace: { span: 1600, chord: 300, naca: '6412', skin: 1.5, material: 'carbon', speed: 300, cl: 1.8, dist: 'elliptic', gap: 600, sup: 'fixed' },
+      pBad: { span: 1800, chord: 200, naca: '4409', skin: 0.5, material: 'alu', speed: 300, cl: 2, dist: 'elliptic', gap: 500, sup: 'pin' },
+      pModel: { span: 300, chord: 60, naca: '4412', skin: 0.8, material: 'pla', speed: 50, cl: 1.2, dist: 'uniform', gap: 180, sup: 'pin' },
+    };
+    let dist = 'elliptic', sup = 'fixed', res = null;
+
+    function seg(id, attr, val) { document.querySelectorAll('#' + id + ' button').forEach((b) => b.setAttribute('aria-pressed', b.dataset[attr] === val)); }
+    function fill(o) {
+      ['span', 'chord', 'naca', 'skin', 'speed', 'cl', 'gap'].forEach((k) => ($(k).value = o[k]));
+      $('material').value = o.material; dist = o.dist; sup = o.sup; seg('distSeg', 'dist', dist); seg('supSeg', 'sup', sup);
+    }
+    function read() {
+      const f = (id) => parseFloat(String($(id).value).replace(',', '.'));
+      return { span: f('span') / 1000, chord: f('chord') / 1000, naca: $('naca').value, skin: f('skin'), material: $('material').value,
+        speed: f('speed'), cl: f('cl'), dist, supportGap: f('gap') / 1000, support: sup, ne: 160 };
+    }
+
+    // ---------- Couleur de contrainte (séquentielle gris -> rouge) ----------
+    const lerp = (a, b, k) => Math.round(a + (b - a) * k);
+    const sColor = (k) => 'rgb(' + lerp(58, 200, k) + ',' + lerp(58, 16, k) + ',' + lerp(62, 46, k) + ')';
+
+    // ---------- Vue de face déformée ----------
+    function drawView() {
+      const svg = $('view');
+      if (!res) { svg.innerHTML = ''; return; }
+      const p = read(), W = 800, H = 300, padX = 40;
+      const s = (W - 2 * padX) / p.span;                    // px par m
+      const X = (x) => padX + x * s;
+      const yMid = 150, thick = Math.max(8, Math.min(26, res.sec.hMax * s * 3));
+      const vmax = Math.max(1e-12, Math.max(...res.v.map(Math.abs)));
+      const k = +$('amp').value / 100;
+      const ampPx = k * 60;                                  // déplacement max affiché (px)
+      const factor = k === 0 ? 1 : Math.max(1, ampPx / (vmax * s));
+      $('ampLbl').textContent = factor === 1 ? t('real') : '× ' + num(factor, factor < 10 ? 1 : 0);
+      const Y = (i) => yMid - res.v[i] * s * factor;
+      const sMax = res.sigMax || 1;
+      $('cbHigh').textContent = 'σ = ' + sig3(sMax / 1e6) + ' MPa' + ' · Re = ' + num(res.mat.Re / 1e6, 0) + ' MPa';
+      let g = '';
+      // charge
+      const wMax = Math.max(...res.w);
+      const top = 32, arrowMax = 58;
+      const loadY = (i) => top + arrowMax - (res.w[i] / wMax) * arrowMax;
+      let lp = '';
+      res.nodes.forEach((x, i) => { lp += (i ? 'L' : 'M') + X(x).toFixed(1) + ' ' + loadY(i).toFixed(1); });
+      g += '<path class="loadline" d="' + lp + '"/>';
+      const nA = 15;
+      for (let j = 0; j <= nA; j++) {
+        const x = (p.span * j) / nA, i = res.nodes.reduce((bi, xx, ii) => (Math.abs(xx - x) < Math.abs(res.nodes[bi] - x) ? ii : bi), 0);
+        const y1 = loadY(i), y2 = top + arrowMax + 6;
+        if (y2 - y1 > 6) g += '<line class="load" x1="' + X(x) + '" x2="' + X(x) + '" y1="' + y1 + '" y2="' + y2 + '"/><path d="M' + (X(x) - 3.5) + ' ' + (y2 - 6) + 'L' + X(x) + ' ' + y2 + 'L' + (X(x) + 3.5) + ' ' + (y2 - 6) + '" fill="none" stroke="var(--line)" stroke-width="1.2"/>';
+      }
+      g += '<text x="' + padX + '" y="' + (top - 8) + '">' + esc(t('cW').replace(' (N/m)', '')) + ' · max ' + sig3(wMax) + ' N/m</text>';
+      // aileron non déformé
+      g += '<rect class="undef" x="' + X(0) + '" y="' + (yMid - thick / 2) + '" width="' + p.span * s + '" height="' + thick + '"/>';
+      // aileron déformé, coloré par la contrainte
+      for (let i = 0; i < res.nodes.length - 1; i++) {
+        const x1 = X(res.nodes[i]), x2 = X(res.nodes[i + 1]), y1 = Y(i), y2 = Y(i + 1);
+        const kk = Math.min(1, ((res.sig[i] + res.sig[i + 1]) / 2) / sMax);
+        g += '<path d="M' + x1 + ' ' + (y1 - thick / 2) + 'L' + x2 + ' ' + (y2 - thick / 2) + 'L' + x2 + ' ' + (y2 + thick / 2) + 'L' + x1 + ' ' + (y1 + thick / 2) + 'Z" fill="' + sColor(kk) + '" stroke="' + sColor(kk) + '" stroke-width="0.6"/>';
+      }
+      // supports + réactions
+      res.supports.forEach((sp, j) => {
+        const i = res.nodes.findIndex((x) => Math.abs(x - sp.x) < 1e-9), x = X(sp.x), yb = Y(i) + thick / 2;
+        if (sp.type === 'fixed') g += '<rect class="sup" x="' + (x - 9) + '" y="' + yb + '" width="18" height="44"/>';
+        else g += '<path class="sup" d="M' + x + ' ' + yb + 'L' + (x - 12) + ' ' + (yb + 20) + 'L' + (x + 12) + ' ' + (yb + 20) + 'Z"/><rect class="sup" x="' + (x - 6) + '" y="' + (yb + 20) + '" width="12" height="24"/>';
+        g += '<line class="ground" x1="' + (x - 22) + '" x2="' + (x + 22) + '" y1="' + (yb + 44) + '" y2="' + (yb + 44) + '"/>';
+        const R = res.reactions[j];
+        g += '<line class="react" x1="' + x + '" x2="' + x + '" y1="' + (yb + 86) + '" y2="' + (yb + 52) + '"/><path d="M' + (x - 5) + ' ' + (yb + 60) + 'L' + x + ' ' + (yb + 51) + 'L' + (x + 5) + ' ' + (yb + 60) + '" fill="none" stroke="var(--accent)" stroke-width="2"/>';
+        g += '<text class="reacttx" x="' + x + '" y="' + Math.min(H - 4, yb + 100) + '" text-anchor="middle">R = ' + sig3(R.F) + ' N</text>';
+      });
+      // repère de la contrainte max
+      const iS = res.nodes.findIndex((x) => x === res.xsigMax);
+      g += '<text x="' + X(res.xsigMax) + '" y="' + (Y(iS) - thick / 2 - 8) + '" text-anchor="middle" style="fill:var(--text)">σmax</text>';
+      svg.innerHTML = g;
+    }
+
+    // ---------- Section ----------
+    function drawSection() {
+      const svg = $('sect');
+      if (!res) { svg.innerHTML = ''; return; }
+      const p = read(), o = A.nacaOutline(res.code, 80), W = 360, padX = 20, sc = W - 2 * padX, midY = 90;
+      const pt = ([x, y]) => (padX + x * sc).toFixed(1) + ' ' + (midY - y * sc).toFixed(1);
+      const d = 'M' + o.up.map(pt).join('L') + 'L' + o.lo.slice().reverse().map(pt).join('L') + 'Z';
+      let g = '<path d="' + d + '" fill="#2a2a2e" stroke="var(--line)" stroke-width="1.5"/>';
+      if (p.skin > 0) {
+        // contour intérieur approché (peau d'épaisseur constante, verticalement)
+        const tk = p.skin / 1000 / p.chord;
+        const inner = []; const innerL = [];
+        o.up.forEach(([x, y], i) => { const yl = o.lo[i][1]; if (y - yl > 2 * tk) { inner.push([x, y - tk]); innerL.push([x, yl + tk]); } });
+        if (inner.length > 2) g += '<path d="M' + inner.map(pt).join('L') + 'L' + innerL.slice().reverse().map(pt).join('L') + 'Z" fill="var(--panel)" stroke="var(--muted)" stroke-width="1"/>';
+      }
+      const yNA = midY - (res.sec.yG / p.chord) * sc;
+      g += '<line x1="' + (padX - 6) + '" x2="' + (W - padX + 6) + '" y1="' + yNA + '" y2="' + yNA + '" stroke="var(--accent)" stroke-dasharray="5 4"/>';
+      g += '<text x="' + (W - padX) + '" y="' + (yNA - 6) + '" text-anchor="end" style="fill:var(--accent)">' + esc(t('na')) + '</text>';
+      g += '<text x="' + padX + '" y="160">NACA ' + esc($('naca').value) + ' · ' + esc(t('chord')) + ' ' + num(p.chord * 1000, 0) + ' mm</text>';
+      svg.innerHTML = g;
+    }
+
+    // ---------- Diagrammes ----------
+    const CH = {};
+    function drawCharts() {
+      document.querySelectorAll('.chart').forEach((svg) => {
+        const k = svg.dataset.k;
+        if (!res) { svg.innerHTML = ''; return; }
+        const W = svg.clientWidth || 300, H = 150, L = 46, R = 8, Tp = 8, B = 20;
+        svg.setAttribute('viewBox', '0 0 ' + W + ' ' + H);
+        const vals = k === 'v' ? res.v.map((v) => v * 1000) : res[k];
+        let lo = Math.min(0, ...vals), hi = Math.max(0, ...vals);
+        if (hi - lo < 1e-12) hi = lo + 1;
+        const pad = (hi - lo) * 0.08; lo -= pad; hi += pad;
+        const span = res.nodes[res.nodes.length - 1];
+        const X = (x) => L + (x / span) * (W - L - R), Y = (v) => Tp + (1 - (v - lo) / (hi - lo)) * (H - Tp - B);
+        let g = '';
+        for (let i = 0; i <= 3; i++) {
+          const v = lo + ((hi - lo) * i) / 3;
+          g += '<line class="grid-l" x1="' + L + '" x2="' + (W - R) + '" y1="' + Y(v) + '" y2="' + Y(v) + '"/><text class="axis-t" x="' + (L - 5) + '" y="' + (Y(v) + 3) + '" text-anchor="end">' + sig3(v) + '</text>';
+        }
+        g += '<line class="zero" x1="' + L + '" x2="' + (W - R) + '" y1="' + Y(0) + '" y2="' + Y(0) + '"/>';
+        res.supports.forEach((s) => (g += '<line class="supl" x1="' + X(s.x) + '" x2="' + X(s.x) + '" y1="' + Tp + '" y2="' + (H - B) + '"/>'));
+        [0, 0.5, 1].forEach((f) => (g += '<text class="axis-t" x="' + X(span * f) + '" y="' + (H - 5) + '" text-anchor="middle">' + num(span * f * 1000, 0) + ' mm</text>'));
+        g += '<path class="ln" d="' + res.nodes.map((x, i) => (i ? 'L' : 'M') + X(x).toFixed(1) + ' ' + Y(vals[i]).toFixed(1)).join('') + '"/>';
+        g += '<g class="hov"></g><rect class="hit" x="' + L + '" y="0" width="' + (W - L - R) + '" height="' + H + '" fill="transparent"/>';
+        svg.innerHTML = g;
+        CH[k] = { X, Y, vals, W, L, R, H, span };
+        const hit = svg.querySelector('.hit');
+        hit.addEventListener('pointermove', (e) => hover(e));
+        hit.addEventListener('pointerleave', () => { document.querySelectorAll('.chart .hov').forEach((h) => (h.innerHTML = '')); document.querySelectorAll('.chart-box .tip').forEach((x) => x.remove()); });
+      });
+    }
+    // survol synchronisé des quatre diagrammes
+    function hover(e) {
+      const svg = e.target.ownerSVGElement, c0 = CH[svg.dataset.k], rect = svg.getBoundingClientRect();
+      const x = ((((e.clientX - rect.left) / rect.width) * c0.W - c0.L) / (c0.W - c0.L - c0.R)) * c0.span;
+      let i = 0; res.nodes.forEach((xx, ii) => { if (Math.abs(xx - x) < Math.abs(res.nodes[i] - x)) i = ii; });
+      const unit = { w: ' N/m', T: ' N', M: ' N·m', v: ' mm' };
+      document.querySelectorAll('.chart').forEach((s) => {
+        const c = CH[s.dataset.k]; if (!c) return;
+        const px = c.X(res.nodes[i]), py = c.Y(c.vals[i]);
+        s.querySelector('.hov').innerHTML = '<line class="cross" x1="' + px + '" x2="' + px + '" y1="8" y2="' + (c.H - 20) + '"/><circle class="dot" cx="' + px + '" cy="' + py + '" r="4"/>';
+        let tip = s.parentNode.querySelector('.tip'); if (!tip) { tip = document.createElement('div'); tip.className = 'tip'; s.parentNode.appendChild(tip); }
+        const r = s.getBoundingClientRect();
+        tip.textContent = num(res.nodes[i] * 1000, 0) + ' mm · ' + sig3(c.vals[i]) + unit[s.dataset.k];
+        tip.style.left = Math.max(70, Math.min(r.width - 70, (px / c.W) * r.width)) + 'px';
+        tip.style.top = (s.offsetTop + (py / c.H) * r.height) + 'px';
+      });
+    }
+
+    function run() {
+      const p = read();
+      res = A.analyse(p);
+      const ul = $('issues'); ul.innerHTML = '';
+      (res.issues || []).slice().sort((a, b) => (a.lvl === b.lvl ? 0 : a.lvl === 'err' ? -1 : 1)).forEach((i) => {
+        const li = document.createElement('li'); li.className = i.lvl;
+        li.innerHTML = '<span class="lv">' + esc(i.lvl === 'err' ? t('lvErr') : t('lvWarn')) + '</span><span>' + esc(t('m')[i.code].replace('{v}', typeof i.v === 'number' ? sig3(i.v) : '')) + '</span>';
+        ul.appendChild(li);
+      });
+      if (!res.ok) { res = null; $('kpis').innerHTML = ''; $('details').innerHTML = ''; drawView(); drawSection(); drawCharts(); $('cbHigh').textContent = ''; return; }
+      const st = res.SF < 1 ? ['err', t('stErr')] : res.SF < 1.5 ? ['warn', t('stWarn')] : ['ok', t('stOk')];
+      const kpi = (k, v, u, sub, main, extra) => '<div class="kpi' + (main ? ' main' : '') + '"><dt>' + esc(t(k)) + '</dt><dd>' + v + '<small>' + u + '</small></dd>' + (sub ? '<div class="sub">' + esc(sub) + '</div>' : '') + (extra || '') + '</div>';
+      $('kpis').innerHTML =
+        kpi('kF', num(res.Ftot, 0), 'N', t('eq').replace('{v}', num(res.Ftot / 9.81, res.Ftot / 9.81 < 10 ? 1 : 0))) +
+        kpi('kV', sig3(Math.abs(res.vMax) * 1000), 'mm', t('at').replace('{v}', num(res.xvMax * 1000, 0))) +
+        kpi('kS', sig3(res.sigMax / 1e6), 'MPa', t('at').replace('{v}', num(res.xsigMax * 1000, 0))) +
+        kpi('kSF', num(res.SF, 1), '', '', true, '<div class="st ' + st[0] + '">' + esc(st[1]) + '</div>');
+      const row = (k, v) => '<dt>' + esc(t(k)) + '</dt><dd>' + esc(v) + '</dd>';
+      const R = res.reactions[0];
+      $('details').innerHTML = row('dA', num(res.sec.A * 1e6, 0) + ' mm²') + row('dI', num(res.sec.I * 1e12, 0) + ' mm⁴') + row('dEI', sig3(res.EI) + ' N·m²') +
+        row('dMass', sig3(res.mass) + ' kg') + row('dSelf', sig3(res.wSelf) + ' N/m') + row('dQ', num(res.q, 0) + ' Pa') +
+        row('dR', sig3(R.F) + ' N') + (p.support === 'fixed' ? row('dRM', sig3(Math.abs(R.M)) + ' N·m') : '') +
+        row('dMmax', sig3(Math.abs(res.Mmax)) + ' N·m') + row('dRe', num(res.mat.Re / 1e6, 0) + ' MPa') + row('dEl', String(res.nodes.length - 1));
+      drawView(); drawSection(); drawCharts();
+    }
+
+    ['span', 'chord', 'naca', 'skin', 'speed', 'cl', 'gap'].forEach((id) => $(id).addEventListener('input', run));
+    $('material').addEventListener('change', run);
+    $('amp').addEventListener('input', drawView);
+    document.querySelectorAll('#distSeg button').forEach((b) => b.addEventListener('click', () => { dist = b.dataset.dist; seg('distSeg', 'dist', dist); run(); }));
+    document.querySelectorAll('#supSeg button').forEach((b) => b.addEventListener('click', () => { sup = b.dataset.sup; seg('supSeg', 'sup', sup); run(); }));
+    window.addEventListener('resize', drawCharts);
+
+    function renderMaterials() { const sel = $('material'), cur = sel.value; sel.innerHTML = Object.keys(A.MATERIALS).map((k) => '<option value="' + k + '">' + esc(t('mat')[k]) + '</option>').join(''); sel.value = cur || 'alu'; }
+    function renderPresets() {
+      const box = $('presets'); box.innerHTML = '';
+      Object.entries(PRESETS).forEach(([k, o]) => { const b = document.createElement('button'); b.type = 'button'; b.className = 'btn'; b.textContent = t(k); b.addEventListener('click', () => { fill(o); run(); }); box.appendChild(b); });
+    }
+    function setLang(l) {
+      lang = l; document.documentElement.lang = l;
+      document.querySelectorAll('[data-t]').forEach((el) => { const v = T[l][el.dataset.t]; if (typeof v === 'string') el.innerHTML = v; });
+      document.title = l === 'fr' ? "Analyse d'un aileron par éléments finis" : 'Rear wing finite element analysis';
+      document.querySelectorAll('.lang button').forEach((b) => b.setAttribute('aria-pressed', b.dataset.lang === l));
+      try { localStorage.setItem('lang', l); } catch (e) {}
+      renderMaterials(); renderPresets(); run();
+    }
+    document.querySelectorAll('.lang button').forEach((b) => b.addEventListener('click', () => setLang(b.dataset.lang)));
+    renderMaterials(); fill(PRESETS.pRoad);
+    setLang(lang);
+  })();
+  </script>
+</body>
+</html>
