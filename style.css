@@ -239,10 +239,8 @@ main { max-width: var(--maxw); margin: 0 auto; padding: 0 16px; }
   border: 1px solid var(--border); background: #111113;
 }
 .card-media img { width: 100%; height: 100%; object-fit: cover; display: block; }
-/* grandes cartes : image en haut, en bandeau sur toute la largeur */
-.project-card--wide .card-media { aspect-ratio: 12 / 5; }
-.project-card--wide .card-media img { object-position: center 30%; }
-@media (max-width: 820px) { .project-card--wide .card-media { aspect-ratio: 16 / 10; } }
+/* toutes les cartes au même format que les petites (demandé par Valentin) : deux par ligne, image en haut */
+.projects-grid .project-card--wide { grid-column: auto; }
 /* image composée de plusieurs captures : affichée en entier */
 .card-media--fit { background: #121214; }
 .card-media--fit img { object-fit: contain; }
