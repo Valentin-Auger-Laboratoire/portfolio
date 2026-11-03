@@ -72,7 +72,7 @@ window.I18N_EN = {
   'projects.contextMatlab': 'Course project · EPISEN, ECUE 325',
   'p10.date': 'Sept 2026',
   'p10.title': 'Measurement chain in MATLAB: estimating and correcting signal distortions with the FFT',
-  'p10.desc': 'Simulation of a measurement chain: generation of a multi-sine signal, six distortions (gain, offset, combinations, exponential, logarithmic), then estimation of their parameters from the distorted signal alone, using spectral analysis (FFT) for linear errors and linearisation plus regression for non-linear ones, and reconstruction of the original signal. Sign and model bugs fixed after submission, checked on 3,000 random draws. Team project of three; the App Designer interface was not kept.',
+  'p10.desc': 'Simulation of a measurement chain: generation of a multi-sine signal, six distortions (gain, offset, combinations, exponential, logarithmic), then estimation of their parameters from the distorted signal alone, using spectral analysis (FFT) for linear errors and linearisation plus regression for non-linear ones, and reconstruction of the original signal. Sign and model bugs fixed after submission, checked on 3,000 random draws. Seven-tab App Designer interface (signal, distortion, FFT, estimation, correction, CSV and PDF export), with its code published. Team project of three.',
   'projects.contextTp': 'Lab work in pairs · EPISEN, ECUE 325',
   'p11.date': '2026',
   'p11.title': 'Pulse detection with a piezoelectric sensor',
