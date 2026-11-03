@@ -155,11 +155,11 @@
             <span class="card-type" data-i18n="tag.ai">IA</span>
             <span class="card-date" data-i18n="p6.date">Mars 2026</span>
           </div>
-          <h3 data-i18n="p6.title">Vision IA : suivi de la main en temps réel et bouton piloté au doigt</h3>
-          <p data-i18n="p6.desc">Détection des mains par webcam avec MediaPipe Hands : les 21 points de chaque main et leurs liaisons s'affichent en direct. À partir de l'exemple officiel, j'ai ajouté un bouton virtuel QUITTER qui s'active quand le bout de l'index le touche (il passe au vert avant de fermer), un clic souris en secours, un compteur d'images par seconde lissé, un bouton adapté à toute résolution et une fermeture propre de la webcam et du modèle.</p>
-          <ul class="tags"><li>Python</li><li>OpenCV</li><li>MediaPipe Hands</li><li>Vision par ordinateur</li><li>Temps réel</li></ul>
+          <h3 data-i18n="p6.title">Vision IA : suivi de la main, puis construction de cubes par gestes</h3>
+          <p data-i18n="p6.desc">Série en deux étapes avec MediaPipe Hands et OpenCV. Étape 1 : suivi des 21 points de la main en direct et bouton virtuel QUITTER qui s'active quand le bout de l'index le touche. Étape 2 : construction de cubes en perspective sur une grille aimantée, posés en pinçant le pouce et l'index, avec une profondeur simulée selon la taille de la main, un verrou de pince par main et l'effacement du dernier cube en fermant le poing. Gestion propre de la webcam, compteur d'images par seconde, tailles adaptées à toute résolution.</p>
+          <ul class="tags"><li>Python</li><li>OpenCV</li><li>MediaPipe Hands</li><li>Reconnaissance de gestes</li><li>Temps réel</li></ul>
           <div class="card-foot">
-            <span class="card-context" data-i18n="projects.contextVision">Vision par ordinateur · webcam</span>
+            <span class="card-context" data-i18n="projects.contextVision">Vision par ordinateur · interaction gestuelle</span>
             <a class="card-link" href="https://github.com/Valentin-Auger-Laboratoire/vision-main" target="_blank" rel="noopener" data-i18n="projects.code">Voir le code ↗</a>
           </div>
         </article>
