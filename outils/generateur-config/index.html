@@ -1,0 +1,598 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Générateur de configuration</title>
+  <meta name="description" content="Générateur de configuration Cisco IOS (router-on-a-stick, VLAN, DHCP, OSPF, SSH) et pare-feu VyOS, avec vérification du plan d'adressage et analyse des règles.">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --bg: #0c0c0d; --panel: #161618; --border: #262628; --border-hi: #3a3a3d;
+      --text: #f2f2f2; --dim: #9b9b9f; --accent: #c8102e; --ok: #8fd18f; --warn: #e0a458;
+      --mono: "JetBrains Mono", ui-monospace, monospace; --sans: "Inter", system-ui, sans-serif;
+      color-scheme: dark;
+    }
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    body { background: var(--bg); color: var(--text); font-family: var(--sans); line-height: 1.55; -webkit-font-smoothing: antialiased; }
+    .wrap { max-width: 1240px; margin: 0 auto; padding: 24px max(16px, env(safe-area-inset-right, 0px)) 48px max(16px, env(safe-area-inset-left, 0px)); }
+    .top { display: flex; justify-content: space-between; align-items: center; gap: 12px; flex-wrap: wrap; margin-bottom: 24px; }
+    .back { font-size: 0.9rem; color: var(--dim); text-decoration: none; }
+    .back:hover { color: var(--accent); }
+    .lang { display: flex; border: 1px solid var(--border-hi); }
+    .lang button { font: 500 0.78rem var(--mono); letter-spacing: .05em; background: none; color: var(--dim); border: 0; padding: 5px 10px; cursor: pointer; }
+    .lang button + button { border-left: 1px solid var(--border-hi); }
+    .lang button[aria-pressed="true"] { background: var(--text); color: var(--bg); }
+    .eyebrow { font: 500 0.82rem var(--mono); color: var(--accent); letter-spacing: .04em; }
+    h1 { font-size: clamp(1.6rem, 3.4vw, 2.3rem); line-height: 1.15; margin: 6px 0 10px; text-wrap: balance; }
+    .intro { color: var(--dim); max-width: 80ch; }
+    .intro code { font: 0.85em var(--mono); color: var(--text); }
+
+    .tabs { display: flex; gap: 8px; margin: 26px 0 16px; flex-wrap: wrap; }
+    .tab { font: 0.85rem var(--mono); background: none; color: var(--dim); border: 1px solid var(--border); border-radius: 999px; padding: 6px 14px; cursor: pointer; }
+    .tab[aria-selected="true"] { color: var(--accent); border-color: var(--accent); }
+    .view[hidden] { display: none; }
+
+    .grid { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 20px; align-items: start; }
+    .panel { background: var(--panel); border: 1px solid var(--border); border-radius: 8px; padding: 18px; min-width: 0; }
+    .panel + .panel { margin-top: 16px; }
+    .out { position: sticky; top: 16px; }
+    h2 { font: 600 0.78rem var(--mono); letter-spacing: .12em; text-transform: uppercase; color: var(--dim); margin-bottom: 12px; }
+    h3 { font: 600 0.74rem var(--mono); letter-spacing: .08em; text-transform: uppercase; color: var(--dim); margin: 18px 0 8px; padding-top: 14px; border-top: 1px solid var(--border); }
+    .fields { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px 12px; }
+    label.f { display: grid; gap: 5px; font: 500 0.74rem var(--mono); color: var(--dim); min-width: 0; }
+    input[type=text], input[type=number], select { width: 100%; min-width: 0; font: 0.86rem var(--mono); background: var(--bg); color: var(--text); border: 1px solid var(--border-hi); border-radius: 6px; padding: 7px 8px; }
+    input::placeholder { color: #5f5f63; }
+    input:focus-visible, select:focus-visible, button:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+    .check { font-size: 0.85rem; color: var(--text); display: flex; gap: 8px; align-items: center; }
+    .check input { accent-color: var(--accent); }
+    .opt { margin-top: 10px; }
+    .opt[data-off="true"] { opacity: .45; }
+
+    .list { display: grid; gap: 8px; }
+    .lhead, .lrow { display: grid; gap: 6px; align-items: center; }
+    .lhead { font: 0.7rem var(--mono); color: var(--dim); }
+    .x { background: none; border: 1px solid var(--border); border-radius: 6px; color: var(--dim); cursor: pointer; font-size: 1rem; height: 34px; }
+    .x:hover { color: var(--accent); border-color: var(--accent); }
+    .lrow .cb { display: flex; justify-content: center; }
+    .lrow .cb input { width: 18px; height: 18px; accent-color: var(--accent); }
+    .l-vlans { grid-template-columns: 62px minmax(0, 1fr) minmax(0, 1.3fr) minmax(0, 1.2fr) 44px 34px; }
+    .l-ifaces { grid-template-columns: 70px minmax(0, 1.2fr) minmax(0, 1.2fr) 34px; }
+    .l-sets { grid-template-columns: minmax(0, 1.4fr) minmax(0, 1fr) minmax(0, 1fr) 34px; }
+    .l-rules { grid-template-columns: repeat(6, minmax(0, 1fr)) 34px; padding: 8px; border: 1px solid var(--border); border-radius: 6px; }
+    .l-rules .s2 { grid-column: span 2; }
+    .l-rules .x { grid-column: 7; grid-row: 1; }
+    .btn { font: 500 0.85rem var(--sans); background: none; color: var(--text); border: 1px solid var(--border-hi); border-radius: 6px; padding: 7px 12px; cursor: pointer; }
+    .btn:hover { border-color: var(--accent); color: var(--accent); }
+    .row { display: flex; gap: 8px; flex-wrap: wrap; margin-top: 10px; align-items: center; }
+    .presets { margin-top: 18px; padding-top: 14px; border-top: 1px solid var(--border); }
+    .presets p { font: 0.75rem var(--mono); color: var(--dim); margin-bottom: 8px; }
+    .hint { font-size: 0.8rem; color: var(--dim); margin-top: 8px; }
+
+    .issues { list-style: none; display: grid; gap: 6px; margin-bottom: 14px; }
+    .issues li { font-size: 0.86rem; display: grid; grid-template-columns: auto minmax(0, 1fr); gap: 10px; align-items: baseline; padding: 7px 10px; border: 1px solid var(--border); border-radius: 6px; }
+    .issues .lv { font: 600 0.68rem var(--mono); letter-spacing: .06em; text-transform: uppercase; padding: 1px 6px; border-radius: 3px; }
+    .issues .err .lv { background: var(--accent); color: #fff; }
+    .issues .warn .lv { border: 1px solid var(--warn); color: var(--warn); }
+    .issues .good { color: var(--ok); border-color: #2e4a2e; display: block; }
+    .issues code { font: 0.92em var(--mono); }
+    .subtabs { display: flex; gap: 6px; flex-wrap: wrap; margin-bottom: 8px; }
+    .subtab { font: 0.8rem var(--mono); background: none; color: var(--dim); border: 1px solid var(--border); border-radius: 6px; padding: 4px 10px; cursor: pointer; }
+    .subtab[aria-selected="true"] { color: var(--text); border-color: var(--text); }
+    pre.code { font: 0.8rem/1.5 var(--mono); background: var(--bg); border: 1px solid var(--border); border-radius: 6px; padding: 12px 14px; overflow: auto; max-height: 62vh; tab-size: 2; }
+    pre.code .c { color: #6c6c70; }
+    pre.code .k { color: var(--text); }
+    pre.code .ph { color: var(--accent); font-weight: 600; }
+    pre.code { color: #c9c9cc; }
+    .msg { font-size: 0.82rem; color: var(--dim); margin-top: 8px; min-height: 1.2em; }
+    .tablewrap { overflow-x: auto; margin-bottom: 14px; }
+    table { width: 100%; border-collapse: collapse; font: 0.78rem var(--mono); }
+    th, td { text-align: left; padding: 6px 8px; border-bottom: 1px solid var(--border); white-space: nowrap; }
+    th { color: var(--dim); font-weight: 500; }
+    .empty { color: var(--dim); font-size: 0.9rem; }
+
+    @media (max-width: 1040px) { .grid { grid-template-columns: 1fr; } .out { position: static; } }
+    @media (max-width: 560px) {
+      .fields { grid-template-columns: 1fr; }
+      .l-vlans { grid-template-columns: 62px minmax(0, 1fr) 44px 34px; }
+      .l-vlans .cidr, .l-vlans .ports { grid-column: span 2; }
+      .l-vlans .cb { grid-column: 3; grid-row: 1; }
+      .l-vlans .x { grid-column: 4; grid-row: 1; }
+      .lhead.l-vlans { display: none; }
+      .l-ifaces { grid-template-columns: 70px minmax(0, 1fr) 34px; }
+      .l-ifaces .desc { grid-column: span 2; }
+      .lhead.l-ifaces { display: none; }
+      .l-sets { grid-template-columns: minmax(0, 1fr) minmax(0, 1fr) 34px; }
+      .l-sets .name { grid-column: span 2; }
+      .l-sets .x { grid-column: 3; grid-row: 1; }
+      .lhead.l-sets { display: none; }
+      .l-rules { grid-template-columns: repeat(4, minmax(0, 1fr)) 34px; }
+      .l-rules .x { grid-column: 5; }
+      .l-rules .n, .l-rules .act { grid-column: span 2; }
+      .l-rules .src, .l-rules .dst, .l-rules .port { grid-column: span 4; }
+    }
+  </style>
+</head>
+<body>
+  <div class="wrap">
+    <div class="top">
+      <a class="back" href="../../index.html#projets" data-t="back">← Retour au portfolio</a>
+      <div class="lang" role="group" aria-label="Langue / Language">
+        <button type="button" data-lang="fr" aria-pressed="true">FR</button>
+        <button type="button" data-lang="en" aria-pressed="false">EN</button>
+      </div>
+    </div>
+    <p class="eyebrow" data-t="eyebrow">Outil réseau · configuration d'équipements</p>
+    <h1 data-t="title">Générateur de configuration Cisco et VyOS</h1>
+    <p class="intro" data-t="intro">Décrivez le site ou le pare-feu : l'outil vérifie les données (adresses, chevauchements, ports, numéros de VLAN, règles) puis écrit la configuration à coller dans l'équipement. Aucun mot de passe n'est demandé : un marqueur <code>&lt;MOT_DE_PASSE&gt;</code> est laissé à sa place.</p>
+
+    <div class="tabs" role="tablist">
+      <button type="button" class="tab" role="tab" data-view="cisco" aria-selected="true" data-t="tabCisco">Site Cisco (routeur + switch)</button>
+      <button type="button" class="tab" role="tab" data-view="vyos" aria-selected="false" data-t="tabVyos">Pare-feu VyOS</button>
+    </div>
+
+    <!-- ===================== Cisco ===================== -->
+    <section class="view" id="view-cisco">
+      <div class="grid">
+        <div>
+          <div class="panel">
+            <h2 data-t="general">Équipements</h2>
+            <div class="fields">
+              <label class="f"><span data-t="fRouter">Nom du routeur</span><input type="text" data-k="router" spellcheck="false"></label>
+              <label class="f"><span data-t="fSwitch">Nom du switch</span><input type="text" data-k="switch" spellcheck="false"></label>
+              <label class="f"><span data-t="fTrunk">Routeur : interface vers le switch</span><input type="text" data-k="trunkIf" spellcheck="false" placeholder="Gi0/0"></label>
+              <label class="f"><span data-t="fUplink">Switch : port vers le routeur</span><input type="text" data-k="uplinkIf" spellcheck="false" placeholder="Gi0/24"></label>
+              <label class="f"><span data-t="fWanIf">Routeur : interface WAN</span><input type="text" data-k="wanIf" spellcheck="false" placeholder="Gi0/1"></label>
+              <label class="f"><span data-t="fWanIp">Adresse WAN (CIDR)</span><input type="text" data-k="wanCidr" spellcheck="false" placeholder="10.0.0.1/30"></label>
+              <label class="f"><span data-t="fDns">Serveur DNS (DHCP)</span><input type="text" data-k="dns" spellcheck="false" placeholder="—"></label>
+            </div>
+
+            <h3 data-t="vlans">VLAN</h3>
+            <div class="lhead l-vlans"><span>ID</span><span data-t="cName">Nom</span><span data-t="cNet">Réseau</span><span data-t="cPorts">Ports d'accès</span><span>DHCP</span><span></span></div>
+            <div class="list" id="list-vlans"></div>
+            <div class="row"><button type="button" class="btn" data-add="vlans" data-t="addVlan">+ Ajouter un VLAN</button></div>
+            <p class="hint" data-t="gwHint">La passerelle de chaque VLAN est la première adresse du réseau. Ports : Fa0/1-10, Gi0/1…</p>
+
+            <h3>OSPF</h3>
+            <label class="check"><input type="checkbox" data-k="ospf.enabled"> <span data-t="ospfOn">Annoncer les VLAN et le lien WAN en OSPF</span></label>
+            <div class="fields opt" data-opt="ospf">
+              <label class="f"><span data-t="fPid">Processus</span><input type="text" data-k="ospf.pid" inputmode="numeric"></label>
+              <label class="f"><span data-t="fArea">Aire</span><input type="text" data-k="ospf.area" inputmode="numeric"></label>
+              <label class="f"><span data-t="fRid">Router-ID</span><input type="text" data-k="ospf.rid" spellcheck="false"></label>
+            </div>
+
+            <h3 data-t="admin">Administration</h3>
+            <label class="check"><input type="checkbox" data-k="ssh.enabled"> <span data-t="sshOn">Accès SSH v2 uniquement (pas de Telnet)</span></label>
+            <div class="fields opt" data-opt="ssh">
+              <label class="f"><span data-t="fDomain">Nom de domaine</span><input type="text" data-k="ssh.domain" spellcheck="false"></label>
+              <label class="f"><span data-t="fUser">Utilisateur</span><input type="text" data-k="ssh.user" spellcheck="false"></label>
+            </div>
+
+            <div class="presets">
+              <p data-t="presets">Exemples :</p>
+              <div class="row" style="margin-top:0" id="presets-cisco"></div>
+            </div>
+          </div>
+        </div>
+        <div class="panel out" aria-live="polite">
+          <h2 data-t="result">Résultat</h2>
+          <ul class="issues" id="issues-cisco"></ul>
+          <div id="plan-cisco"></div>
+          <div class="subtabs" role="tablist" id="sub-cisco">
+            <button type="button" class="subtab" data-sub="router" aria-selected="true" data-t="subRouter">Routeur</button>
+            <button type="button" class="subtab" data-sub="switch" aria-selected="false" data-t="subSwitch">Switch</button>
+          </div>
+          <pre class="code" id="code-cisco"></pre>
+          <div class="row">
+            <button type="button" class="btn" data-copy="cisco" data-t="copy">Copier</button>
+            <button type="button" class="btn" data-dl="cisco" data-t="dl">Télécharger (.txt)</button>
+          </div>
+          <p class="msg" id="msg-cisco"></p>
+        </div>
+      </div>
+    </section>
+
+    <!-- ===================== VyOS ===================== -->
+    <section class="view" id="view-vyos" hidden>
+      <div class="grid">
+        <div>
+          <div class="panel">
+            <h2 data-t="ifaces">Interfaces</h2>
+            <div class="lhead l-ifaces"><span>Nom</span><span data-t="cAddr">Adresse (CIDR)</span><span>Description</span><span></span></div>
+            <div class="list" id="list-ifaces"></div>
+            <div class="row"><button type="button" class="btn" data-add="ifaces" data-t="addIf">+ Ajouter une interface</button></div>
+
+            <h3 data-t="sets">Rulesets (zones)</h3>
+            <div class="lhead l-sets"><span data-t="cName">Nom</span><span data-t="cDef">Action par défaut</span><span data-t="cIn">Interface d'entrée</span><span></span></div>
+            <div class="list" id="list-sets"></div>
+            <div class="row"><button type="button" class="btn" data-add="sets" data-t="addSet">+ Ajouter un ruleset</button></div>
+
+            <h3 data-t="rules">Règles</h3>
+            <div class="list" id="list-rules"></div>
+            <div class="row"><button type="button" class="btn" data-add="rules" data-t="addRule">+ Ajouter une règle</button></div>
+            <p class="hint" data-t="rulesHint">Les règles sont évaluées par numéro croissant ; la première qui correspond décide. Champs vides = tout. Ports : 443, 80,443 ou 8000-8080.</p>
+
+            <h3 data-t="options">Options</h3>
+            <label class="check"><input type="checkbox" data-k="stateful"> <span data-t="stateOn">Pare-feu stateful (retour des connexions établies accepté)</span></label>
+            <label class="check" style="margin-top:8px"><input type="checkbox" data-k="ospf.enabled"> <span data-t="vyOspfOn">OSPF aire 0 sur toutes les interfaces</span></label>
+            <div class="fields opt" data-opt="ospf">
+              <label class="f"><span data-t="fRid">Router-ID</span><input type="text" data-k="ospf.rid" spellcheck="false"></label>
+            </div>
+
+            <div class="presets">
+              <p data-t="presets">Exemples :</p>
+              <div class="row" style="margin-top:0" id="presets-vyos"></div>
+            </div>
+          </div>
+        </div>
+        <div class="panel out" aria-live="polite">
+          <h2 data-t="result">Résultat</h2>
+          <ul class="issues" id="issues-vyos"></ul>
+          <pre class="code" id="code-vyos"></pre>
+          <div class="row">
+            <button type="button" class="btn" data-copy="vyos" data-t="copy">Copier</button>
+            <button type="button" class="btn" data-dl="vyos" data-t="dl">Télécharger (.txt)</button>
+          </div>
+          <p class="msg" id="msg-vyos"></p>
+        </div>
+      </div>
+    </section>
+  </div>
+
+  <script src="generateur.js"></script>
+  <script>
+  (() => {
+    'use strict';
+    const G = window.GenConfig, $ = (id) => document.getElementById(id);
+    const esc = (s) => String(s).replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+
+    const T = {
+      fr: {
+        back: '← Retour au portfolio', eyebrow: "Outil réseau · configuration d'équipements", title: 'Générateur de configuration Cisco et VyOS',
+        intro: "Décrivez le site ou le pare-feu : l'outil vérifie les données (adresses, chevauchements, ports, numéros de VLAN, règles) puis écrit la configuration à coller dans l'équipement. Aucun mot de passe n'est demandé : un marqueur <code>&lt;MOT_DE_PASSE&gt;</code> est laissé à sa place.",
+        tabCisco: 'Site Cisco (routeur + switch)', tabVyos: 'Pare-feu VyOS', general: 'Équipements',
+        fRouter: 'Nom du routeur', fSwitch: 'Nom du switch', fTrunk: 'Routeur : interface vers le switch', fUplink: 'Switch : port vers le routeur',
+        fWanIf: 'Routeur : interface WAN', fWanIp: 'Adresse WAN (CIDR)', fDns: 'Serveur DNS (DHCP)',
+        vlans: 'VLAN', cName: 'Nom', cNet: 'Réseau', cPorts: "Ports d'accès", addVlan: '+ Ajouter un VLAN',
+        gwHint: 'La passerelle de chaque VLAN est la première adresse du réseau. Ports : Fa0/1-10, Gi0/1…',
+        ospfOn: 'Annoncer les VLAN et le lien WAN en OSPF', fPid: 'Processus', fArea: 'Aire', fRid: 'Router-ID',
+        admin: 'Administration', sshOn: 'Accès SSH v2 uniquement (pas de Telnet)', fDomain: 'Nom de domaine', fUser: 'Utilisateur',
+        presets: 'Exemples :', result: 'Résultat', subRouter: 'Routeur', subSwitch: 'Switch', copy: 'Copier', dl: 'Télécharger (.txt)',
+        copied: 'Copié dans le presse-papiers.', copyFail: 'Copie impossible : sélectionnez le texte à la main.',
+        ifaces: 'Interfaces', cAddr: 'Adresse (CIDR)', addIf: '+ Ajouter une interface', sets: 'Rulesets (zones)', cDef: 'Action par défaut', cIn: "Interface d'entrée",
+        addSet: '+ Ajouter un ruleset', rules: 'Règles', addRule: '+ Ajouter une règle',
+        rulesHint: 'Les règles sont évaluées par numéro croissant ; la première qui correspond décide. Champs vides = tout. Ports : 443, 80,443 ou 8000-8080.',
+        options: 'Options', stateOn: 'Pare-feu stateful (retour des connexions établies accepté)', vyOspfOn: 'OSPF aire 0 sur toutes les interfaces',
+        none: '— aucune —', remove: 'Supprimer', phSrc: 'source (toutes)', phDst: 'destination (toutes)', phPort: 'port(s) de destination (tous)', phN: 'n°',
+        lvErr: 'Erreur', lvWarn: 'À vérifier', allGood: 'Aucun problème détecté.', fixFirst: 'Corrigez les erreurs pour obtenir la configuration.',
+        planTitle: "Plan d'adressage", hGw: 'Passerelle', hRange: 'Plage', yes: 'oui', no: 'non',
+        header: 'Configuration generee par le generateur du portfolio - a relire avant application',
+        pPoc: 'Site Paris du PoC', pSmall: 'Petit réseau (2 VLAN)', pErr: 'Exemple avec erreurs',
+        pFw: 'Pare-feu du PoC', pFwAnnex: "Annexe d'origine (règle 40)", pFwShadow: 'Exemple : règle masquée',
+        m: {
+          hostname: 'Nom d\'hôte invalide : « {v} » (une lettre d\'abord, puis lettres, chiffres ou tirets).',
+          ifname: 'Nom d\'interface invalide : « {v} » (ex. Gi0/0, Fa0/1).',
+          noVlan: 'Ajoutez au moins un VLAN.', vlanId: 'Numéro de VLAN invalide : {v} (1 à 4094).', vlanReserved: 'Le VLAN {v} est réservé (1002 à 1005).',
+          vlan1: 'Le VLAN 1 est le VLAN par défaut de tous les ports : à éviter pour les utilisateurs.', vlanDup: 'Le VLAN {v} est défini deux fois.',
+          vlanName: 'Nom invalide pour le VLAN {id} : « {v} » (lettres, chiffres, _ et -, sans espace).',
+          cidr: '{n} : réseau invalide « {v} » (format a.b.c.d/préfixe).', prefixTooLong: '{n} : préfixe trop long pour un réseau de postes ({v}).',
+          notNetwork: '{n} : {v} n\'est pas l\'adresse du réseau, vouliez-vous dire {s} ?', ports: '{n} : liste de ports invalide « {v} » (ex. Fa0/1-10, Gi0/1).',
+          noPorts: '{n} : aucun port d\'accès attribué.', portDup: 'Le port {v} est attribué deux fois ({a} et {b}).',
+          wanIsTrunk: 'L\'interface WAN est la même que l\'interface vers le switch.', wanHost: 'WAN : {v} est l\'adresse du réseau ou de broadcast, pas une adresse d\'hôte.',
+          overlap: 'Les réseaux {a} et {b} se chevauchent.', ospfPid: 'Numéro de processus OSPF invalide : {v} (1 à 65535).', ospfArea: 'Numéro d\'aire OSPF invalide : {v}.',
+          rid: 'Router-ID invalide : « {v} » (format a.b.c.d).', ospfNoWan: 'OSPF activé sans lien WAN : le routeur n\'aura aucun voisin.',
+          domain: 'Nom de domaine invalide : « {v} » (ex. site.lab).', user: 'Nom d\'utilisateur invalide : « {v} ».',
+          noSsh: 'SSH désactivé : aucun accès distant sécurisé n\'est configuré.', dns: 'Adresse DNS invalide : « {v} ».', noDns: 'DHCP sans serveur DNS : les postes n\'en recevront pas.',
+          vyIf: 'Nom d\'interface VyOS invalide : « {v} » (eth0, eth1…).', vyIfDup: 'L\'interface {v} est définie deux fois.',
+          vyIfHost: '{n} : {v} est l\'adresse du réseau ou de broadcast, pas une adresse d\'hôte.', vyDesc: '{n} : la description ne doit pas contenir de guillemets.',
+          vySetName: 'Nom de ruleset invalide : « {v} » (lettre d\'abord, sans espace).', vySetDup: 'Le ruleset {v} est défini deux fois.', vyAction: 'Action invalide : « {v} ».',
+          vyBindUnknown: '{s} : l\'interface « {v} » n\'existe pas.', vyRuleSet: 'Règle {r} : ruleset « {s} » inconnu.', vyRuleNum: '{s} : numéro de règle invalide « {r} » (1 à 999999).',
+          vyRuleDup: '{s} : la règle {r} est définie deux fois.', vyProto: '{s} règle {r} : protocole invalide.', vyAddr: '{s} règle {r} : adresse invalide « {v} ».',
+          vyAddrHost: '{s} règle {r} : {v} n\'est pas une adresse de réseau, ramenée à {c}.', vyPort: '{s} règle {r} : port invalide « {v} » (ex. 443, 80,443, 8000-8080).',
+          vyPortProto: '{s} règle {r} : un port demande le protocole tcp, udp ou tcp_udp.', vyUnbound: '{s} n\'est appliqué à aucune interface : il ne filtre rien.',
+          vyBindDup: '{v} : {b} n\'est jamais atteint, {a} est déjà appliqué à cette interface et se termine par son action par défaut.',
+          vyDefAccept: '{s} : action par défaut « accept », tout ce qui n\'est pas interdit passe.', vyAcceptAll: '{s} règle {r} : accepte tout le trafic.',
+          vyRedundant: '{s} règle {r} : jamais atteinte, la règle {by} couvre déjà ce trafic avec la même action (règle inutile).',
+          vyShadow: '{s} règle {r} : jamais atteinte, masquée par la règle {by} qui couvre ce trafic avec l\'action inverse.',
+          vyNoFilter: '{v} : le trafic qui entre par cette interface n\'est pas filtré (aucun ruleset).', vyNoState: 'Sans « state-policy », le trafic retour doit être autorisé règle par règle.',
+        },
+      },
+      en: {
+        back: '← Back to portfolio', eyebrow: 'Network tool · device configuration', title: 'Cisco and VyOS configuration generator',
+        intro: 'Describe the site or the firewall: the tool checks the data (addresses, overlaps, ports, VLAN numbers, rules) then writes the configuration to paste into the device. No password is asked for: a <code>&lt;MOT_DE_PASSE&gt;</code> (password) placeholder is left in its place.',
+        tabCisco: 'Cisco site (router + switch)', tabVyos: 'VyOS firewall', general: 'Devices',
+        fRouter: 'Router name', fSwitch: 'Switch name', fTrunk: 'Router: interface to the switch', fUplink: 'Switch: port to the router',
+        fWanIf: 'Router: WAN interface', fWanIp: 'WAN address (CIDR)', fDns: 'DNS server (DHCP)',
+        vlans: 'VLANs', cName: 'Name', cNet: 'Network', cPorts: 'Access ports', addVlan: '+ Add a VLAN',
+        gwHint: "Each VLAN's gateway is the first address of the network. Ports: Fa0/1-10, Gi0/1…",
+        ospfOn: 'Advertise the VLANs and the WAN link in OSPF', fPid: 'Process', fArea: 'Area', fRid: 'Router ID',
+        admin: 'Management', sshOn: 'SSH v2 access only (no Telnet)', fDomain: 'Domain name', fUser: 'Username',
+        presets: 'Examples:', result: 'Output', subRouter: 'Router', subSwitch: 'Switch', copy: 'Copy', dl: 'Download (.txt)',
+        copied: 'Copied to clipboard.', copyFail: 'Copy failed: select the text manually.',
+        ifaces: 'Interfaces', cAddr: 'Address (CIDR)', addIf: '+ Add an interface', sets: 'Rulesets (zones)', cDef: 'Default action', cIn: 'Inbound interface',
+        addSet: '+ Add a ruleset', rules: 'Rules', addRule: '+ Add a rule',
+        rulesHint: 'Rules are evaluated by increasing number; the first match decides. Empty fields = any. Ports: 443, 80,443 or 8000-8080.',
+        options: 'Options', stateOn: 'Stateful firewall (return traffic of established connections accepted)', vyOspfOn: 'OSPF area 0 on all interfaces',
+        none: '— none —', remove: 'Remove', phSrc: 'source (any)', phDst: 'destination (any)', phPort: 'destination port(s) (any)', phN: 'no.',
+        lvErr: 'Error', lvWarn: 'Check', allGood: 'No issue found.', fixFirst: 'Fix the errors to get the configuration.',
+        planTitle: 'Addressing plan', hGw: 'Gateway', hRange: 'Range', yes: 'yes', no: 'no',
+        header: 'Configuration generated by the portfolio generator - review before applying',
+        pPoc: 'PoC Paris site', pSmall: 'Small network (2 VLANs)', pErr: 'Example with errors',
+        pFw: 'PoC firewall', pFwAnnex: 'Original appendix (rule 40)', pFwShadow: 'Example: shadowed rule',
+        m: {
+          hostname: 'Invalid hostname: "{v}" (a letter first, then letters, digits or hyphens).',
+          ifname: 'Invalid interface name: "{v}" (e.g. Gi0/0, Fa0/1).',
+          noVlan: 'Add at least one VLAN.', vlanId: 'Invalid VLAN number: {v} (1 to 4094).', vlanReserved: 'VLAN {v} is reserved (1002 to 1005).',
+          vlan1: 'VLAN 1 is the default VLAN of every port: avoid it for users.', vlanDup: 'VLAN {v} is defined twice.',
+          vlanName: 'Invalid name for VLAN {id}: "{v}" (letters, digits, _ and -, no spaces).',
+          cidr: '{n}: invalid network "{v}" (format a.b.c.d/prefix).', prefixTooLong: '{n}: prefix too long for a host network ({v}).',
+          notNetwork: '{n}: {v} is not the network address, did you mean {s}?', ports: '{n}: invalid port list "{v}" (e.g. Fa0/1-10, Gi0/1).',
+          noPorts: '{n}: no access port assigned.', portDup: 'Port {v} is assigned twice ({a} and {b}).',
+          wanIsTrunk: 'The WAN interface is the same as the interface to the switch.', wanHost: 'WAN: {v} is the network or broadcast address, not a host address.',
+          overlap: 'Networks {a} and {b} overlap.', ospfPid: 'Invalid OSPF process number: {v} (1 to 65535).', ospfArea: 'Invalid OSPF area number: {v}.',
+          rid: 'Invalid router ID: "{v}" (format a.b.c.d).', ospfNoWan: 'OSPF enabled without a WAN link: the router will have no neighbour.',
+          domain: 'Invalid domain name: "{v}" (e.g. site.lab).', user: 'Invalid username: "{v}".',
+          noSsh: 'SSH disabled: no secure remote access is configured.', dns: 'Invalid DNS address: "{v}".', noDns: 'DHCP without a DNS server: hosts will not receive one.',
+          vyIf: 'Invalid VyOS interface name: "{v}" (eth0, eth1…).', vyIfDup: 'Interface {v} is defined twice.',
+          vyIfHost: '{n}: {v} is the network or broadcast address, not a host address.', vyDesc: '{n}: the description must not contain quotes.',
+          vySetName: 'Invalid ruleset name: "{v}" (a letter first, no spaces).', vySetDup: 'Ruleset {v} is defined twice.', vyAction: 'Invalid action: "{v}".',
+          vyBindUnknown: '{s}: interface "{v}" does not exist.', vyRuleSet: 'Rule {r}: unknown ruleset "{s}".', vyRuleNum: '{s}: invalid rule number "{r}" (1 to 999999).',
+          vyRuleDup: '{s}: rule {r} is defined twice.', vyProto: '{s} rule {r}: invalid protocol.', vyAddr: '{s} rule {r}: invalid address "{v}".',
+          vyAddrHost: '{s} rule {r}: {v} is not a network address, reduced to {c}.', vyPort: '{s} rule {r}: invalid port "{v}" (e.g. 443, 80,443, 8000-8080).',
+          vyPortProto: '{s} rule {r}: a port requires protocol tcp, udp or tcp_udp.', vyUnbound: '{s} is not applied to any interface: it filters nothing.',
+          vyBindDup: '{v}: {b} is never reached, {a} is already applied to this interface and ends with its default action.',
+          vyDefAccept: '{s}: default action "accept", everything not denied gets through.', vyAcceptAll: '{s} rule {r}: accepts all traffic.',
+          vyRedundant: '{s} rule {r}: never reached, rule {by} already covers this traffic with the same action (useless rule).',
+          vyShadow: '{s} rule {r}: never reached, shadowed by rule {by}, which covers this traffic with the opposite action.',
+          vyNoFilter: '{v}: traffic entering through this interface is not filtered (no ruleset).', vyNoState: 'Without "state-policy", return traffic must be allowed rule by rule.',
+        },
+      },
+    };
+    let lang = 'fr';
+    try { lang = localStorage.getItem('lang') || ((navigator.language || 'fr').toLowerCase().startsWith('fr') ? 'fr' : 'en'); } catch (e) {}
+    if (!T[lang]) lang = 'fr';
+    const t = (k) => T[lang][k];
+
+    // ---------------- Exemples ----------------
+    const clone = (o) => JSON.parse(JSON.stringify(o));
+    const CISCO_PRESETS = {
+      // D'après configs/R-Paris.cfg du dépôt poc-reseau-teleradiologie (lien vers le switch WAN) ; ports d'exemple.
+      pPoc: { router: 'R-Paris', switch: 'SW-Core-Paris', trunkIf: 'Fa0/0', uplinkIf: 'Fa1/4', wanIf: 'Fa2/0', wanCidr: '10.0.1.1/24', dns: '',
+        vlans: [{ id: 10, name: 'USERS', cidr: '172.16.10.0/24', ports: 'Fa1/5-7', dhcp: false }, { id: 20, name: 'SERVEURS', cidr: '172.16.20.0/24', ports: 'Fa1/8', dhcp: false },
+          { id: 30, name: 'ADMIN', cidr: '172.16.30.0/24', ports: 'Fa1/9', dhcp: false }, { id: 40, name: 'IMAGERIE', cidr: '172.16.40.0/24', ports: 'Fa1/11-12', dhcp: false }],
+        ospf: { enabled: true, pid: '1', area: '0', rid: '1.1.1.1' }, ssh: { enabled: true, domain: 'paris.lab', user: 'admin' } },
+      pSmall: { router: 'R1', switch: 'SW1', trunkIf: 'Gi0/0', uplinkIf: 'Gi0/24', wanIf: 'Gi0/1', wanCidr: '203.0.113.2/30', dns: '192.168.10.2',
+        vlans: [{ id: 10, name: 'POSTES', cidr: '192.168.10.0/24', ports: 'Gi0/1-20', dhcp: true }, { id: 99, name: 'GESTION', cidr: '192.168.99.0/28', ports: 'Gi0/23', dhcp: false }],
+        ospf: { enabled: false, pid: '1', area: '0', rid: '1.1.1.1' }, ssh: { enabled: true, domain: 'bureau.lab', user: 'admin' } },
+      pErr: { router: 'R1', switch: 'SW 1', trunkIf: 'Gi0/0', uplinkIf: 'Gi0/24', wanIf: 'Gi0/1', wanCidr: '192.168.10.200/30', dns: '',
+        vlans: [{ id: 10, name: 'POSTES', cidr: '192.168.10.0/24', ports: 'Gi0/1-12', dhcp: true }, { id: 20, name: 'IMPRIMANTES', cidr: '192.168.20.5/24', ports: 'Gi0/10-14', dhcp: false },
+          { id: 1003, name: 'TEST', cidr: '10.0.0.0/24', ports: '', dhcp: false }],
+        ospf: { enabled: true, pid: '1', area: '0', rid: '1.1.1' }, ssh: { enabled: false, domain: '', user: '' } },
+    };
+    // pFw = configs/vyos.conf du PoC (version corrigée) ; pFwAnnex ajoute la règle 40 de l'annexe d'origine.
+    const FW_POC = { stateful: true, ospf: { enabled: true, rid: '4.4.4.4' },
+      ifaces: [{ name: 'eth1', cidr: '192.168.200.1/30', desc: 'Vers-R-Cloud' }, { name: 'eth2', cidr: '10.0.1.254/24', desc: 'WAN-Sites' },
+        { name: 'eth3', cidr: '192.168.10.1/30', desc: 'Vers-R-Ext-Radio' }, { name: 'eth4', cidr: '192.168.100.1/30', desc: 'Vers-R-DMZ' },
+        { name: 'eth5', cidr: '192.168.20.1/30', desc: 'Vers-R-Ext-Etabli' }],
+      sets: [{ name: 'DMZ-IN', def: 'drop', iface: 'eth4' }, { name: 'RADIO-IN', def: 'drop', iface: 'eth3' }, { name: 'ETABLI-IN', def: 'drop', iface: 'eth5' }],
+      rules: [
+        { set: 'DMZ-IN', n: '5', action: 'accept', proto: 'any', src: '192.168.100.1', dst: '', port: '' },
+        { set: 'DMZ-IN', n: '10', action: 'accept', proto: 'tcp', src: '', dst: '', port: '443' },
+        { set: 'DMZ-IN', n: '20', action: 'accept', proto: 'tcp', src: '', dst: '', port: '104' },
+        { set: 'DMZ-IN', n: '30', action: 'accept', proto: 'icmp', src: '', dst: '', port: '' },
+        { set: 'DMZ-IN', n: '35', action: 'accept', proto: 'any', src: '10.0.1.0/24', dst: '', port: '' },
+        { set: 'DMZ-IN', n: '36', action: 'accept', proto: 'any', src: '172.16.0.0/16', dst: '', port: '' },
+        { set: 'DMZ-IN', n: '37', action: 'accept', proto: 'any', src: '172.17.0.0/16', dst: '', port: '' },
+        { set: 'DMZ-IN', n: '38', action: 'accept', proto: 'any', src: '172.18.0.0/16', dst: '', port: '' },
+        { set: 'RADIO-IN', n: '10', action: 'accept', proto: 'any', src: '192.168.11.0/24', dst: '192.168.101.0/24', port: '' },
+        { set: 'RADIO-IN', n: '20', action: 'accept', proto: 'any', src: '192.168.11.0/24', dst: '192.168.201.0/24', port: '' },
+        { set: 'RADIO-IN', n: '30', action: 'accept', proto: 'icmp', src: '', dst: '', port: '' },
+        { set: 'ETABLI-IN', n: '10', action: 'accept', proto: 'any', src: '192.168.21.0/24', dst: '192.168.101.0/24', port: '' },
+        { set: 'ETABLI-IN', n: '20', action: 'accept', proto: 'icmp', src: '', dst: '', port: '' }] };
+    const FW_ANNEX = clone(FW_POC); FW_ANNEX.sets.push({ name: 'DMZ-OUT', def: 'accept', iface: 'eth4' });
+    const VYOS_PRESETS = {
+      pFw: FW_POC, pFwAnnex: FW_ANNEX,
+      pFwShadow: { stateful: true, ospf: { enabled: false, rid: '' },
+        ifaces: [{ name: 'eth0', cidr: '203.0.113.2/30', desc: 'Internet' }, { name: 'eth1', cidr: '192.168.50.1/24', desc: 'Serveurs' }],
+        sets: [{ name: 'WAN-IN', def: 'drop', iface: 'eth0' }, { name: 'SRV-IN', def: 'drop', iface: 'eth1' }],
+        rules: [
+          { set: 'WAN-IN', n: '10', action: 'accept', proto: 'tcp', src: '', dst: '192.168.50.10', port: '80,443' },
+          { set: 'WAN-IN', n: '20', action: 'drop', proto: 'tcp', src: '198.51.100.0/24', dst: '192.168.50.10', port: '443' },
+          { set: 'WAN-IN', n: '30', action: 'accept', proto: 'tcp', src: '', dst: '192.168.50.0/24', port: '1-65535' },
+          { set: 'WAN-IN', n: '40', action: 'accept', proto: 'tcp', src: '', dst: '192.168.50.20', port: '22' },
+          { set: 'SRV-IN', n: '10', action: 'accept', proto: 'udp', src: '192.168.50.0/24', dst: '', port: '53,123' },
+          { set: 'SRV-IN', n: '20', action: 'accept', proto: 'tcp', src: '192.168.50.0/24', dst: '', port: '443' }] },
+    };
+
+    let cs = clone(CISCO_PRESETS.pPoc);
+    let vs = clone(FW_POC);
+    let sub = 'router';
+    const out = { cisco: null, vyos: null };
+
+    // ---------------- Champs simples (data-k) ----------------
+    const getK = (st, k) => k.split('.').reduce((o, p) => o[p], st);
+    const setK = (st, k, v) => { const p = k.split('.'); const last = p.pop(); p.reduce((o, q) => o[q], st)[last] = v; };
+    function bindFields(view, getState, run) {
+      document.querySelectorAll('#view-' + view + ' [data-k]').forEach((el) => {
+        el.addEventListener(el.type === 'checkbox' ? 'change' : 'input', () => { setK(getState(), el.dataset.k, el.type === 'checkbox' ? el.checked : el.value); run(); });
+      });
+    }
+    function fillFields(view, st) {
+      document.querySelectorAll('#view-' + view + ' [data-k]').forEach((el) => {
+        const v = getK(st, el.dataset.k);
+        if (el.type === 'checkbox') el.checked = !!v; else el.value = v == null ? '' : v;
+      });
+    }
+
+    // ---------------- Listes éditables ----------------
+    const LISTS = {
+      vlans: { view: 'cisco', state: () => cs.vlans, cls: 'l-vlans', fields: [
+        { f: 'id', type: 'text', mode: 'numeric', ph: 'ID' }, { f: 'name', type: 'text', ph: () => t('cName') }, { f: 'cidr', type: 'text', ph: '192.168.10.0/24', cls: 'cidr' },
+        { f: 'ports', type: 'text', ph: 'Fa0/1-10', cls: 'ports' }, { f: 'dhcp', type: 'checkbox', cls: 'cb', label: 'DHCP' }],
+        blank: () => ({ id: String(10 * (cs.vlans.length + 1)), name: 'VLAN' + 10 * (cs.vlans.length + 1), cidr: '', ports: '', dhcp: false }) },
+      ifaces: { view: 'vyos', state: () => vs.ifaces, cls: 'l-ifaces', dep: true, fields: [
+        { f: 'name', type: 'text', ph: 'eth0' }, { f: 'cidr', type: 'text', ph: '192.168.1.1/24' }, { f: 'desc', type: 'text', ph: 'Description', cls: 'desc' }],
+        blank: () => ({ name: 'eth' + vs.ifaces.length, cidr: '', desc: '' }) },
+      sets: { view: 'vyos', state: () => vs.sets, cls: 'l-sets', dep: true, fields: [
+        { f: 'name', type: 'text', ph: 'ZONE-IN', cls: 'name' }, { f: 'def', type: 'select', opts: () => ['drop', 'reject', 'accept'] },
+        { f: 'iface', type: 'select', opts: () => ['', ...vs.ifaces.map((i) => i.name)] }],
+        blank: () => ({ name: 'ZONE' + (vs.sets.length + 1) + '-IN', def: 'drop', iface: '' }) },
+      rules: { view: 'vyos', state: () => vs.rules, cls: 'l-rules', fields: [
+        { f: 'set', type: 'select', cls: 's2', opts: () => vs.sets.map((s) => s.name) }, { f: 'n', type: 'text', mode: 'numeric', cls: 'n', ph: () => t('phN') },
+        { f: 'action', type: 'select', cls: 'act', opts: () => ['accept', 'drop', 'reject'] }, { f: 'proto', type: 'select', cls: 's2', opts: () => ['any', 'tcp', 'udp', 'tcp_udp', 'icmp'] },
+        { f: 'src', type: 'text', cls: 's2 src', ph: () => t('phSrc') }, { f: 'dst', type: 'text', cls: 's2 dst', ph: () => t('phDst') }, { f: 'port', type: 'text', cls: 's2 port', ph: () => t('phPort') }],
+        blank: () => { const s = vs.sets[0] ? vs.sets[0].name : ''; const nums = vs.rules.filter((r) => r.set === s).map((r) => +r.n || 0);
+          return { set: s, n: String((nums.length ? Math.max(...nums) : 0) + 10), action: 'accept', proto: 'tcp', src: '', dst: '', port: '' }; } },
+    };
+    const val = (x) => (typeof x === 'function' ? x() : x);
+    function renderList(key) {
+      const L = LISTS[key], box = $('list-' + key), items = L.state();
+      box.innerHTML = '';
+      items.forEach((item, idx) => {
+        const row = document.createElement('div'); row.className = 'lrow ' + L.cls;
+        for (const fd of L.fields) {
+          let el;
+          if (fd.type === 'select') {
+            el = document.createElement('select');
+            const opts = fd.opts();
+            if (!opts.includes(item[fd.f])) opts.unshift(item[fd.f]);
+            for (const o of opts) { const op = document.createElement('option'); op.value = o; op.textContent = o === '' ? t('none') : o; el.appendChild(op); }
+            el.value = item[fd.f];
+          } else if (fd.type === 'checkbox') {
+            const wrap = document.createElement('span'); wrap.className = 'cb' + (fd.cls ? ' ' + fd.cls : '');
+            const cb = document.createElement('input'); cb.type = 'checkbox'; cb.checked = !!item[fd.f]; cb.setAttribute('aria-label', fd.label);
+            cb.addEventListener('change', () => { item[fd.f] = cb.checked; runAll(L.view); });
+            wrap.appendChild(cb); row.appendChild(wrap); continue;
+          } else {
+            el = document.createElement('input'); el.type = 'text'; el.value = item[fd.f]; el.spellcheck = false; el.autocomplete = 'off';
+            if (fd.mode) el.inputMode = fd.mode;
+            if (fd.ph) el.placeholder = val(fd.ph);
+          }
+          if (fd.cls) el.className = fd.cls;
+          el.setAttribute('aria-label', fd.f);
+          el.addEventListener(fd.type === 'select' ? 'change' : 'input', () => { item[fd.f] = el.value; runAll(L.view); });
+          if (L.dep) el.addEventListener('change', () => { renderList('sets'); renderList('rules'); });
+          row.appendChild(el);
+        }
+        const x = document.createElement('button'); x.type = 'button'; x.className = 'x'; x.textContent = '×'; x.setAttribute('aria-label', t('remove'));
+        x.addEventListener('click', () => { items.splice(idx, 1); renderList(key); if (L.dep) { renderList('sets'); renderList('rules'); } runAll(L.view); });
+        row.appendChild(x);
+        box.appendChild(row);
+      });
+    }
+    document.querySelectorAll('[data-add]').forEach((b) => b.addEventListener('click', () => {
+      const key = b.dataset.add, L = LISTS[key];
+      L.state().push(L.blank()); renderList(key); if (L.dep) { renderList('sets'); renderList('rules'); } runAll(L.view);
+      const rows = $('list-' + key).children; const last = rows[rows.length - 1]; if (last) last.querySelector('input,select').focus();
+    }));
+
+    // ---------------- Rendu du résultat ----------------
+    function fmt(code, p) {
+      return t('m')[code].replace(/\{(\w+)\}/g, (_, k) => '<code>' + esc(p[k] != null ? p[k] : '') + '</code>');
+    }
+    function renderIssues(id, res) {
+      const ul = $(id); ul.innerHTML = '';
+      if (!res.issues.length) { ul.innerHTML = '<li class="good">' + esc(t('allGood')) + '</li>'; return; }
+      const sorted = res.issues.slice().sort((a, b) => (a.lvl === b.lvl ? 0 : a.lvl === 'err' ? -1 : 1));
+      for (const i of sorted) {
+        const li = document.createElement('li'); li.className = i.lvl;
+        li.innerHTML = '<span class="lv">' + esc(i.lvl === 'err' ? t('lvErr') : t('lvWarn')) + '</span><span>' + fmt(i.code, i.p) + '</span>';
+        ul.appendChild(li);
+      }
+    }
+    function highlight(text) {
+      return text.split('\n').map((line) => {
+        const l = esc(line);
+        if (/^\s*[!#]/.test(line)) return '<span class="c">' + l + '</span>';
+        return l.replace(/&lt;MOT_DE_PASSE&gt;/g, '<span class="ph">&lt;MOT_DE_PASSE&gt;</span>')
+                .replace(/^(\S+)/, '<span class="k">$1</span>');
+      }).join('\n');
+    }
+    function runCisco() {
+      const res = G.cisco({ ...cs, header: t('header') });
+      out.cisco = res;
+      renderIssues('issues-cisco', res);
+      document.querySelectorAll('#view-cisco [data-opt]').forEach((d) => (d.dataset.off = !cs[d.dataset.opt].enabled));
+      const plan = $('plan-cisco');
+      if (res.ok) {
+        plan.innerHTML = '<div class="tablewrap"><table><thead><tr><th>VLAN</th><th>' + esc(t('cName')) + '</th><th>' + esc(t('cNet')) + '</th><th>' + esc(t('hGw')) + '</th><th>' + esc(t('hRange')) + '</th><th>DHCP</th></tr></thead><tbody>' +
+          res.plan.map((p) => '<tr><td>' + p.id + '</td><td>' + esc(p.name) + '</td><td>' + p.net + '</td><td>' + p.gw + '</td><td>' + p.first + ' – ' + p.last + '</td><td>' + (p.dhcp ? t('yes') : t('no')) + '</td></tr>').join('') + '</tbody></table></div>';
+        $('code-cisco').innerHTML = highlight(res[sub]);
+      } else {
+        plan.innerHTML = '';
+        $('code-cisco').innerHTML = '<span class="empty">' + esc(t('fixFirst')) + '</span>';
+      }
+      $('msg-cisco').textContent = '';
+    }
+    function runVyos() {
+      const res = G.vyos({ interfaces: vs.ifaces, rulesets: vs.sets, rules: vs.rules, stateful: vs.stateful, ospf: vs.ospf, header: t('header') });
+      out.vyos = res;
+      renderIssues('issues-vyos', res);
+      document.querySelectorAll('#view-vyos [data-opt]').forEach((d) => (d.dataset.off = !vs[d.dataset.opt].enabled));
+      $('code-vyos').innerHTML = res.ok ? highlight(res.text) : '<span class="empty">' + esc(t('fixFirst')) + '</span>';
+      $('msg-vyos').textContent = '';
+    }
+    const runAll = (view) => (view === 'cisco' ? runCisco() : runVyos());
+
+    function currentText(view) {
+      const r = out[view];
+      if (!r || !r.ok) return null;
+      return view === 'cisco' ? r[sub] : r.text;
+    }
+    function fileName(view) {
+      if (view === 'vyos') return 'vyos-config.txt';
+      return ((sub === 'router' ? cs.router : cs.switch) || sub).replace(/[^A-Za-z0-9_-]/g, '_') + '.txt';
+    }
+    document.querySelectorAll('[data-copy]').forEach((b) => b.addEventListener('click', async () => {
+      const v = b.dataset.copy, txt = currentText(v); if (!txt) return;
+      try { await navigator.clipboard.writeText(txt); $('msg-' + v).textContent = t('copied'); }
+      catch (e) { $('msg-' + v).textContent = t('copyFail'); }
+    }));
+    document.querySelectorAll('[data-dl]').forEach((b) => b.addEventListener('click', () => {
+      const v = b.dataset.dl, txt = currentText(v); if (!txt) return;
+      const a = document.createElement('a');
+      a.href = URL.createObjectURL(new Blob([txt.replace(/\n/g, '\r\n')], { type: 'text/plain;charset=utf-8' }));
+      a.download = fileName(v); document.body.appendChild(a); a.click();
+      setTimeout(() => { URL.revokeObjectURL(a.href); a.remove(); }, 0);
+    }));
+    document.querySelectorAll('#sub-cisco .subtab').forEach((b) => b.addEventListener('click', () => {
+      sub = b.dataset.sub;
+      document.querySelectorAll('#sub-cisco .subtab').forEach((x) => x.setAttribute('aria-selected', x === b));
+      runCisco();
+    }));
+
+    // ---------------- Exemples, onglets, langue ----------------
+    function loadCisco(p) { cs = clone(p); fillFields('cisco', cs); renderList('vlans'); runCisco(); }
+    function loadVyos(p) { vs = clone(p); fillFields('vyos', vs); renderList('ifaces'); renderList('sets'); renderList('rules'); runVyos(); }
+    function renderPresets() {
+      [['presets-cisco', CISCO_PRESETS, loadCisco], ['presets-vyos', VYOS_PRESETS, loadVyos]].forEach(([id, P, load]) => {
+        const box = $(id); box.innerHTML = '';
+        Object.entries(P).forEach(([k, p]) => {
+          const b = document.createElement('button'); b.type = 'button'; b.className = 'btn'; b.textContent = t(k);
+          b.addEventListener('click', () => load(p)); box.appendChild(b);
+        });
+      });
+    }
+    bindFields('cisco', () => cs, runCisco);
+    bindFields('vyos', () => vs, runVyos);
+    document.querySelectorAll('.tab').forEach((b) => b.addEventListener('click', () => {
+      document.querySelectorAll('.tab').forEach((x) => x.setAttribute('aria-selected', x === b));
+      document.querySelectorAll('.view').forEach((v) => (v.hidden = v.id !== 'view-' + b.dataset.view));
+    }));
+    function setLang(l) {
+      lang = l; document.documentElement.lang = l;
+      document.querySelectorAll('[data-t]').forEach((el) => { const v = T[l][el.dataset.t]; if (typeof v === 'string') el.innerHTML = v; });
+      document.title = l === 'fr' ? 'Générateur de configuration' : 'Configuration generator';
+      document.querySelectorAll('.lang button').forEach((b) => b.setAttribute('aria-pressed', b.dataset.lang === l));
+      try { localStorage.setItem('lang', l); } catch (e) {}
+      renderPresets(); renderList('vlans'); renderList('ifaces'); renderList('sets'); renderList('rules'); runCisco(); runVyos();
+    }
+    document.querySelectorAll('.lang button').forEach((b) => b.addEventListener('click', () => setLang(b.dataset.lang)));
+    fillFields('cisco', cs); fillFields('vyos', vs);
+    setLang(lang);
+  })();
+  </script>
+</body>
+</html>
