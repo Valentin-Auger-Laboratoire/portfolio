@@ -1,0 +1,454 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Calculateur d'engrenages</title>
+  <meta name="description" content="Calculateur de trains d'engrenages : trains simples à plusieurs étages et train épicycloïdal (relation de Willis), rapport, sens, vitesses, couples et conditions de montage, avec animation.">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --bg: #0c0c0d; --panel: #161618; --border: #262628; --border-hi: #3a3a3d;
+      --text: #f2f2f2; --dim: #9b9b9f; --muted: #6c6c70; --accent: #c8102e; --line: #c9c9cc; --warn: #e0a458;
+      --g1: #c9c9cc; --g2: #8a8a90; --g3: #c8102e;
+      --mono: "JetBrains Mono", ui-monospace, monospace; --sans: "Inter", system-ui, sans-serif;
+      color-scheme: dark;
+    }
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    body { background: var(--bg); color: var(--text); font-family: var(--sans); line-height: 1.55; -webkit-font-smoothing: antialiased; }
+    .wrap { max-width: 1240px; margin: 0 auto; padding: 24px max(16px, env(safe-area-inset-right, 0px)) 48px max(16px, env(safe-area-inset-left, 0px)); }
+    .top { display: flex; justify-content: space-between; align-items: center; gap: 12px; flex-wrap: wrap; margin-bottom: 24px; }
+    .back { font-size: 0.9rem; color: var(--dim); text-decoration: none; }
+    .back:hover { color: var(--accent); }
+    .lang { display: flex; border: 1px solid var(--border-hi); }
+    .lang button { font: 500 0.78rem var(--mono); letter-spacing: .05em; background: none; color: var(--dim); border: 0; padding: 5px 10px; cursor: pointer; }
+    .lang button + button { border-left: 1px solid var(--border-hi); }
+    .lang button[aria-pressed="true"] { background: var(--text); color: var(--bg); }
+    .eyebrow { font: 500 0.82rem var(--mono); color: var(--accent); letter-spacing: .04em; }
+    h1 { font-size: clamp(1.6rem, 3.4vw, 2.3rem); line-height: 1.15; margin: 6px 0 10px; text-wrap: balance; }
+    .intro { color: var(--dim); max-width: 80ch; }
+    .tabs { display: flex; gap: 8px; margin: 26px 0 16px; flex-wrap: wrap; }
+    .tab { font: 0.85rem var(--mono); background: none; color: var(--dim); border: 1px solid var(--border); border-radius: 999px; padding: 6px 14px; cursor: pointer; }
+    .tab[aria-selected="true"] { color: var(--accent); border-color: var(--accent); }
+    .view[hidden], [hidden] { display: none !important; }
+    .grid { display: grid; grid-template-columns: 380px minmax(0, 1fr); gap: 20px; align-items: start; }
+    .panel { background: var(--panel); border: 1px solid var(--border); border-radius: 8px; padding: 18px; min-width: 0; }
+    h2 { font: 600 0.78rem var(--mono); letter-spacing: .12em; text-transform: uppercase; color: var(--dim); margin-bottom: 12px; }
+    h3 { font: 600 0.74rem var(--mono); letter-spacing: .08em; text-transform: uppercase; color: var(--dim); margin: 18px 0 10px; padding-top: 14px; border-top: 1px solid var(--border); }
+    .fields { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px 12px; }
+    .fields.three { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+    label.f { display: grid; gap: 5px; font: 500 0.74rem var(--mono); color: var(--dim); min-width: 0; }
+    .inp { display: flex; align-items: center; min-width: 0; border: 1px solid var(--border-hi); border-radius: 6px; background: var(--bg); }
+    .inp input, .inp select { flex: 1; width: 100%; min-width: 0; font: 0.9rem var(--mono); background: none; color: var(--text); border: 0; padding: 8px 9px; }
+    .inp select option { background: var(--bg); }
+    .inp span { font: 0.74rem var(--mono); color: var(--muted); padding-right: 9px; white-space: nowrap; }
+    .inp:focus-within { outline: 2px solid var(--accent); outline-offset: 2px; }
+    button:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+    .btn { font: 500 0.85rem var(--sans); background: none; color: var(--text); border: 1px solid var(--border-hi); border-radius: 6px; padding: 7px 12px; cursor: pointer; }
+    .btn:hover { border-color: var(--accent); color: var(--accent); }
+    .row { display: flex; gap: 8px; flex-wrap: wrap; align-items: center; margin-top: 10px; }
+    .hint { font-size: 0.8rem; color: var(--dim); margin-top: 10px; }
+    .presets { margin-top: 18px; padding-top: 14px; border-top: 1px solid var(--border); }
+    .presets p { font: 0.75rem var(--mono); color: var(--dim); margin-bottom: 8px; }
+    .stages { display: grid; gap: 8px; }
+    .stage { display: grid; grid-template-columns: 26px repeat(3, minmax(0, 1fr)) 34px; gap: 6px; align-items: center; }
+    .stage b { font: 0.74rem var(--mono); color: var(--muted); }
+    .stage input { width: 100%; min-width: 0; font: 0.86rem var(--mono); background: var(--bg); color: var(--text); border: 1px solid var(--border-hi); border-radius: 6px; padding: 7px 8px; }
+    .stage input:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+    .stage .x { background: none; border: 1px solid var(--border); border-radius: 6px; color: var(--dim); cursor: pointer; height: 34px; }
+    .stage .x:hover { color: var(--accent); border-color: var(--accent); }
+    .stage-h { display: grid; grid-template-columns: 26px repeat(3, minmax(0, 1fr)) 34px; gap: 6px; font: 0.7rem var(--mono); color: var(--dim); margin-bottom: 4px; }
+    .kpis { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 10px; }
+    .kpi { border: 1px solid var(--border); border-radius: 6px; padding: 10px 12px; min-width: 0; }
+    .kpi dt { font: 0.72rem var(--mono); color: var(--dim); }
+    .kpi dd { font: 600 1.25rem var(--sans); font-variant-numeric: tabular-nums; margin-top: 2px; overflow-wrap: anywhere; }
+    .kpi dd small { font: 400 0.78rem var(--mono); color: var(--dim); margin-left: 3px; }
+    .kpi.main dd { color: var(--accent); }
+    .issues { list-style: none; display: grid; gap: 6px; margin-top: 14px; }
+    .issues li { font-size: 0.86rem; display: grid; grid-template-columns: auto minmax(0, 1fr); gap: 10px; align-items: baseline; padding: 7px 10px; border: 1px solid var(--border); border-radius: 6px; }
+    .issues .lv { font: 600 0.68rem var(--mono); letter-spacing: .06em; text-transform: uppercase; padding: 1px 6px; border-radius: 3px; border: 1px solid var(--warn); color: var(--warn); }
+    .issues .err .lv { background: var(--accent); border-color: var(--accent); color: #fff; }
+    .issues .good { display: block; color: #8fd18f; border-color: #2e4a2e; }
+    .scene { width: 100%; height: auto; display: block; margin-top: 14px; }
+    .scene .gear { stroke-width: 1.2; stroke-linejoin: round; }
+    .scene .hub { fill: var(--bg); stroke: var(--text); stroke-width: 1.5; }
+    .scene .mark { stroke: var(--bg); stroke-width: 2.5; stroke-linecap: round; }
+    .scene .carrier { stroke: var(--accent); stroke-width: 5; stroke-linecap: round; opacity: .85; }
+    .scene text { font: 11px var(--mono); fill: var(--dim); }
+    .anim { display: flex; gap: 12px; align-items: center; margin-top: 10px; font: 0.8rem var(--mono); color: var(--dim); flex-wrap: wrap; }
+    .tablewrap { overflow-x: auto; margin-top: 14px; }
+    table { width: 100%; border-collapse: collapse; font: 0.8rem var(--mono); font-variant-numeric: tabular-nums; }
+    th, td { text-align: left; padding: 6px 8px; border-bottom: 1px solid var(--border); white-space: nowrap; }
+    th { color: var(--dim); font-weight: 500; }
+    .legend { font: 0.74rem var(--mono); color: var(--dim); margin-top: 8px; display: flex; gap: 14px; flex-wrap: wrap; }
+    .legend i { display: inline-block; width: 10px; height: 10px; border-radius: 2px; vertical-align: -1px; margin-right: 6px; }
+    .note { font-size: 0.82rem; color: var(--dim); margin-top: 14px; }
+    .note p + p { margin-top: 6px; }
+    @media (max-width: 1000px) { .grid { grid-template-columns: 1fr; } }
+    @media (max-width: 700px) { .kpis { grid-template-columns: repeat(2, minmax(0, 1fr)); } .fields.three { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+  </style>
+</head>
+<body>
+  <div class="wrap">
+    <div class="top">
+      <a class="back" href="../../index.html#projets" data-t="back">← Retour au portfolio</a>
+      <div class="lang" role="group" aria-label="Langue / Language">
+        <button type="button" data-lang="fr" aria-pressed="true">FR</button>
+        <button type="button" data-lang="en" aria-pressed="false">EN</button>
+      </div>
+    </div>
+    <p class="eyebrow" data-t="eyebrow">Outil mécanique · transmission de puissance</p>
+    <h1 data-t="title">Calculateur de trains d'engrenages</h1>
+    <p class="intro" data-t="intro">Rapport de réduction, sens de rotation, vitesses, couples et entraxes d'un train d'engrenages simple à plusieurs étages, ou d'un train épicycloïdal avec la relation de Willis et les conditions de montage. Les roues tournent à l'écran dans le bon rapport.</p>
+
+    <div class="tabs" role="tablist">
+      <button type="button" class="tab" role="tab" data-view="simple" aria-selected="true" data-t="tabSimple">Train simple</button>
+      <button type="button" class="tab" role="tab" data-view="epi" aria-selected="false" data-t="tabEpi">Train épicycloïdal</button>
+    </div>
+
+    <!-- ===== Train simple ===== -->
+    <section class="view" id="view-simple">
+      <div class="grid">
+        <div class="panel">
+          <h2 data-t="stagesT">Étages</h2>
+          <div class="stage-h"><span></span><span data-t="cZ1">Z menante</span><span data-t="cZ2">Z menée</span><span data-t="cM">Module (mm)</span><span></span></div>
+          <div class="stages" id="stages"></div>
+          <div class="row"><button type="button" class="btn" id="addStage" data-t="addStage">+ Ajouter un étage</button></div>
+          <p class="hint" data-t="stageHint">La roue menée d'un étage et la roue menante de l'étage suivant sont montées sur le même arbre.</p>
+          <h3 data-t="inT">Entrée</h3>
+          <div class="fields">
+            <label class="f"><span data-t="fN">Vitesse</span><span class="inp"><input type="number" id="s-nIn" min="1" step="10"><span>tr/min</span></span></label>
+            <label class="f"><span data-t="fC">Couple</span><span class="inp"><input type="number" id="s-cIn" min="0" step="0.1"><span>N·m</span></span></label>
+            <label class="f"><span data-t="fEta">Rendement / étage</span><span class="inp"><input type="number" id="s-eta" min="0.5" max="1" step="0.01"></span></label>
+          </div>
+          <div class="presets"><p data-t="presets">Exemples :</p><div class="row" style="margin-top:0" id="presetsS"></div></div>
+        </div>
+        <div class="panel" aria-live="polite">
+          <h2 data-t="result">Résultat</h2>
+          <dl class="kpis" id="kpisS"></dl>
+          <ul class="issues" id="issuesS"></ul>
+          <svg class="scene" id="sceneS" viewBox="0 0 700 300" role="img" aria-label="Engrenages"></svg>
+          <div class="anim"><button type="button" class="btn" data-play data-t="pause">Pause</button><span data-t="animNote">Animation ralentie : l'arbre d'entrée fait un tour en 6 s.</span></div>
+          <div class="tablewrap" id="tableS"></div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ===== Épicycloïdal ===== -->
+    <section class="view" id="view-epi" hidden>
+      <div class="grid">
+        <div class="panel">
+          <h2 data-t="teethT">Dentures</h2>
+          <div class="fields">
+            <label class="f"><span data-t="fZs">Planétaire Zs</span><span class="inp"><input type="number" id="e-zs" min="6" step="1"></span></label>
+            <label class="f"><span data-t="fZp">Satellites Zp</span><span class="inp"><input type="number" id="e-zp" min="6" step="1"></span></label>
+            <label class="f"><span data-t="fZr">Couronne Zr</span><span class="inp"><input type="number" id="e-zr" min="12" step="1"></span></label>
+            <label class="f"><span data-t="fNs">Nombre de satellites</span><span class="inp"><input type="number" id="e-n" min="1" max="8" step="1"></span></label>
+            <label class="f"><span data-t="cM">Module (mm)</span><span class="inp"><input type="number" id="e-m" min="0.1" step="0.25"></span></label>
+            <label class="f"><span data-t="fN">Vitesse</span><span class="inp"><input type="number" id="e-nIn" min="1" step="10"><span>tr/min</span></span></label>
+          </div>
+          <h3 data-t="rolesT">Fonctionnement</h3>
+          <div class="fields">
+            <label class="f"><span data-t="fFixed">Élément fixe</span><span class="inp"><select id="e-fixed"></select></span></label>
+            <label class="f"><span data-t="fInput">Entrée</span><span class="inp"><select id="e-input"></select></span></label>
+          </div>
+          <p class="hint" id="outHint"></p>
+          <div class="presets"><p data-t="presets">Exemples :</p><div class="row" style="margin-top:0" id="presetsE"></div></div>
+        </div>
+        <div class="panel" aria-live="polite">
+          <h2 data-t="result">Résultat</h2>
+          <dl class="kpis" id="kpisE"></dl>
+          <ul class="issues" id="issuesE"></ul>
+          <svg class="scene" id="sceneE" viewBox="0 0 420 420" role="img" aria-label="Train épicycloïdal" style="max-width:460px;margin-inline:auto"></svg>
+          <div class="legend"><span><i style="background:var(--g1)"></i><span data-t="sun">planétaire</span></span><span><i style="background:var(--g2)"></i><span data-t="planets">satellites</span></span><span><i style="background:#3a3a3e"></i><span data-t="ring">couronne</span></span><span><i style="background:var(--accent)"></i><span data-t="carrier">porte-satellites</span></span></div>
+          <div class="anim"><button type="button" class="btn" data-play data-t="pause">Pause</button><span data-t="animNote">Animation ralentie : l'arbre d'entrée fait un tour en 6 s.</span></div>
+          <div class="note" data-t="noteEpi"></div>
+        </div>
+      </div>
+    </section>
+  </div>
+
+  <script src="engrenages.js"></script>
+  <script>
+  (() => {
+    'use strict';
+    const E = window.Engrenages, $ = (id) => document.getElementById(id);
+    const esc = (s) => String(s).replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+    const T = {
+      fr: {
+        back: '← Retour au portfolio', eyebrow: 'Outil mécanique · transmission de puissance', title: "Calculateur de trains d'engrenages",
+        intro: "Rapport de réduction, sens de rotation, vitesses, couples et entraxes d'un train d'engrenages simple à plusieurs étages, ou d'un train épicycloïdal avec la relation de Willis et les conditions de montage. Les roues tournent à l'écran dans le bon rapport.",
+        tabSimple: 'Train simple', tabEpi: 'Train épicycloïdal', stagesT: 'Étages', cZ1: 'Z menante', cZ2: 'Z menée', cM: 'Module (mm)', addStage: '+ Ajouter un étage',
+        stageHint: "La roue menée d'un étage et la roue menante de l'étage suivant sont montées sur le même arbre.", inT: 'Entrée', fN: 'Vitesse', fC: 'Couple', fEta: 'Rendement / étage',
+        presets: 'Exemples :', result: 'Résultat', pause: 'Pause', play: 'Lecture', animNote: "Animation ralentie : l'arbre d'entrée fait un tour en 6 s.",
+        kRatio: 'Rapport ωs / ωe', kOut: 'Vitesse de sortie', kCout: 'Couple de sortie', kSense: 'Sens de sortie', same: 'même sens', opposite: 'sens inverse',
+        hStage: 'Étage', hI: 'Rapport', hA: 'Entraxe', hD1: 'Ø primitif menante', hD2: 'Ø primitif menée', hN: 'Vitesse arbre mené',
+        pReduc: 'Réducteur 2 étages', pFast: 'Multiplicateur', pThree: 'Réducteur 3 étages',
+        teethT: 'Dentures', fZs: 'Planétaire Zs', fZp: 'Satellites Zp', fZr: 'Couronne Zr', fNs: 'Nombre de satellites', rolesT: 'Fonctionnement', fFixed: 'Élément fixe', fInput: 'Entrée',
+        el: { s: 'Planétaire', c: 'Porte-satellites', r: 'Couronne' }, outIs: 'Sortie : {o}.',
+        kSat: 'Satellite / porte-satellites', kWillis: 'Raison de Willis', sun: 'planétaire', planets: 'satellites', ring: 'couronne', carrier: 'porte-satellites',
+        pEpiA: 'Couronne fixe (réducteur)', pEpiB: 'Porte-satellites fixe (inverseur)', pEpiC: 'Planétaire fixe',
+        noteEpi: "<p>Relation de Willis : (ωs − ωc) / (ωr − ωc) = − Zr / Zs. Conditions vérifiées : coaxialité Zr = Zs + 2·Zp, montage (Zs + Zr) divisible par le nombre de satellites, voisinage (les satellites ne se touchent pas).</p><p>Denture droite, sans déport : en dessous de 17 dents (angle de pression 20°), il y a interférence de taillage.</p>",
+        allGood: 'Aucun problème détecté.', lvErr: 'Erreur', lvWarn: 'À vérifier', perMin: 'tr/min',
+        m: {
+          noStage: 'Ajoutez au moins un étage.', z: 'Étage {a} : nombre de dents invalide (entier positif).', m: 'Étage {a} : module invalide.',
+          nIn: "Vitesse d'entrée invalide.", cIn: "Couple d'entrée invalide.", eta: 'Rendement invalide (entre 0 et 1).',
+          under: '{a} : {b} dents, en dessous de 17 il y a interférence de taillage (denture sans déport, 20°).',
+          bigStep: 'Étage {a} : rapport de {b} sur un seul étage, au-delà de 7 il vaut mieux ajouter un étage.',
+          zEpi: 'Nombre de dents invalide.', nSat: 'Nombre de satellites invalide.', roles: "L'élément fixe et l'entrée doivent être différents.",
+          coax: 'Coaxialité : il faut Zr = Zs + 2·Zp = {a}.', mount: 'Montage impossible : Zs + Zr = {a} n\'est pas divisible par {b} satellites.',
+          neighbour: 'Voisinage : {a} satellites de cette taille se chevauchent, réduisez leur nombre ou leur taille.',
+          internal: 'Couronne et satellites trop proches en nombre de dents : risque d\'interférence de la denture intérieure.',
+        },
+      },
+      en: {
+        back: '← Back to portfolio', eyebrow: 'Mechanical tool · power transmission', title: 'Gear train calculator',
+        intro: 'Reduction ratio, direction of rotation, speeds, torques and centre distances of a multi-stage simple gear train, or of an epicyclic gear train with the Willis equation and assembly conditions. The gears rotate on screen at the right ratio.',
+        tabSimple: 'Simple train', tabEpi: 'Epicyclic train', stagesT: 'Stages', cZ1: 'Driver Z', cZ2: 'Driven Z', cM: 'Module (mm)', addStage: '+ Add a stage',
+        stageHint: 'The driven gear of one stage and the driver of the next stage are mounted on the same shaft.', inT: 'Input', fN: 'Speed', fC: 'Torque', fEta: 'Efficiency / stage',
+        presets: 'Examples:', result: 'Output', pause: 'Pause', play: 'Play', animNote: 'Slowed-down animation: the input shaft turns once every 6 s.',
+        kRatio: 'Ratio ωout / ωin', kOut: 'Output speed', kCout: 'Output torque', kSense: 'Output direction', same: 'same direction', opposite: 'reversed',
+        hStage: 'Stage', hI: 'Ratio', hA: 'Centre distance', hD1: 'Driver pitch Ø', hD2: 'Driven pitch Ø', hN: 'Driven shaft speed',
+        pReduc: '2-stage reducer', pFast: 'Speed increaser', pThree: '3-stage reducer',
+        teethT: 'Teeth', fZs: 'Sun Zs', fZp: 'Planets Zp', fZr: 'Ring Zr', fNs: 'Number of planets', rolesT: 'Operation', fFixed: 'Fixed member', fInput: 'Input',
+        el: { s: 'Sun', c: 'Carrier', r: 'Ring' }, outIs: 'Output: {o}.',
+        kSat: 'Planet / carrier', kWillis: 'Willis ratio', sun: 'sun', planets: 'planets', ring: 'ring', carrier: 'carrier',
+        pEpiA: 'Fixed ring (reducer)', pEpiB: 'Fixed carrier (reverser)', pEpiC: 'Fixed sun',
+        noteEpi: '<p>Willis equation: (ωs − ωc) / (ωr − ωc) = − Zr / Zs. Checked conditions: coaxiality Zr = Zs + 2·Zp, assembly (Zs + Zr) divisible by the number of planets, neighbouring (planets do not touch).</p><p>Spur gears without profile shift: below 17 teeth (20° pressure angle), undercut occurs.</p>',
+        allGood: 'No issue found.', lvErr: 'Error', lvWarn: 'Check', perMin: 'rpm',
+        m: {
+          noStage: 'Add at least one stage.', z: 'Stage {a}: invalid number of teeth (positive integer).', m: 'Stage {a}: invalid module.',
+          nIn: 'Invalid input speed.', cIn: 'Invalid input torque.', eta: 'Invalid efficiency (between 0 and 1).',
+          under: '{a}: {b} teeth, below 17 undercut occurs (no profile shift, 20°).',
+          bigStep: 'Stage {a}: ratio of {b} on a single stage, above 7 another stage is better.',
+          zEpi: 'Invalid number of teeth.', nSat: 'Invalid number of planets.', roles: 'Fixed member and input must be different.',
+          coax: 'Coaxiality: Zr must equal Zs + 2·Zp = {a}.', mount: 'Cannot assemble: Zs + Zr = {a} is not divisible by {b} planets.',
+          neighbour: 'Neighbouring: {a} planets of this size overlap, reduce their number or size.',
+          internal: 'Ring and planets too close in tooth count: risk of internal gear interference.',
+        },
+      },
+    };
+    let lang = 'fr';
+    try { lang = localStorage.getItem('lang') || ((navigator.language || 'fr').toLowerCase().startsWith('fr') ? 'fr' : 'en'); } catch (e) {}
+    if (!T[lang]) lang = 'fr';
+    const t = (k) => T[lang][k];
+    const num = (v, d) => v.toLocaleString(lang === 'fr' ? 'fr-FR' : 'en-GB', { maximumFractionDigits: d, minimumFractionDigits: 0 });
+    const fmtRatio = (r) => { const a = Math.abs(r); return a >= 1 ? num(r, 3) : '1 / ' + num(1 / a, 2) + (r < 0 ? ' (−)' : ''); };
+
+    // ---------- Dessin d'une roue dentée ----------
+    // Dents trapézoïdales : rayon primitif R = m·z/2, tête R + m, pied R − 1,25·m
+    function gearPath(cx, cy, z, m, s, rot, internal) {
+      const R = (m * z) / 2 * s, ra = internal ? R - m * s : R + m * s, rf = internal ? R + 1.25 * m * s : R - 1.25 * m * s;
+      const step = (2 * Math.PI) / z;
+      let d = '';
+      for (let j = 0; j < z; j++) {
+        const c = rot + j * step;
+        const pts = [[rf, c - step * 0.5], [rf, c - step * 0.27], [ra, c - step * 0.15], [ra, c + step * 0.15], [rf, c + step * 0.27]];
+        pts.forEach(([r, a], k) => { d += (j === 0 && k === 0 ? 'M' : 'L') + (cx + r * Math.cos(a)).toFixed(2) + ' ' + (cy + r * Math.sin(a)).toFixed(2); });
+      }
+      return d + 'Z';
+    }
+    function gearSvg(cx, cy, z, m, s, rot, fill, opts) {
+      const o = opts || {};
+      let g = '<path class="gear" d="' + gearPath(cx, cy, z, m, s, rot, false) + '" fill="' + fill + '" stroke="#0c0c0d"/>';
+      const hub = Math.max(4, Math.min((m * z) / 2 * s * 0.25, 14));
+      g += '<circle class="hub" cx="' + cx + '" cy="' + cy + '" r="' + hub + '"/>';
+      const rr = (m * z) / 2 * s * 0.7;
+      if (!o.noMark) g += '<line class="mark" x1="' + (cx + hub * Math.cos(rot)) + '" y1="' + (cy + hub * Math.sin(rot)) + '" x2="' + (cx + rr * Math.cos(rot)) + '" y2="' + (cy + rr * Math.sin(rot)) + '"/>';
+      return g;
+    }
+
+    // ================= Train simple =================
+    let stages = [];
+    const SP = {
+      pReduc: { stages: [{ z1: 20, z2: 60, m: 2 }, { z1: 18, z2: 54, m: 2.5 }], nIn: 1500, cIn: 10, eta: 0.98 },
+      pFast: { stages: [{ z1: 72, z2: 24, m: 1.5 }], nIn: 300, cIn: 30, eta: 0.98 },
+      pThree: { stages: [{ z1: 17, z2: 51, m: 1 }, { z1: 18, z2: 54, m: 1.5 }, { z1: 20, z2: 50, m: 2 }], nIn: 3000, cIn: 2, eta: 0.97 },
+    };
+    let resS = null, geoS = null;
+    function renderStages() {
+      const box = $('stages'); box.innerHTML = '';
+      stages.forEach((s, k) => {
+        const row = document.createElement('div'); row.className = 'stage';
+        row.innerHTML = '<b>' + (k + 1) + '</b>';
+        ['z1', 'z2', 'm'].forEach((f) => {
+          const inp = document.createElement('input'); inp.type = 'number'; inp.value = s[f]; inp.step = f === 'm' ? '0.25' : '1'; inp.min = f === 'm' ? '0.1' : '6';
+          inp.setAttribute('aria-label', f + ' ' + (k + 1));
+          inp.addEventListener('input', () => { s[f] = parseFloat(inp.value.replace(',', '.')); runS(); });
+          row.appendChild(inp);
+        });
+        const x = document.createElement('button'); x.type = 'button'; x.className = 'x'; x.textContent = '×'; x.setAttribute('aria-label', '×');
+        x.addEventListener('click', () => { stages.splice(k, 1); renderStages(); runS(); });
+        row.appendChild(x); box.appendChild(row);
+      });
+    }
+    function issuesHtml(ul, issues) {
+      ul.innerHTML = '';
+      if (!issues.length) { ul.innerHTML = '<li class="good">' + esc(t('allGood')) + '</li>'; return; }
+      issues.forEach((i) => {
+        const li = document.createElement('li'); li.className = i.lvl;
+        const v = Array.isArray(i.v) ? i.v : [i.v];
+        let a0 = v[0];
+        if (i.code === 'under') a0 = typeof a0 === 'number' ? t('hStage') + ' ' + a0 : a0 === 'S' ? t('el').s : t('fZp').replace(' Zp', '');
+        const txt = t('m')[i.code].replace('{a}', a0 != null ? (typeof a0 === 'number' ? num(a0, 1) : a0) : '').replace('{b}', v[1] != null ? num(v[1], 1) : '');
+        li.innerHTML = '<span class="lv">' + esc(i.lvl === 'err' ? t('lvErr') : t('lvWarn')) + '</span><span>' + esc(txt) + '</span>';
+        ul.appendChild(li);
+      });
+    }
+    const kpi = (k, v, u, main) => '<div class="kpi' + (main ? ' main' : '') + '"><dt>' + esc(t(k)) + '</dt><dd>' + v + (u ? '<small>' + u + '</small>' : '') + '</dd></div>';
+    function runS() {
+      const p = { stages: stages.map((s) => ({ ...s })), nIn: parseFloat($('s-nIn').value), cIn: parseFloat($('s-cIn').value), eta: parseFloat($('s-eta').value) };
+      resS = E.simpleTrain(p);
+      issuesHtml($('issuesS'), resS.issues || []);
+      if (!resS.ok) { resS = null; $('kpisS').innerHTML = ''; $('sceneS').innerHTML = ''; $('tableS').innerHTML = ''; return; }
+      $('kpisS').innerHTML = kpi('kRatio', fmtRatio(resS.ratio), '', true) + kpi('kOut', num(Math.abs(resS.nOut), 1), t('perMin')) + kpi('kCout', num(resS.cOut, 2), 'N·m') + kpi('kSense', resS.sign > 0 ? t('same') : t('opposite'), '');
+      let n = p.nIn;
+      $('tableS').innerHTML = '<table><thead><tr><th>' + t('hStage') + '</th><th>Z</th><th>' + t('hI') + '</th><th>' + t('hA') + '</th><th>' + t('hD1') + '</th><th>' + t('hD2') + '</th><th>' + t('hN') + '</th></tr></thead><tbody>' +
+        resS.stages.map((s, k) => { n *= s.i; return '<tr><td>' + (k + 1) + '</td><td>' + s.z1 + ' / ' + s.z2 + '</td><td>' + fmtRatio(s.i) + '</td><td>' + num(s.a, 2) + ' mm</td><td>' + num(s.d1, 1) + ' mm</td><td>' + num(s.d2, 1) + ' mm</td><td>' + num(n, 1) + ' ' + t('perMin') + '</td></tr>'; }).join('') + '</tbody></table>';
+      // géométrie : arbres alignés horizontalement, en zigzag vertical pour les trains longs
+      const shafts = [{ x: 0, y: 0 }];
+      resS.stages.forEach((s, k) => { const ang = k % 2 === 0 ? 0.35 : -0.35; const prev = shafts[k]; shafts.push({ x: prev.x + s.a * Math.cos(ang), y: prev.y + s.a * Math.sin(ang) }); });
+      let x0 = Infinity, x1 = -Infinity, y0 = Infinity, y1 = -Infinity;
+      resS.stages.forEach((s, k) => {
+        [[shafts[k], s.d1 / 2 + s.m], [shafts[k + 1], s.d2 / 2 + s.m]].forEach(([c, r]) => { x0 = Math.min(x0, c.x - r); x1 = Math.max(x1, c.x + r); y0 = Math.min(y0, c.y - r); y1 = Math.max(y1, c.y + r); });
+      });
+      const W = 700, H = 300, pad = 14, sc = Math.min((W - 2 * pad) / (x1 - x0), (H - 2 * pad) / (y1 - y0));
+      geoS = { shafts, sc, ox: pad - x0 * sc + ((W - 2 * pad) - (x1 - x0) * sc) / 2, oy: pad - y0 * sc + ((H - 2 * pad) - (y1 - y0) * sc) / 2 };
+      drawS();
+    }
+    function drawS() {
+      if (!resS) return;
+      const { shafts, sc, ox, oy } = geoS, P = (c) => [ox + c.x * sc, oy + c.y * sc];
+      const fills = ['var(--g1)', 'var(--g2)'];
+      // angles : roue menante k sur l'arbre k, roue menée k sur l'arbre k+1
+      let thDriver = angleIn;   // angle absolu de la roue menante du 1er étage
+      const parts = [];
+      resS.stages.forEach((s, k) => {
+        const a = shafts[k], b = shafts[k + 1], dir = Math.atan2(b.y - a.y, b.x - a.x);
+        // dans le repère tourné de dir : θ2 = −(z1/z2)(θ1 − dir) + π + π/z2 + dir
+        const thDriven = -(s.z1 / s.z2) * (thDriver - dir) + Math.PI + Math.PI / s.z2 + dir;
+        parts.push({ c: a, z: s.z1, m: s.m, th: thDriver, fill: k === 0 ? 'var(--g1)' : '#5a5a60' });
+        parts.push({ c: b, z: s.z2, m: s.m, th: thDriven, fill: fills[(k + 1) % 2] });
+        thDriver = thDriven;   // la roue menante suivante tourne avec l'arbre
+      });
+      // grandes roues dessous, petites dessus sur un même arbre
+      parts.sort((u, v) => v.z * v.m - u.z * u.m);
+      let g = '';
+      parts.forEach((q) => { const [x, y] = P(q.c); g += gearSvg(x, y, q.z, q.m, sc, q.th, q.fill); });
+      const [ix, iy] = P(shafts[0]), [ex, ey] = P(shafts[shafts.length - 1]);
+      g += '<text x="' + ix + '" y="' + (iy + 4) + '" text-anchor="middle" style="fill:var(--accent)">E</text>';
+      g += '<text x="' + ex + '" y="' + (ey + 4) + '" text-anchor="middle" style="fill:var(--accent)">S</text>';
+      $('sceneS').innerHTML = g;
+    }
+
+    // ================= Épicycloïdal =================
+    const EP = {
+      pEpiA: { zs: 24, zp: 24, zr: 72, n: 3, m: 1, nIn: 1000, fixed: 'r', input: 's' },
+      pEpiB: { zs: 36, zp: 18, zr: 72, n: 3, m: 1, nIn: 1000, fixed: 'c', input: 's' },
+      pEpiC: { zs: 20, zp: 20, zr: 60, n: 4, m: 1, nIn: 1000, fixed: 's', input: 'r' },
+    };
+    let resE = null, pE = null;
+    function fillRoles() {
+      const fx = $('e-fixed'), inp = $('e-input'), vf = fx.value || pE?.fixed || 'r', vi = inp.value || pE?.input || 's';
+      fx.innerHTML = ['r', 's', 'c'].map((k) => '<option value="' + k + '">' + esc(t('el')[k]) + '</option>').join('');
+      inp.innerHTML = ['s', 'c', 'r'].map((k) => '<option value="' + k + '">' + esc(t('el')[k]) + '</option>').join('');
+      fx.value = vf; inp.value = vi;
+    }
+    function readE() {
+      return { zs: parseInt($('e-zs').value, 10), zp: parseInt($('e-zp').value, 10), zr: parseInt($('e-zr').value, 10), n: parseInt($('e-n').value, 10),
+        m: parseFloat($('e-m').value), nIn: parseFloat($('e-nIn').value), fixed: $('e-fixed').value, input: $('e-input').value };
+    }
+    function fillE(o) { ['zs', 'zp', 'zr', 'n', 'm', 'nIn'].forEach((k) => ($('e-' + k).value = o[k])); $('e-fixed').value = o.fixed; $('e-input').value = o.input; }
+    function runE() {
+      pE = readE(); resE = E.epicyclic(pE);
+      issuesHtml($('issuesE'), resE.issues || []);
+      const out = ['s', 'c', 'r'].find((x) => x !== pE.fixed && x !== pE.input);
+      $('outHint').textContent = pE.fixed !== pE.input ? t('outIs').replace('{o}', t('el')[out]) : '';
+      if (!resE.ok) { resE = null; $('kpisE').innerHTML = ''; $('sceneE').innerHTML = ''; return; }
+      $('kpisE').innerHTML = kpi('kRatio', fmtRatio(resE.ratio), '', true) + kpi('kOut', num(Math.abs(resE.nOut), 1), t('perMin')) +
+        kpi('kSense', resE.ratio > 0 ? t('same') : t('opposite'), '') + kpi('kSat', num(Math.abs(resE.nPlanetRel), 0), t('perMin'));
+      drawE();
+    }
+    function drawE() {
+      if (!resE) return;
+      const p = pE, W = 420, c = W / 2, sc = (W / 2 - 10) / ((p.m * p.zr) / 2 + 2.6 * p.m);
+      const w = resE.w, th = (k) => angleIn * w[k];      // angles proportionnels aux vitesses
+      const thS = th('s'), thC = th('c'), thR = th('r');
+      let g = '';
+      // couronne (denture intérieure)
+      const Rr = ((p.m * p.zr) / 2) * sc, Rout = Rr + 2.6 * p.m * sc;
+      // phase de la couronne pour engrener avec le satellite 0 à l'instant initial
+      const pitchP = (2 * Math.PI) / p.zp;
+      const thP0 = Math.PI + Math.PI / p.zp;
+      const alpha = thP0 - Math.round(thP0 / pitchP) * pitchP;
+      const phiR = alpha + Math.PI / p.zr;
+      g += '<path d="M' + (c + Rout) + ' ' + c + 'A' + Rout + ' ' + Rout + ' 0 1 0 ' + (c - Rout) + ' ' + c + 'A' + Rout + ' ' + Rout + ' 0 1 0 ' + (c + Rout) + ' ' + c + 'Z ' + gearPath(c, c, p.zr, p.m, sc, phiR + thR, true) + '" fill="#3a3a3e" fill-rule="evenodd" stroke="#0c0c0d"/>';
+      // repère de la couronne
+      g += '<line class="mark" style="stroke:var(--line)" x1="' + (c + (Rr + 1.4 * p.m * sc) * Math.cos(thR)) + '" y1="' + (c + (Rr + 1.4 * p.m * sc) * Math.sin(thR)) + '" x2="' + (c + (Rout - 2) * Math.cos(thR)) + '" y2="' + (c + (Rout - 2) * Math.sin(thR)) + '"/>';
+      // satellites
+      const a = resE.aSat * sc;
+      const carrierLines = [];
+      for (let k = 0; k < p.n; k++) {
+        const psi = thC + (2 * Math.PI * k) / p.n;
+        const px = c + a * Math.cos(psi), py = c + a * Math.sin(psi);
+        const thP = psi - (p.zs / p.zp) * (thS - psi) + Math.PI + Math.PI / p.zp;
+        g += gearSvg(px, py, p.zp, p.m, sc, thP, 'var(--g2)');
+        carrierLines.push([px, py]);
+      }
+      // planétaire
+      g += gearSvg(c, c, p.zs, p.m, sc, thS, 'var(--g1)');
+      // porte-satellites
+      carrierLines.forEach(([x, y]) => (g += '<line class="carrier" x1="' + c + '" y1="' + c + '" x2="' + x + '" y2="' + y + '"/>'));
+      carrierLines.forEach(([x, y]) => (g += '<circle class="hub" cx="' + x + '" cy="' + y + '" r="4"/>'));
+      g += '<circle class="hub" cx="' + c + '" cy="' + c + '" r="6"/>';
+      $('sceneE').innerHTML = g;
+    }
+
+    // ---------- Animation commune ----------
+    let angleIn = 0, playing = !(window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches), last = 0, view = 'simple';
+    function frame(ts) {
+      if (playing) { const dt = last ? Math.min(0.1, (ts - last) / 1000) : 0; angleIn += dt * (2 * Math.PI / 6); view === 'simple' ? drawS() : drawE(); }
+      last = ts; requestAnimationFrame(frame);
+    }
+    document.querySelectorAll('[data-play]').forEach((b) => b.addEventListener('click', () => {
+      playing = !playing; document.querySelectorAll('[data-play]').forEach((x) => (x.textContent = playing ? t('pause') : t('play')));
+    }));
+
+    // ---------- Liaisons ----------
+    ['s-nIn', 's-cIn', 's-eta'].forEach((id) => $(id).addEventListener('input', runS));
+    ['e-zs', 'e-zp', 'e-zr', 'e-n', 'e-m', 'e-nIn'].forEach((id) => $('' + id).addEventListener('input', runE));
+    ['e-fixed', 'e-input'].forEach((id) => $(id).addEventListener('change', runE));
+    $('addStage').addEventListener('click', () => { const l = stages[stages.length - 1] || { z2: 40, m: 2 }; stages.push({ z1: 18, z2: 54, m: l.m }); renderStages(); runS(); });
+    document.querySelectorAll('.tab').forEach((b) => b.addEventListener('click', () => {
+      view = b.dataset.view;
+      document.querySelectorAll('.tab').forEach((x) => x.setAttribute('aria-selected', x === b));
+      document.querySelectorAll('.view').forEach((v) => (v.hidden = v.id !== 'view-' + view));
+      view === 'simple' ? runS() : runE();
+    }));
+    function loadS(o) { stages = o.stages.map((s) => ({ ...s })); $('s-nIn').value = o.nIn; $('s-cIn').value = o.cIn; $('s-eta').value = o.eta; renderStages(); runS(); }
+    function renderPresets() {
+      [['presetsS', SP, loadS], ['presetsE', EP, (o) => { fillE(o); runE(); }]].forEach(([id, P, load]) => {
+        const box = $(id); box.innerHTML = '';
+        Object.entries(P).forEach(([k, o]) => { const b = document.createElement('button'); b.type = 'button'; b.className = 'btn'; b.textContent = t(k); b.addEventListener('click', () => load(o)); box.appendChild(b); });
+      });
+    }
+    function setLang(l) {
+      lang = l; document.documentElement.lang = l;
+      document.querySelectorAll('[data-t]').forEach((el) => { const v = T[l][el.dataset.t]; if (typeof v === 'string') el.innerHTML = v; });
+      document.querySelectorAll('[data-play]').forEach((x) => (x.textContent = playing ? t('pause') : t('play')));
+      document.title = l === 'fr' ? "Calculateur d'engrenages" : 'Gear train calculator';
+      document.querySelectorAll('.lang button').forEach((b) => b.setAttribute('aria-pressed', b.dataset.lang === l));
+      try { localStorage.setItem('lang', l); } catch (e) {}
+      fillRoles(); renderPresets(); runS(); runE();
+    }
+    document.querySelectorAll('.lang button').forEach((b) => b.addEventListener('click', () => setLang(b.dataset.lang)));
+    stages = SP.pReduc.stages.map((s) => ({ ...s })); $('s-nIn').value = 1500; $('s-cIn').value = 10; $('s-eta').value = 0.98; renderStages();
+    fillRoles(); fillE(EP.pEpiA);
+    setLang(lang);
+    requestAnimationFrame(frame);
+  })();
+  </script>
+</body>
+</html>
