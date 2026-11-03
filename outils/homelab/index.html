@@ -1,0 +1,468 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Tableau de bord homelab</title>
+  <meta name="description" content="Tableau de bord de supervision d'un homelab : état des services, latence, disponibilité, ressources et journal des incidents. Démo simulée et mode réel.">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --bg: #0c0c0d; --panel: #161618; --border: #262628; --border-hi: #3a3a3d;
+      --text: #f2f2f2; --dim: #9b9b9f; --muted: #6c6c70; --accent: #c8102e; --line: #c9c9cc;
+      --good: #8fd18f; --warn: #e0a458; --crit: #e5484d;
+      --mono: "JetBrains Mono", ui-monospace, monospace; --sans: "Inter", system-ui, sans-serif;
+      color-scheme: dark;
+    }
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    body { background: var(--bg); color: var(--text); font-family: var(--sans); line-height: 1.55; -webkit-font-smoothing: antialiased; }
+    .wrap { max-width: 1240px; margin: 0 auto; padding: 24px max(16px, env(safe-area-inset-right, 0px)) 48px max(16px, env(safe-area-inset-left, 0px)); }
+    .top { display: flex; justify-content: space-between; align-items: center; gap: 12px; flex-wrap: wrap; margin-bottom: 24px; }
+    .back { font-size: 0.9rem; color: var(--dim); text-decoration: none; }
+    .back:hover { color: var(--accent); }
+    .lang { display: flex; border: 1px solid var(--border-hi); }
+    .lang button { font: 500 0.78rem var(--mono); letter-spacing: .05em; background: none; color: var(--dim); border: 0; padding: 5px 10px; cursor: pointer; }
+    .lang button + button { border-left: 1px solid var(--border-hi); }
+    .lang button[aria-pressed="true"] { background: var(--text); color: var(--bg); }
+    .eyebrow { font: 500 0.82rem var(--mono); color: var(--accent); letter-spacing: .04em; }
+    h1 { font-size: clamp(1.6rem, 3.4vw, 2.3rem); line-height: 1.15; margin: 6px 0 10px; text-wrap: balance; }
+    .intro { color: var(--dim); max-width: 80ch; }
+
+    .tabs { display: flex; gap: 8px; margin: 26px 0 16px; flex-wrap: wrap; }
+    .tab { font: 0.85rem var(--mono); background: none; color: var(--dim); border: 1px solid var(--border); border-radius: 999px; padding: 6px 14px; cursor: pointer; }
+    .tab[aria-selected="true"] { color: var(--accent); border-color: var(--accent); }
+
+    .panel { background: var(--panel); border: 1px solid var(--border); border-radius: 8px; padding: 16px 18px; min-width: 0; }
+    h2 { font: 600 0.78rem var(--mono); letter-spacing: .12em; text-transform: uppercase; color: var(--dim); margin-bottom: 12px; }
+    .btn { font: 500 0.85rem var(--sans); background: none; color: var(--text); border: 1px solid var(--border-hi); border-radius: 6px; padding: 7px 12px; cursor: pointer; }
+    .btn:hover { border-color: var(--accent); color: var(--accent); }
+    .btn[aria-pressed="true"] { border-color: var(--text); }
+    .btn.primary { background: var(--accent); border-color: var(--accent); color: #fff; }
+    .btn.primary:hover { filter: brightness(1.1); color: #fff; }
+    select, textarea, input[type=text] { font: 0.85rem var(--mono); background: var(--bg); color: var(--text); border: 1px solid var(--border-hi); border-radius: 6px; padding: 7px 8px; min-width: 0; }
+    button:focus-visible, select:focus-visible, textarea:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+    .ctrl { display: flex; gap: 8px; flex-wrap: wrap; align-items: center; }
+    .ctrl .sep { width: 1px; align-self: stretch; background: var(--border); margin: 0 4px; }
+    .clock { margin-left: auto; font: 0.8rem var(--mono); color: var(--dim); }
+    .banner { font-size: 0.85rem; color: var(--dim); border-left: 2px solid var(--accent); padding: 2px 0 2px 10px; margin-bottom: 14px; }
+    [hidden] { display: none !important; }
+
+    .kpis { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 12px; margin: 16px 0; }
+    .kpi { background: var(--panel); border: 1px solid var(--border); border-radius: 8px; padding: 12px 14px; min-width: 0; }
+    .kpi dt { font: 0.72rem var(--mono); color: var(--dim); }
+    .kpi dd { font: 600 1.5rem var(--sans); font-variant-numeric: tabular-nums; margin-top: 2px; }
+    .kpi dd small { font: 400 0.8rem var(--mono); color: var(--dim); margin-left: 4px; }
+
+    .layout { display: grid; grid-template-columns: minmax(0, 2fr) minmax(0, 1fr); gap: 16px; align-items: start; }
+    .cards { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px; }
+    .card { background: var(--panel); border: 1px solid var(--border); border-radius: 8px; padding: 12px 14px; min-width: 0; position: relative; }
+    .card.st-down { border-color: #5a2326; }
+    .card.st-degraded { border-color: #4d3a22; }
+    .card-h { display: flex; justify-content: space-between; gap: 8px; align-items: baseline; }
+    .card-h b { font-weight: 600; font-size: 0.95rem; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+    .host { font: 0.74rem var(--mono); color: var(--muted); overflow-wrap: anywhere; }
+    .badge { font: 600 0.7rem var(--mono); letter-spacing: .04em; white-space: nowrap; display: inline-flex; gap: 5px; align-items: center; }
+    .badge.up { color: var(--good); } .badge.degraded { color: var(--warn); } .badge.down { color: var(--crit); } .badge.unknown { color: var(--dim); }
+    .metrics { display: flex; justify-content: space-between; font: 0.78rem var(--mono); color: var(--dim); margin-top: 8px; gap: 8px; }
+    .metrics span b { color: var(--text); font-weight: 500; font-variant-numeric: tabular-nums; }
+    .spark { display: block; width: 100%; height: 46px; margin-top: 6px; overflow: visible; }
+    .spark .ln { fill: none; stroke: var(--line); stroke-width: 2; stroke-linejoin: round; stroke-linecap: round; vector-effect: non-scaling-stroke; }
+    .spark .th { stroke: var(--warn); stroke-width: 1; stroke-dasharray: 3 3; vector-effect: non-scaling-stroke; opacity: .7; }
+    .spark .fail { fill: var(--crit); }
+    .spark .cross { stroke: var(--muted); stroke-width: 1; vector-effect: non-scaling-stroke; }
+    .spark .dot { fill: var(--text); stroke: var(--panel); stroke-width: 2; vector-effect: non-scaling-stroke; }
+    .tip { position: absolute; pointer-events: none; font: 0.72rem var(--mono); background: var(--bg); border: 1px solid var(--border-hi); border-radius: 4px; padding: 3px 7px; white-space: nowrap; transform: translate(-50%, -100%); z-index: 2; }
+    .axis { display: flex; justify-content: space-between; font: 0.66rem var(--mono); color: var(--muted); }
+
+    .side { display: grid; gap: 16px; }
+    .meter { margin-bottom: 14px; }
+    .meter:last-child { margin-bottom: 0; }
+    .meter-h { display: flex; justify-content: space-between; font-size: 0.85rem; gap: 8px; }
+    .meter-h span:last-child { font: 0.8rem var(--mono); font-variant-numeric: tabular-nums; }
+    .bar { position: relative; height: 8px; background: #222225; border-radius: 4px; margin-top: 6px; overflow: hidden; }
+    .bar i { position: absolute; inset: 0 auto 0 0; background: var(--line); border-radius: 4px; }
+    .bar.warn i { background: var(--warn); } .bar.crit i { background: var(--crit); }
+    .bar u { position: absolute; top: 0; bottom: 0; width: 2px; background: var(--panel); }
+    .meter .lv { font: 0.7rem var(--mono); color: var(--dim); margin-top: 3px; }
+    .meter .lv.warn { color: var(--warn); } .meter .lv.crit { color: var(--crit); }
+
+    .log { list-style: none; font: 0.78rem var(--mono); max-height: 340px; overflow: auto; }
+    .log li { display: grid; grid-template-columns: 64px minmax(0, 1fr); gap: 8px; padding: 6px 0; border-bottom: 1px solid var(--border); }
+    .log time { color: var(--muted); }
+    .log .to-down { color: var(--crit); } .log .to-degraded { color: var(--warn); } .log .to-up { color: var(--good); }
+    .empty { color: var(--dim); font-size: 0.85rem; }
+
+    .cfg { display: grid; grid-template-columns: minmax(0, 1.4fr) minmax(0, 1fr); gap: 16px; margin-bottom: 16px; }
+    textarea { width: 100%; min-height: 220px; resize: vertical; line-height: 1.45; }
+    .note { font-size: 0.84rem; color: var(--dim); }
+    .note p + p { margin-top: 8px; }
+    .note code { font: 0.9em var(--mono); color: var(--text); }
+    .msg { font-size: 0.84rem; margin-top: 8px; min-height: 1.2em; color: var(--dim); }
+    .msg.err { color: var(--warn); }
+
+    @media (max-width: 1000px) { .layout, .cfg { grid-template-columns: 1fr; } }
+    @media (max-width: 640px) { .kpis { grid-template-columns: repeat(2, minmax(0, 1fr)); } .cards { grid-template-columns: 1fr; } .clock { margin-left: 0; width: 100%; } }
+  </style>
+</head>
+<body>
+  <div class="wrap">
+    <div class="top">
+      <a class="back" href="../../index.html#projets" data-t="back">← Retour au portfolio</a>
+      <div class="lang" role="group" aria-label="Langue / Language">
+        <button type="button" data-lang="fr" aria-pressed="true">FR</button>
+        <button type="button" data-lang="en" aria-pressed="false">EN</button>
+      </div>
+    </div>
+    <p class="eyebrow" data-t="eyebrow">Outil réseau · supervision</p>
+    <h1 data-t="title">Tableau de bord homelab</h1>
+    <p class="intro" data-t="intro">Supervision des services d'un réseau domestique : état de chaque service, latence, disponibilité, ressources des machines et journal des incidents. Un service passe « dégradé » au-delà du seuil de latence ou après un échec isolé, et « hors ligne » après trois échecs de suite.</p>
+
+    <div class="tabs" role="tablist">
+      <button type="button" class="tab" role="tab" data-mode="demo" aria-selected="true" data-t="tabDemo">Démo (homelab simulé)</button>
+      <button type="button" class="tab" role="tab" data-mode="real" aria-selected="false" data-t="tabReal">Mes services (mode réel)</button>
+    </div>
+
+    <!-- Contrôles de la démo -->
+    <div id="demoCtrl">
+      <p class="banner" data-t="demoBanner">Données simulées : homelab fictif de démonstration (routeur, switch, NAS, serveur domotique…), pas un réseau réel. Une sonde toutes les 30 s simulées.</p>
+      <div class="ctrl">
+        <button type="button" class="btn" id="pause" data-t="pause">Pause</button>
+        <button type="button" class="btn" data-speed="1" aria-pressed="true">×1</button>
+        <button type="button" class="btn" data-speed="10" aria-pressed="false">×10</button>
+        <span class="sep" aria-hidden="true"></span>
+        <select id="target" aria-label="Service"></select>
+        <button type="button" class="btn" id="outage" data-t="outage">Provoquer une panne</button>
+        <button type="button" class="btn" id="slow" data-t="slow">Ralentir</button>
+        <button type="button" class="btn" id="fill" data-t="fill">Remplir le disque du NAS</button>
+        <span class="clock" id="clock"></span>
+      </div>
+    </div>
+
+    <!-- Configuration du mode réel -->
+    <div id="realCtrl" hidden>
+      <div class="cfg">
+        <div class="panel">
+          <h2 data-t="cfgTitle">Configuration (JSON)</h2>
+          <textarea id="cfg" spellcheck="false" aria-label="JSON"></textarea>
+          <div class="ctrl" style="margin-top:10px">
+            <button type="button" class="btn primary" id="start" data-t="start">Lancer la supervision</button>
+            <button type="button" class="btn" id="stop" data-t="stop">Arrêter</button>
+            <button type="button" class="btn" id="resetCfg" data-t="resetCfg">Exemple</button>
+          </div>
+          <p class="msg" id="cfgMsg" aria-live="polite"></p>
+        </div>
+        <div class="panel note">
+          <h2 data-t="howTitle">Comment ça marche</h2>
+          <div data-t="how"></div>
+        </div>
+      </div>
+    </div>
+
+    <dl class="kpis" id="kpis"></dl>
+    <div class="layout">
+      <div class="cards" id="cards"></div>
+      <div class="side">
+        <div class="panel" id="resPanel">
+          <h2 data-t="resTitle">Ressources</h2>
+          <div id="res"></div>
+        </div>
+        <div class="panel">
+          <h2 data-t="logTitle">Journal des incidents</h2>
+          <ul class="log" id="log" aria-live="polite"></ul>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script src="homelab.js"></script>
+  <script>
+  (() => {
+    'use strict';
+    const H = window.Homelab, $ = (id) => document.getElementById(id);
+    const esc = (s) => String(s).replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+
+    const T = {
+      fr: {
+        back: '← Retour au portfolio', eyebrow: 'Outil réseau · supervision', title: 'Tableau de bord homelab',
+        intro: "Supervision des services d'un réseau domestique : état de chaque service, latence, disponibilité, ressources des machines et journal des incidents. Un service passe « dégradé » au-delà du seuil de latence ou après un échec isolé, et « hors ligne » après trois échecs de suite.",
+        tabDemo: 'Démo (homelab simulé)', tabReal: 'Mes services (mode réel)',
+        demoBanner: "Données simulées : homelab fictif de démonstration (routeur, switch, NAS, serveur domotique…), pas un réseau réel. Une sonde toutes les 30 s simulées.",
+        pause: 'Pause', resume: 'Reprendre', outage: 'Provoquer une panne', slow: 'Ralentir', fill: 'Remplir le disque du NAS',
+        simTime: 'Heure simulée', cfgTitle: 'Configuration (JSON)', start: 'Lancer la supervision', stop: 'Arrêter', resetCfg: 'Exemple', howTitle: 'Comment ça marche',
+        how: "<p>Chaque service est sondé par une requête HTTP envoyée depuis votre navigateur (mode <code>no-cors</code>) : une réponse, quelle qu'elle soit, compte comme « joignable », et le temps de réponse sert de latence. Rien n'est envoyé ailleurs.</p><p>Champs : <code>name</code>, <code>url</code>, <code>kind</code> (facultatif), <code>warnMs</code> (seuil de latence, facultatif) ; <code>interval</code> en secondes (5 à 300).</p><p>Limite : depuis cette page en HTTPS, le navigateur bloque les adresses en <code>http://</code> du réseau local (contenu mixte). Pour superviser votre réseau, ouvrez une copie locale de la page (fichier ou petit serveur local) ou utilisez des services en HTTPS.</p>",
+        kUp: 'Services en ligne', kLat: 'Latence moyenne', kAvail: 'Disponibilité', kAlerts: 'Alertes en cours', window: 'sur la fenêtre',
+        st: { up: 'En ligne', degraded: 'Dégradé', down: 'Hors ligne', unknown: 'En attente' },
+        last: 'dernière', avail: 'dispo.', failed: 'échec', ago: 'il y a', now: 'maintenant', threshold: 'seuil',
+        resTitle: 'Ressources', resReal: 'Non disponible en mode réel (il faudrait un agent sur chaque machine).',
+        r: { disk: 'NAS · disque', temp: 'NAS · température', cpu: 'Serveur domotique · CPU', ram: 'Serveur domotique · mémoire' },
+        lv: { ok: 'normal', warn: 'à surveiller (seuil {a})', crit: 'critique (seuil {b})' },
+        logTitle: 'Journal des incidents', noEvent: 'Aucun incident pour le moment.', ms: 'ms',
+        ev: { down: 'hors ligne', degraded: 'dégradé', up: 'rétabli' }, resEv: { warn: 'au-dessus du seuil', crit: 'critique', ok: 'revenu à la normale' },
+        eJson: 'JSON invalide.', eEmpty: 'Aucun service dans la configuration.', eName: 'Service {i} : nom manquant.', eUrl: 'Service {i} : URL invalide (http:// ou https://).', eTooMany: '30 services au maximum.',
+        running: 'Supervision en cours : {n} services, une sonde toutes les {s} s.', stopped: 'Supervision arrêtée.',
+        mixed: 'Attention : {n} service(s) en http:// seront bloqués par le navigateur depuis cette page en HTTPS.',
+        realEmpty: 'Saisissez vos services puis lancez la supervision.',
+        svc: { router: 'Routeur (passerelle)', switch: 'Switch manageable', nas: 'NAS (partages, sauvegardes)', ha: 'Serveur domotique', dns: 'DNS local', print: 'Imprimante 3D', wan: 'Accès Internet' },
+      },
+      en: {
+        back: '← Back to portfolio', eyebrow: 'Network tool · monitoring', title: 'Homelab dashboard',
+        intro: 'Monitoring of the services of a home network: status of each service, latency, availability, machine resources and incident log. A service turns "degraded" above its latency threshold or after a single failure, and "down" after three failures in a row.',
+        tabDemo: 'Demo (simulated homelab)', tabReal: 'My services (live mode)',
+        demoBanner: 'Simulated data: a fictional demo homelab (router, switch, NAS, home automation server…), not a real network. One probe every 30 simulated seconds.',
+        pause: 'Pause', resume: 'Resume', outage: 'Cause an outage', slow: 'Slow down', fill: 'Fill the NAS disk',
+        simTime: 'Simulated time', cfgTitle: 'Configuration (JSON)', start: 'Start monitoring', stop: 'Stop', resetCfg: 'Example', howTitle: 'How it works',
+        how: '<p>Each service is probed with an HTTP request sent from your browser (<code>no-cors</code> mode): any response counts as "reachable", and the response time is used as latency. Nothing is sent anywhere else.</p><p>Fields: <code>name</code>, <code>url</code>, <code>kind</code> (optional), <code>warnMs</code> (latency threshold, optional); <code>interval</code> in seconds (5 to 300).</p><p>Limitation: from this HTTPS page, the browser blocks <code>http://</code> addresses on the local network (mixed content). To monitor your network, open a local copy of the page (file or small local server) or use HTTPS services.</p>',
+        kUp: 'Services up', kLat: 'Average latency', kAvail: 'Availability', kAlerts: 'Active alerts', window: 'over the window',
+        st: { up: 'Up', degraded: 'Degraded', down: 'Down', unknown: 'Pending' },
+        last: 'last', avail: 'avail.', failed: 'failed', ago: '', now: 'now', threshold: 'threshold',
+        resTitle: 'Resources', resReal: 'Not available in live mode (it would need an agent on each machine).',
+        r: { disk: 'NAS · disk', temp: 'NAS · temperature', cpu: 'Home automation server · CPU', ram: 'Home automation server · memory' },
+        lv: { ok: 'normal', warn: 'watch (threshold {a})', crit: 'critical (threshold {b})' },
+        logTitle: 'Incident log', noEvent: 'No incident so far.', ms: 'ms',
+        ev: { down: 'down', degraded: 'degraded', up: 'recovered' }, resEv: { warn: 'above threshold', crit: 'critical', ok: 'back to normal' },
+        eJson: 'Invalid JSON.', eEmpty: 'No service in the configuration.', eName: 'Service {i}: missing name.', eUrl: 'Service {i}: invalid URL (http:// or https://).', eTooMany: '30 services at most.',
+        running: 'Monitoring: {n} services, one probe every {s} s.', stopped: 'Monitoring stopped.',
+        mixed: 'Warning: {n} http:// service(s) will be blocked by the browser from this HTTPS page.',
+        realEmpty: 'Enter your services, then start monitoring.',
+        svc: { router: 'Router (gateway)', switch: 'Managed switch', nas: 'NAS (shares, backups)', ha: 'Home automation server', dns: 'Local DNS', print: '3D printer', wan: 'Internet access' },
+      },
+    };
+    let lang = 'fr';
+    try { lang = localStorage.getItem('lang') || ((navigator.language || 'fr').toLowerCase().startsWith('fr') ? 'fr' : 'en'); } catch (e) {}
+    if (!T[lang]) lang = 'fr';
+    const t = (k) => T[lang][k];
+    const fill = (s, p) => s.replace(/\{(\w+)\}/g, (_, k) => (p[k] != null ? p[k] : ''));
+
+    // ---------------- Homelab fictif de démonstration ----------------
+    const DEMO = [
+      { id: 'router', host: '192.168.1.1', kind: 'HTTPS', base: 1.2 },
+      { id: 'switch', host: '192.168.1.2', kind: 'HTTPS', base: 1.8 },
+      { id: 'nas', host: '192.168.1.10:5001', kind: 'SMB · HTTPS', base: 4.5 },
+      { id: 'ha', host: '192.168.1.20:8123', kind: 'Home Assistant', base: 14 },
+      { id: 'dns', host: '192.168.1.21', kind: 'DNS', base: 3 },
+      { id: 'print', host: '192.168.1.30', kind: 'OctoPrint', base: 24, loss: 0.01 },
+      { id: 'wan', host: '1.1.1.1', kind: 'HTTPS', base: 18, warnMs: 120 },
+    ];
+    const SAMPLE = { interval: 15, services: [
+      { name: 'Routeur', url: 'http://192.168.1.1', kind: 'Passerelle' },
+      { name: 'NAS', url: 'http://192.168.1.10:5000', kind: 'Stockage' },
+      { name: 'Home Assistant', url: 'http://192.168.1.20:8123', kind: 'Domotique', warnMs: 200 },
+      { name: 'Site public', url: 'https://example.org', kind: 'Internet', warnMs: 400 }] };
+
+    const TICK_S = 30;   // une sonde simulée = 30 s
+    let mode = 'demo';
+    let sim = null, real = null; // { mon, ... }
+    let tipState = null;
+
+    function newDemo() {
+      const probe = H.simProbe(20261103);
+      const services = DEMO.map((d) => ({ ...d }));
+      const mon = H.Monitor({ services, probe, warnMs: 150, failThreshold: 3, history: 60 });
+      const res = H.simResources(20261103);
+      return { mon, probe, res, resNow: res.get(), resLv: {}, resEvents: [], clock: Date.now() - 60 * TICK_S * 1000, speed: 1, paused: false, timer: null, fillLeft: 0 };
+    }
+    async function warmUp(d) {
+      // 60 sondes d'historique pour que les courbes ne démarrent pas vides
+      for (let i = 0; i < 60; i++) { await stepDemo(d, true); }
+    }
+    async function stepDemo(d, silent) {
+      d.clock += TICK_S * 1000;
+      await d.mon.tick(d.clock);
+      const extra = d.fillLeft > 0 ? 0.6 : 0; if (d.fillLeft > 0) d.fillLeft--;
+      d.resNow = d.res.step(extra);
+      for (const k of Object.keys(H.RES_LIMITS)) {
+        const lv = H.level(k, d.resNow[k]);
+        if (d.resLv[k] && d.resLv[k] !== lv) d.mon.events.unshift({ t: d.clock, res: k, to: lv, v: d.resNow[k] });
+        d.resLv[k] = lv;
+      }
+      if (!silent) render();
+    }
+    function schedule() {
+      clearInterval(sim.timer);
+      if (!sim.paused && mode === 'demo') sim.timer = setInterval(() => stepDemo(sim), sim.speed === 10 ? 120 : 1200);
+    }
+
+    // ---------------- Rendu ----------------
+    const active = () => (mode === 'demo' ? sim : real);
+    const svcName = (s) => s.name || t('svc')[s.id] || s.id;
+    const fmtMs = (v) => (v == null ? '—' : (v < 10 ? v.toFixed(1) : Math.round(v)) + ' ' + t('ms'));
+    const fmtTime = (ts) => new Date(ts).toLocaleTimeString(lang === 'fr' ? 'fr-FR' : 'en-GB', { hour: '2-digit', minute: '2-digit', second: '2-digit' });
+    const ICON = { up: '●', degraded: '▲', down: '✕', unknown: '○' };
+
+    function renderKpis(a) {
+      const s = a ? a.mon.summary() : null;
+      const alerts = s ? s.down + s.degraded + (a.resLv ? Object.values(a.resLv).filter((x) => x !== 'ok').length : 0) : 0;
+      $('kpis').innerHTML = [
+        [t('kUp'), s ? s.up + '<small>/ ' + s.total + '</small>' : '—'],
+        [t('kLat'), s && s.avgMs != null ? (s.avgMs < 10 ? s.avgMs.toFixed(1) : Math.round(s.avgMs)) + '<small>' + t('ms') + '</small>' : '—'],
+        [t('kAvail'), s && s.availability != null ? (s.availability * 100).toFixed(1).replace('.', lang === 'fr' ? ',' : '.') + '<small>% ' + esc(t('window')) + '</small>' : '—'],
+        [t('kAlerts'), s ? String(alerts) : '—'],
+      ].map(([k, v]) => '<div class="kpi"><dt>' + esc(k) + '</dt><dd>' + v + '</dd></div>').join('');
+    }
+
+    const W = 240, HGT = 46;
+    function sparkGeom(st, a) {
+      const hist = st.hist, n = a.mon.conf.history;
+      const warn = st.svc.warnMs || a.mon.conf.warnMs;
+      const max = Math.max(warn * 1.15, ...hist.filter((h) => h.ok).map((h) => h.ms), 1);
+      const x = (i) => (n <= 1 ? 0 : (i + (n - hist.length)) * (W / (n - 1)));
+      const y = (v) => HGT - 2 - (v / max) * (HGT - 6);
+      return { hist, warn, max, x, y };
+    }
+    function sparkSvg(st, a) {
+      const g = sparkGeom(st, a);
+      let d = '', pen = false;
+      g.hist.forEach((h, i) => {
+        if (h.ok) { d += (pen ? 'L' : 'M') + g.x(i).toFixed(1) + ' ' + g.y(h.ms).toFixed(1); pen = true; } else pen = false;
+      });
+      const fails = g.hist.map((h, i) => (h.ok ? '' : '<rect class="fail" x="' + (g.x(i) - 1.5).toFixed(1) + '" y="' + (HGT - 6) + '" width="3" height="6" rx="1"/>')).join('');
+      const ty = g.y(g.warn).toFixed(1);
+      return '<svg class="spark" viewBox="0 0 ' + W + ' ' + HGT + '" preserveAspectRatio="none" role="img" aria-label="' + esc(svcName(st.svc)) + '">' +
+        '<line class="th" x1="0" x2="' + W + '" y1="' + ty + '" y2="' + ty + '"/>' +
+        '<path class="ln" d="' + d + '"/>' + fails + '<g class="hover"></g></svg>';
+    }
+    function renderCards(a) {
+      const box = $('cards');
+      if (!a) { box.innerHTML = '<p class="empty">' + esc(t('realEmpty')) + '</p>'; return; }
+      const sts = a.mon.states;
+      if (box.children.length !== sts.length || box.dataset.mode !== mode) {
+        box.dataset.mode = mode;
+        box.innerHTML = sts.map((_, i) => '<article class="card" data-i="' + i + '"></article>').join('');
+        box.querySelectorAll('.card').forEach((c) => {
+          c.addEventListener('pointermove', (e) => { tipState = { i: +c.dataset.i, x: e.clientX }; drawTip(); });
+          c.addEventListener('pointerleave', () => { tipState = null; drawTip(); });
+        });
+      }
+      sts.forEach((st, i) => {
+        const c = box.children[i];
+        const last = st.hist.length ? st.hist[st.hist.length - 1] : null;
+        const okN = st.hist.filter((h) => h.ok).length;
+        c.className = 'card st-' + st.status;
+        c.innerHTML = '<div class="card-h"><b>' + esc(svcName(st.svc)) + '</b><span class="badge ' + st.status + '">' + ICON[st.status] + ' ' + esc(t('st')[st.status]) + '</span></div>' +
+          '<div class="host">' + esc(st.svc.host) + (st.svc.kind ? ' · ' + esc(st.svc.kind) : '') + '</div>' +
+          sparkSvg(st, a) +
+          '<div class="axis"><span>−' + Math.round((a.mon.conf.history - 1) * (a.interval || TICK_S) / 60) + ' min</span><span>' + esc(t('threshold')) + ' ' + fmtMs(st.svc.warnMs || a.mon.conf.warnMs) + '</span><span>' + esc(t('now')) + '</span></div>' +
+          '<div class="metrics"><span>' + esc(t('last')) + ' <b>' + (last ? (last.ok ? fmtMs(last.ms) : esc(t('failed'))) : '—') + '</b></span><span>' + esc(t('avail')) + ' <b>' + (st.hist.length ? Math.round((okN / st.hist.length) * 1000) / 10 + ' %' : '—') + '</b></span></div>';
+      });
+      drawTip();
+    }
+    function drawTip() {
+      document.querySelectorAll('.tip').forEach((x) => x.remove());
+      document.querySelectorAll('.spark .hover').forEach((g) => (g.innerHTML = ''));
+      const a = active();
+      if (!tipState || !a) return;
+      const card = $('cards').children[tipState.i]; if (!card) return;
+      const st = a.mon.states[tipState.i]; const svg = card.querySelector('.spark'); if (!svg || !st.hist.length) return;
+      const r = svg.getBoundingClientRect();
+      const g = sparkGeom(st, a);
+      const n = a.mon.conf.history, off = n - st.hist.length;
+      let i = Math.round(((tipState.x - r.left) / r.width) * (n - 1)) - off;
+      i = Math.max(0, Math.min(st.hist.length - 1, i));
+      const h = st.hist[i];
+      const vx = g.x(i), vy = h.ok ? g.y(h.ms) : HGT - 3;
+      svg.querySelector('.hover').innerHTML = '<line class="cross" x1="' + vx + '" x2="' + vx + '" y1="0" y2="' + HGT + '"/>' + (h.ok ? '<circle class="dot" cx="' + vx + '" cy="' + vy + '" r="3.5"/>' : '');
+      const tip = document.createElement('div'); tip.className = 'tip';
+      tip.textContent = fmtTime(h.t) + ' · ' + (h.ok ? fmtMs(h.ms) : t('failed'));
+      const cr = card.getBoundingClientRect();
+      const px = r.left - cr.left + (vx / W) * r.width;
+      tip.style.left = Math.max(60, Math.min(cr.width - 60, px)) + 'px';
+      tip.style.top = (r.top - cr.top - 4) + 'px';
+      card.appendChild(tip);
+    }
+    function renderRes(a) {
+      const box = $('res');
+      if (mode !== 'demo') { box.innerHTML = '<p class="empty">' + esc(t('resReal')) + '</p>'; return; }
+      const v = a.resNow;
+      const unit = { disk: '%', cpu: '%', ram: '%', temp: '°C' };
+      const scale = { disk: 100, cpu: 100, ram: 100, temp: 80 };
+      box.innerHTML = ['disk', 'temp', 'cpu', 'ram'].map((k) => {
+        const lv = H.level(k, v[k]); const [wa, cr] = H.RES_LIMITS[k];
+        const pct = Math.min(100, (v[k] / scale[k]) * 100);
+        return '<div class="meter"><div class="meter-h"><span>' + esc(t('r')[k]) + '</span><span>' + (Math.round(v[k] * 10) / 10) + ' ' + unit[k] + '</span></div>' +
+          '<div class="bar ' + lv + '" role="meter" aria-valuemin="0" aria-valuemax="' + scale[k] + '" aria-valuenow="' + v[k].toFixed(1) + '" aria-label="' + esc(t('r')[k]) + '"><i style="width:' + pct + '%"></i><u style="left:' + (wa / scale[k]) * 100 + '%"></u><u style="left:' + (cr / scale[k]) * 100 + '%"></u></div>' +
+          '<div class="lv ' + lv + '">' + (lv === 'ok' ? '● ' : lv === 'warn' ? '▲ ' : '✕ ') + esc(fill(t('lv')[lv], { a: wa + ' ' + unit[k], b: cr + ' ' + unit[k] })) + '</div></div>';
+      }).join('');
+    }
+    function renderLog(a) {
+      const ul = $('log');
+      const evs = a ? a.mon.events.slice(0, 60) : [];
+      if (!evs.length) { ul.innerHTML = '<li class="empty" style="display:block;border:0">' + esc(t('noEvent')) + '</li>'; return; }
+      ul.innerHTML = evs.map((e) => {
+        if (e.res) return '<li><time>' + fmtTime(e.t) + '</time><span class="to-' + (e.to === 'ok' ? 'up' : e.to === 'warn' ? 'degraded' : 'down') + '">' + esc(t('r')[e.res]) + ' : ' + esc(t('resEv')[e.to]) + ' (' + Math.round(e.v * 10) / 10 + ')</span></li>';
+        const st = a.mon.states.find((s) => s.svc.id === e.id);
+        return '<li><time>' + fmtTime(e.t) + '</time><span class="to-' + e.to + '">' + ICON[e.to] + ' ' + esc(svcName(st.svc)) + ' : ' + esc(t('ev')[e.to]) + (e.ms != null ? ' (' + fmtMs(e.ms) + ')' : '') + '</span></li>';
+      }).join('');
+    }
+    function render() {
+      const a = active();
+      renderKpis(a); renderCards(a); renderRes(a); renderLog(a);
+      $('resPanel').hidden = false;
+      $('clock').textContent = sim ? t('simTime') + ' ' + fmtTime(sim.clock) : '';
+    }
+
+    // ---------------- Contrôles démo ----------------
+    function renderTargets() {
+      const sel = $('target'), cur = sel.value;
+      sel.innerHTML = DEMO.map((d) => '<option value="' + d.id + '">' + esc(t('svc')[d.id]) + '</option>').join('');
+      sel.value = cur || 'nas';
+    }
+    $('pause').addEventListener('click', () => { sim.paused = !sim.paused; $('pause').textContent = sim.paused ? t('resume') : t('pause'); schedule(); });
+    document.querySelectorAll('[data-speed]').forEach((b) => b.addEventListener('click', () => {
+      sim.speed = +b.dataset.speed;
+      document.querySelectorAll('[data-speed]').forEach((x) => x.setAttribute('aria-pressed', x === b));
+      schedule();
+    }));
+    $('outage').addEventListener('click', () => { sim.probe.outage($('target').value, 8); });
+    $('slow').addEventListener('click', () => { sim.probe.slowdown($('target').value, 10); });
+    $('fill').addEventListener('click', () => { sim.fillLeft = 30; });
+
+    // ---------------- Mode réel ----------------
+    function cfgMsg(text, isErr) { const m = $('cfgMsg'); m.textContent = text; m.className = 'msg' + (isErr ? ' err' : ''); }
+    function stopReal() { if (real) { clearInterval(real.timer); real.running = false; } }
+    $('start').addEventListener('click', async () => {
+      const c = H.parseConfig($('cfg').value);
+      if (c.error) { cfgMsg(fill(t({ json: 'eJson', empty: 'eEmpty', name: 'eName', url: 'eUrl', tooMany: 'eTooMany' }[c.error]), { i: c.i }), true); return; }
+      try { localStorage.setItem('homelab-config', $('cfg').value); } catch (e) {}
+      stopReal();
+      const mon = H.Monitor({ services: c.services, probe: H.httpProbe(4000), warnMs: 300, failThreshold: 3, history: 40 });
+      real = { mon, interval: c.interval, running: true, timer: null };
+      let msg = fill(t('running'), { n: c.services.length, s: c.interval });
+      const blocked = location.protocol === 'https:' ? c.services.filter((s) => s.url.startsWith('http:')).length : 0;
+      if (blocked) msg += ' ' + fill(t('mixed'), { n: blocked });
+      cfgMsg(msg, !!blocked);
+      const go = async () => { await mon.tick(Date.now()); if (mode === 'real') render(); };
+      render(); await go();
+      real.timer = setInterval(go, c.interval * 1000);
+    });
+    $('stop').addEventListener('click', () => { stopReal(); cfgMsg(t('stopped')); });
+    $('resetCfg').addEventListener('click', () => { $('cfg').value = JSON.stringify(SAMPLE, null, 2); });
+
+    // ---------------- Onglets, langue ----------------
+    document.querySelectorAll('.tab').forEach((b) => b.addEventListener('click', () => {
+      mode = b.dataset.mode;
+      document.querySelectorAll('.tab').forEach((x) => x.setAttribute('aria-selected', x === b));
+      $('demoCtrl').hidden = mode !== 'demo'; $('realCtrl').hidden = mode !== 'real';
+      tipState = null; schedule(); render();
+    }));
+    function setLang(l) {
+      lang = l; document.documentElement.lang = l;
+      document.querySelectorAll('[data-t]').forEach((el) => { const v = T[l][el.dataset.t]; if (typeof v === 'string') el.innerHTML = v; });
+      if (sim) $('pause').textContent = sim.paused ? t('resume') : t('pause');
+      document.title = l === 'fr' ? 'Tableau de bord homelab' : 'Homelab dashboard';
+      document.querySelectorAll('.lang button').forEach((b) => b.setAttribute('aria-pressed', b.dataset.lang === l));
+      try { localStorage.setItem('lang', l); } catch (e) {}
+      renderTargets(); if (sim) render();
+    }
+    document.querySelectorAll('.lang button').forEach((b) => b.addEventListener('click', () => setLang(b.dataset.lang)));
+
+    let saved = null; try { saved = localStorage.getItem('homelab-config'); } catch (e) {}
+    $('cfg').value = saved || JSON.stringify(SAMPLE, null, 2);
+    setLang(lang);
+    sim = newDemo();
+    warmUp(sim).then(() => { render(); schedule(); });
+  })();
+  </script>
+</body>
+</html>
