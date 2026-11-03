@@ -1,0 +1,488 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Démo des projets IHM</title>
+  <meta name="description" content="Démo web des projets Python du module IHM : suivi médical V1/V2, salle d'attente MVP/MVVM, monitoring de patients et web scraping.">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --bg: #0c0c0d; --panel: #161618; --border: #262628; --border-hi: #3a3a3d;
+      --text: #f2f2f2; --dim: #9b9b9f; --muted: #6c6c70; --accent: #c8102e; --good: #8fd18f; --warn: #e0a458;
+      --mono: "JetBrains Mono", ui-monospace, monospace; --sans: "Inter", system-ui, sans-serif;
+      color-scheme: dark;
+    }
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    body { background: var(--bg); color: var(--text); font-family: var(--sans); line-height: 1.55; -webkit-font-smoothing: antialiased; }
+    .wrap { max-width: 1280px; margin: 0 auto; padding: 24px max(16px, env(safe-area-inset-right, 0px)) 48px max(16px, env(safe-area-inset-left, 0px)); }
+    .top { display: flex; justify-content: space-between; align-items: center; gap: 12px; flex-wrap: wrap; margin-bottom: 24px; }
+    .back { font-size: 0.9rem; color: var(--dim); text-decoration: none; }
+    .back:hover { color: var(--accent); }
+    .lang { display: flex; border: 1px solid var(--border-hi); }
+    .lang button { font: 500 0.78rem var(--mono); letter-spacing: .05em; background: none; color: var(--dim); border: 0; padding: 5px 10px; cursor: pointer; }
+    .lang button + button { border-left: 1px solid var(--border-hi); }
+    .lang button[aria-pressed="true"] { background: var(--text); color: var(--bg); }
+    .eyebrow { font: 500 0.82rem var(--mono); color: var(--accent); letter-spacing: .04em; }
+    h1 { font-size: clamp(1.6rem, 3.4vw, 2.3rem); line-height: 1.15; margin: 6px 0 10px; text-wrap: balance; }
+    .intro { color: var(--dim); max-width: 82ch; }
+    .tabs { display: flex; gap: 8px; margin: 26px 0 16px; flex-wrap: wrap; }
+    .tab { font: 0.85rem var(--mono); background: none; color: var(--dim); border: 1px solid var(--border); border-radius: 999px; padding: 6px 14px; cursor: pointer; }
+    .tab[aria-selected="true"] { color: var(--accent); border-color: var(--accent); }
+    .view[hidden], [hidden] { display: none !important; }
+    .grid { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 20px; align-items: start; }
+    .panel { background: var(--panel); border: 1px solid var(--border); border-radius: 8px; padding: 18px; min-width: 0; }
+    .panel + .panel { margin-top: 16px; }
+    h2 { font: 600 0.78rem var(--mono); letter-spacing: .12em; text-transform: uppercase; color: var(--dim); margin-bottom: 12px; }
+    .seg { display: flex; gap: 6px; flex-wrap: wrap; margin-bottom: 12px; }
+    .seg button, .btn { font: 500 0.82rem var(--sans); background: none; color: var(--text); border: 1px solid var(--border-hi); border-radius: 6px; padding: 6px 11px; cursor: pointer; }
+    .seg button[aria-pressed="true"] { border-color: var(--text); }
+    .btn:hover, .seg button:hover { border-color: var(--accent); color: var(--accent); }
+    button:focus-visible, input:focus-visible, select:focus-visible, textarea:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+    .note { font-size: 0.82rem; color: var(--dim); margin-top: 10px; }
+    .note code, .expl code { font: 0.9em var(--mono); color: var(--text); }
+    .expl { font-size: 0.86rem; color: var(--dim); }
+    .expl p + p { margin-top: 6px; }
+
+    /* ---- fenêtre d'application (style bureau clair, comme l'appli PyQt) ---- */
+    .win { background: #f5f7fa; color: #2d3748; border-radius: 8px; overflow: hidden; border: 1px solid #3a3a3d; font: 14px/1.4 "Segoe UI", Arial, system-ui, sans-serif; }
+    .win-bar { background: #e2e6ec; color: #1a202c; font-size: 12.5px; padding: 7px 12px; display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid #cbd5e0; }
+    .win-bar i { display: inline-flex; gap: 6px; } .win-bar i b { width: 11px; height: 11px; border-radius: 2px; background: #b9c0ca; display: inline-block; }
+    .win-body { padding: 12px; display: grid; gap: 8px; min-height: 380px; align-content: start; position: relative; }
+    .win label { font-size: 13px; }
+    .win input, .win select, .win textarea { font: 13px "Segoe UI", Arial, system-ui, sans-serif; color: #1a202c; background: #fff; border: 1px solid #cbd5e0; border-radius: 4px; padding: 6px 8px; width: 100%; min-width: 0; }
+    .win textarea { font: 12px ui-monospace, Consolas, monospace; min-height: 120px; resize: vertical; }
+    .win .row { display: flex; gap: 8px; }
+    .win .row > * { flex: 1; min-width: 0; }
+    .win button { font: 600 13px "Segoe UI", Arial, system-ui, sans-serif; border: 1px solid #b9c0ca; background: #fdfdfd; color: #1a202c; border-radius: 4px; padding: 7px 10px; cursor: pointer; }
+    .win button:hover { background: #eef1f5; }
+    .win .b-blue { background: #3182ce; color: #fff; border-color: #3182ce; } .win .b-blue:hover { background: #2b6cb0; }
+    .win .b-green { background: #38a169; color: #fff; border-color: #38a169; } .win .b-green:hover { background: #2f855a; }
+    .win .b-red { background: #e53e3e; color: #fff; border-color: #e53e3e; } .win .b-red:hover { background: #c53030; }
+    .win .b-plain { background: none; border-color: transparent; }
+    .win ul.list { list-style: none; background: #fff; border: 1px solid #cbd5e0; border-radius: 5px; min-height: 150px; max-height: 240px; overflow: auto; padding: 2px; }
+    .win ul.list li { padding: 4px 6px; cursor: pointer; border-radius: 3px; user-select: none; }
+    .win ul.list li[aria-selected="true"] { background: #3182ce; color: #fff; }
+    .win pre.out { background: #fff; border: 1px solid #cbd5e0; border-radius: 4px; padding: 8px; font: 12.5px "Segoe UI", Arial, sans-serif; white-space: pre-wrap; min-height: 190px; max-height: 300px; overflow: auto; }
+    .win .v1 button { font-weight: 400; }
+    /* boîte de dialogue façon QMessageBox */
+    .dlg-back { position: absolute; inset: 0; background: rgba(20, 24, 30, .35); display: grid; place-items: center; }
+    .dlg { background: #fff; color: #1a202c; border: 1px solid #a0aec0; border-radius: 6px; width: min(320px, 90%); box-shadow: 0 10px 30px rgba(0,0,0,.35); }
+    .dlg h4 { font: 600 12.5px "Segoe UI", Arial, sans-serif; background: #e2e6ec; padding: 6px 10px; border-bottom: 1px solid #cbd5e0; }
+    .dlg p { padding: 14px 12px; font-size: 13px; display: flex; gap: 10px; align-items: flex-start; }
+    .dlg p span.ic { font-size: 20px; line-height: 1; }
+    .dlg .act { display: flex; justify-content: flex-end; gap: 8px; padding: 0 12px 12px; }
+    .dlg .act button { min-width: 70px; }
+
+    .log { background: #0a0a0b; border: 1px solid var(--border); border-radius: 6px; padding: 10px 12px; font: 0.78rem/1.6 var(--mono); color: #c9c9cc; min-height: 200px; max-height: 340px; overflow: auto; white-space: pre-wrap; }
+    .log .c { color: var(--muted); } .log .e { color: var(--warn); } .log .ok { color: var(--good); }
+    pre.code { background: #0a0a0b; border: 1px solid var(--border); border-radius: 6px; padding: 10px 12px; font: 0.76rem/1.55 var(--mono); color: #c9c9cc; overflow: auto; max-height: 260px; white-space: pre; }
+    .scr-steps { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px; margin-bottom: 12px; }
+    .scr-steps button { text-align: left; }
+    .scr-steps button.on { border-color: var(--accent); color: var(--accent); }
+    table { width: 100%; border-collapse: collapse; font: 0.8rem var(--mono); margin-top: 10px; }
+    th, td { text-align: left; padding: 6px 8px; border-bottom: 1px solid var(--border); }
+    th { color: var(--dim); font-weight: 500; }
+    .tablewrap { overflow-x: auto; }
+    @media (max-width: 1000px) { .grid { grid-template-columns: minmax(0, 1fr); } }
+    @media (max-width: 560px) { .scr-steps { grid-template-columns: minmax(0, 1fr); } }
+  </style>
+</head>
+<body>
+  <div class="wrap">
+    <div class="top">
+      <a class="back" href="../../index.html#projets" data-t="back">← Retour au portfolio</a>
+      <div class="lang" role="group" aria-label="Langue / Language">
+        <button type="button" data-lang="fr" aria-pressed="true">FR</button>
+        <button type="button" data-lang="en" aria-pressed="false">EN</button>
+      </div>
+    </div>
+    <p class="eyebrow" data-t="eyebrow">Démo · module IHM (Python / PyQt)</p>
+    <h1 data-t="title">Les projets IHM, utilisables dans le navigateur</h1>
+    <p class="intro" data-t="intro">Les quatre projets Python du module IHM, recréés en version web : même logique, mêmes règles de validation, mêmes messages que le code PyQt. Le journal à droite montre ce que fait le code à chaque clic. Les interfaces restent en français, comme les applications d'origine.</p>
+
+    <div class="tabs" role="tablist">
+      <button type="button" class="tab" role="tab" data-view="suivi" aria-selected="true" data-t="tSuivi">Suivi médical V1 → V2</button>
+      <button type="button" class="tab" role="tab" data-view="salle" aria-selected="false" data-t="tSalle">Salle d'attente MVP / MVVM</button>
+      <button type="button" class="tab" role="tab" data-view="monitoring" aria-selected="false" data-t="tMon">Monitoring de patients</button>
+      <button type="button" class="tab" role="tab" data-view="scraping" aria-selected="false" data-t="tScr">Web scraping</button>
+    </div>
+
+    <!-- ================= Suivi médical ================= -->
+    <section class="view" id="view-suivi">
+      <div class="grid">
+        <div>
+          <div class="seg" id="verSeg">
+            <button type="button" data-ver="v1" aria-pressed="false">V1</button>
+            <button type="button" data-ver="v2" aria-pressed="true" data-t="v2lbl">V2 (pensée UX santé)</button>
+          </div>
+          <div class="win" id="suiviWin"></div>
+        </div>
+        <div>
+          <div class="panel"><h2 data-t="logT">Dans le code</h2><div class="log" id="logSuivi" aria-live="polite"></div></div>
+          <div class="panel expl" id="explSuivi"></div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ================= Salle d'attente ================= -->
+    <section class="view" id="view-salle" hidden>
+      <div class="grid">
+        <div>
+          <div class="seg" id="archSeg">
+            <button type="button" data-arch="mvp" aria-pressed="true">MVP</button>
+            <button type="button" data-arch="mvvm" aria-pressed="false">MVVM</button>
+          </div>
+          <div class="win" id="salleWin"></div>
+        </div>
+        <div>
+          <div class="panel"><h2 data-t="logT">Dans le code</h2><div class="log" id="logSalle" aria-live="polite"></div></div>
+          <div class="panel expl" id="explSalle"></div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ================= Monitoring ================= -->
+    <section class="view" id="view-monitoring" hidden>
+      <div class="grid">
+        <div class="win" id="monWin">
+          <div class="win-bar"><span>Système de monitoring de patients</span><i><b></b><b></b><b></b></i></div>
+          <div class="win-body">
+            <label>Analyse des patients critiques</label>
+            <label>Cliquer sur le bouton ci-dessous pour analyser les données du fichier.</label>
+            <button type="button" id="monRun">Analyser</button>
+            <label>Résultats :</label>
+            <pre class="out" id="monOut"></pre>
+            <label id="monCount">Nombre de patients critiques : 0</label>
+          </div>
+        </div>
+        <div>
+          <div class="panel">
+            <h2 data-t="fileT">Fichier data/patients.txt (modifiable)</h2>
+            <div class="win" style="border:0;background:none"><textarea id="monFile" spellcheck="false" aria-label="patients.txt" style="min-height:150px"></textarea></div>
+            <div class="seg" style="margin-top:10px;margin-bottom:0">
+              <button type="button" id="monReset" data-t="monReset">Fichier d'origine</button>
+              <button type="button" id="monBad" data-t="monBad">Ajouter une ligne mal formée</button>
+              <button type="button" id="monAdd" data-t="monAdd">Ajouter un patient fiévreux</button>
+            </div>
+          </div>
+          <div class="panel"><h2 data-t="logT">Dans le code</h2><div class="log" id="logMon" aria-live="polite"></div></div>
+          <div class="panel expl" id="explMon"></div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ================= Web scraping ================= -->
+    <section class="view" id="view-scraping" hidden>
+      <div class="panel" style="margin-bottom:16px">
+        <h2 data-t="stepsT">Étapes du TP</h2>
+        <div class="scr-steps" id="scrSteps"></div>
+        <p class="note" data-t="scrNote">Les vrais sites (Wikipédia, Indeed) ne peuvent pas être lus depuis une page web à cause des règles de sécurité du navigateur (CORS). Le code tourne donc sur des pages d'exemple intégrées, avec des offres fictives. L'extraction, elle, est la même que dans les scripts Python.</p>
+      </div>
+      <div class="grid">
+        <div>
+          <div class="panel"><h2 id="srcTitle" data-t="srcT">HTML reçu par le script</h2><pre class="code" id="scrSrc"></pre></div>
+          <div class="panel"><h2 data-t="pyT">Code Python correspondant</h2><pre class="code" id="scrPy"></pre></div>
+        </div>
+        <div>
+          <div class="panel"><h2 data-t="consoleT">Sortie du script</h2><div class="log" id="scrOut"></div><div class="tablewrap" id="scrTable"></div>
+            <div class="seg" id="scrExport" style="margin-top:10px;margin-bottom:0" hidden>
+              <button type="button" id="dlJson" data-t="dlJson">Télécharger resultats.json</button>
+              <button type="button" id="dlCsv" data-t="dlCsv">Télécharger resultats.csv</button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+  </div>
+
+  <script src="ihm.js"></script>
+  <script>
+  (() => {
+    'use strict';
+    const I = window.IHM, $ = (id) => document.getElementById(id);
+    const esc = (s) => String(s).replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+    const T = {
+      fr: {
+        back: '← Retour au portfolio', eyebrow: 'Démo · module IHM (Python / PyQt)', title: 'Les projets IHM, utilisables dans le navigateur',
+        intro: "Les quatre projets Python du module IHM, recréés en version web : même logique, mêmes règles de validation, mêmes messages que le code PyQt. Le journal à droite montre ce que fait le code à chaque clic. Les interfaces restent en français, comme les applications d'origine.",
+        tSuivi: 'Suivi médical V1 → V2', tSalle: "Salle d'attente MVP / MVVM", tMon: 'Monitoring de patients', tScr: 'Web scraping', v2lbl: 'V2 (pensée UX santé)', logT: 'Dans le code',
+        explV1: "<p><b>V1</b> : la première version. Une saisie vide est ignorée sans rien dire, la suppression est immédiate, aucune sélection ne donne aucun retour. Sauvegarde : liste de chaînes en JSON.</p>",
+        explV2: "<p><b>V2</b> : retravaillée selon les principes UX du soin : boutons colorés par gravité (bleu ajout, vert terminé, rouge suppression), message d'erreur explicite si la saisie est vide, <b>confirmation avant toute suppression</b>, message si rien n'est sélectionné, données structurées <code>{action, terminee}</code> en JSON.</p><p>Dans le code Python, la liste « Filtre d'affichage » est créée mais pas encore reliée à l'affichage ; dans cette démo, elle est branchée.</p>",
+        explMvp: "<p><b>MVP</b> : la vue est passive. Le <code>Presenter</code> lit les champs de la vue, valide, modifie le modèle, puis pousse la liste et le message dans la vue.</p>",
+        explMvvm: "<p><b>MVVM</b> : la vue appelle le <code>ViewModel</code>, qui ne connaît pas la vue : il émet des <b>signaux</b> (<code>patients_changed</code>, <code>message_changed</code>) auxquels la vue s'est abonnée. Même modèle, même validation, communication inversée.</p>",
+        explMon: "<p>Chaque ligne est lue avec une expression régulière (<code>ID:…;NAME:…;HR:…;TEMP:…;STATUS:…</code>). Une ligne mal formée lève <code>InvalidPatientDataError</code> avec son numéro. Le statut est recalculé : un patient est critique si <b>FC &gt; 100 bpm</b> ou <b>T° &gt; 38,5 °C</b>. Le fichier d'origine contient d'ailleurs une erreur que l'analyse corrige : Durand (38,9 °C) était noté OK.</p><p>Sur le fichier d'origine, la sortie de cette démo est identique, caractère pour caractère, à celle du programme Python.</p>",
+        fileT: 'Fichier data/patients.txt (modifiable)', monReset: "Fichier d'origine", monBad: 'Ajouter une ligne mal formée', monAdd: 'Ajouter un patient fiévreux',
+        stepsT: 'Étapes du TP', srcT: 'HTML reçu par le script', srcT2: 'HTML après exécution du JavaScript (Selenium)', pyT: 'Code Python correspondant', consoleT: 'Sortie du script',
+        scrNote: "Les vrais sites (Wikipédia, Indeed) ne peuvent pas être lus depuis une page web à cause des règles de sécurité du navigateur (CORS). Le code tourne donc sur des pages d'exemple intégrées, avec des offres fictives. L'extraction, elle, est la même que dans les scripts Python.",
+        s1: '1. Page statique (requests + BeautifulSoup)', s2: '2. Page dynamique avec requests', s4: '3. Même page avec Selenium', s5: '4. Extraction robuste et export JSON / CSV',
+        dlJson: 'Télécharger resultats.json', dlCsv: 'Télécharger resultats.csv', hTitle: 'Intitulé', hCompany: 'Entreprise', hPlace: 'Localisation',
+      },
+      en: {
+        back: '← Back to portfolio', eyebrow: 'Demo · HCI module (Python / PyQt)', title: 'The HCI projects, usable in the browser',
+        intro: 'The four Python projects of the HCI module, rebuilt for the web: same logic, same validation rules, same messages as the PyQt code. The log on the right shows what the code does on each click. The interfaces stay in French, like the original applications.',
+        tSuivi: 'Medical tracking V1 → V2', tSalle: 'Waiting room MVP / MVVM', tMon: 'Patient monitoring', tScr: 'Web scraping', v2lbl: 'V2 (healthcare UX)', logT: 'In the code',
+        explV1: '<p><b>V1</b>: the first version. An empty entry is silently ignored, deletion is immediate, no selection gives no feedback. Saving: list of strings as JSON.</p>',
+        explV2: '<p><b>V2</b>: reworked with healthcare UX principles: buttons coloured by severity (blue add, green done, red delete), explicit error message for an empty entry, <b>confirmation before any deletion</b>, message when nothing is selected, structured <code>{action, terminee}</code> data as JSON.</p><p>In the Python code, the "display filter" list is created but not yet wired to the display; in this demo it is wired.</p>',
+        explMvp: '<p><b>MVP</b>: the view is passive. The <code>Presenter</code> reads the view fields, validates, updates the model, then pushes the list and message into the view.</p>',
+        explMvvm: '<p><b>MVVM</b>: the view calls the <code>ViewModel</code>, which does not know the view: it emits <b>signals</b> (<code>patients_changed</code>, <code>message_changed</code>) the view subscribed to. Same model, same validation, reversed communication.</p>',
+        explMon: '<p>Each line is read with a regular expression (<code>ID:…;NAME:…;HR:…;TEMP:…;STATUS:…</code>). A malformed line raises <code>InvalidPatientDataError</code> with its number. The status is recomputed: a patient is critical if <b>HR &gt; 100 bpm</b> or <b>T &gt; 38.5 °C</b>. The original file even contains a mistake the analysis fixes: Durand (38.9 °C) was marked OK.</p><p>On the original file, this demo outputs exactly the same text, character for character, as the Python program.</p>',
+        fileT: 'File data/patients.txt (editable)', monReset: 'Original file', monBad: 'Add a malformed line', monAdd: 'Add a feverish patient',
+        stepsT: 'Lab steps', srcT: 'HTML received by the script', srcT2: 'HTML after JavaScript ran (Selenium)', pyT: 'Matching Python code', consoleT: 'Script output',
+        scrNote: 'The real sites (Wikipedia, Indeed) cannot be read from a web page because of browser security rules (CORS). The code therefore runs on built-in sample pages with fictional job offers. The extraction itself is the same as in the Python scripts.',
+        s1: '1. Static page (requests + BeautifulSoup)', s2: '2. Dynamic page with requests', s4: '3. Same page with Selenium', s5: '4. Robust extraction and JSON / CSV export',
+        dlJson: 'Download resultats.json', dlCsv: 'Download resultats.csv', hTitle: 'Title', hCompany: 'Company', hPlace: 'Location',
+      },
+    };
+    let lang = 'fr';
+    try { lang = localStorage.getItem('lang') || ((navigator.language || 'fr').toLowerCase().startsWith('fr') ? 'fr' : 'en'); } catch (e) {}
+    if (!T[lang]) lang = 'fr';
+    const t = (k) => T[lang][k];
+    const logTo = (id) => (msg, cls) => { const el = $(id); el.insertAdjacentHTML('beforeend', '<span class="' + (cls || '') + '">' + esc(msg) + '</span>\n'); el.scrollTop = el.scrollHeight; };
+    const store = { get: (k) => { try { return localStorage.getItem(k); } catch (e) { return null; } }, set: (k, v) => { try { localStorage.setItem(k, v); } catch (e) {} } };
+    function download(name, text, type) {
+      const a = document.createElement('a'); a.href = URL.createObjectURL(new Blob([text], { type })); a.download = name; document.body.appendChild(a); a.click();
+      setTimeout(() => { URL.revokeObjectURL(a.href); a.remove(); }, 0);
+    }
+    // boîte de dialogue façon QMessageBox, dans la fenêtre
+    function dialog(win, title, msg, kind, onYes) {
+      const body = win.querySelector('.win-body');
+      const ic = { warning: '⚠️', info: 'ℹ️', question: '❓', critical: '⛔' }[kind] || 'ℹ️';
+      const d = document.createElement('div'); d.className = 'dlg-back';
+      d.innerHTML = '<div class="dlg" role="dialog" aria-modal="true"><h4>' + esc(title) + '</h4><p><span class="ic">' + ic + '</span><span>' + esc(msg) + '</span></p><div class="act">' +
+        (kind === 'question' ? '<button type="button" data-r="yes">Yes</button><button type="button" data-r="no">No</button>' : '<button type="button" data-r="ok">OK</button>') + '</div></div>';
+      body.appendChild(d);
+      d.querySelector('button').focus();
+      d.addEventListener('click', (e) => { const r = e.target.dataset && e.target.dataset.r; if (!r) return; d.remove(); if (r === 'yes' && onYes) onYes(); });
+    }
+    const listHtml = (items, sel) => items.map((it, k) => '<li role="option" data-k="' + k + '" aria-selected="' + (k === sel) + '">' + esc(it.text != null ? it.text : it) + '</li>').join('');
+
+    // ================= Suivi médical =================
+    let ver = 'v2', v1 = I.SuiviV1(), v2 = I.SuiviV2(), selS = -1, filtre = 0;
+    const logS = logTo('logSuivi');
+    function renderSuivi() {
+      const w = $('suiviWin');
+      if (ver === 'v1') {
+        w.innerHTML = '<div class="win-bar"><span>Suivi des actions patients</span><i><b></b><b></b><b></b></i></div><div class="win-body v1">' +
+          '<input id="s1in" placeholder="" aria-label="action"><button type="button" id="s1add">Ajouter</button><ul class="list" id="s1list" role="listbox"></ul>' +
+          '<button type="button" id="s1done">Marquer comme terminée</button><button type="button" id="s1del">Supprimer l\'action</button>' +
+          '<div class="row"><button type="button" id="s1save">Sauvegarder</button><button type="button" id="s1load">Charger</button></div></div>';
+        const draw = () => { $('s1list').innerHTML = listHtml(v1.affichage(), selS); };
+        draw();
+        $('s1list').addEventListener('click', (e) => { const li = e.target.closest('li'); if (li) { selS = +li.dataset.k; draw(); } });
+        $('s1add').onclick = () => { const v = $('s1in').value; const r = v1.ajouter(v); logS('ajouter(' + JSON.stringify(v) + ')' + (r.ok ? '' : ' → saisie vide, ignorée sans message'), r.ok ? '' : 'e'); if (r.ok) $('s1in').value = ''; draw(); };
+        $('s1done').onclick = () => { const r = v1.terminer(selS); logS('terminer() ' + (r.ok ? '→ "( )" remplacé par "[X]"' : '→ aucune sélection, rien ne se passe'), r.ok ? '' : 'e'); draw(); };
+        $('s1del').onclick = () => { const r = v1.supprimer(selS); logS('supprimer() ' + (r.ok ? '→ supprimée immédiatement, sans confirmation' : '→ aucune sélection, rien ne se passe'), r.ok ? 'e' : 'e'); selS = -1; draw(); };
+        $('s1save').onclick = () => { store.set('ihm-actions.json', v1.exporter()); logS('sauvegarder() → actions.json = ' + v1.exporter(), 'ok'); };
+        $('s1load').onclick = () => { const j = store.get('ihm-actions.json'); if (j) { v1.importer(j); logS('charger() ← actions.json', 'ok'); } else logS('charger() → fichier absent, exception ignorée (except: pass)', 'e'); draw(); };
+      } else {
+        w.innerHTML = '<div class="win-bar"><span>Interface de Suivi Médical - Analyse UX</span><i><b></b><b></b><b></b></i></div><div class="win-body">' +
+          '<label><b>Nouvelle action médicale :</b></label><div class="row" style="flex:none"><input id="s2in" placeholder="Ex: Mesurer tension artérielle..." style="flex:1"><button type="button" class="b-blue" id="s2add" style="flex:none">Ajouter</button></div>' +
+          '<label><b>Filtre d\'affichage :</b></label><select id="s2f"><option value="0">Toutes les actions</option><option value="1">À faire</option><option value="2">Terminées</option></select>' +
+          '<ul class="list" id="s2list" role="listbox"></ul>' +
+          '<div class="row"><button type="button" class="b-green" id="s2done">Marquer Terminée</button><button type="button" class="b-red" id="s2del">Supprimer l\'action</button></div>' +
+          '<div class="row"><button type="button" class="b-plain" id="s2save">💾 Sauvegarder (JSON)</button><button type="button" class="b-plain" id="s2load">📂 Charger</button></div></div>';
+        $('s2f').value = String(filtre);
+        let shown = [];
+        const draw = () => { shown = v2.affichage(filtre); $('s2list').innerHTML = listHtml(shown, selS); };
+        draw();
+        const idx = () => (selS >= 0 && shown[selS] ? shown[selS].index : -1);
+        $('s2list').addEventListener('click', (e) => { const li = e.target.closest('li'); if (li) { selS = +li.dataset.k; draw(); } });
+        $('s2f').onchange = () => { filtre = +$('s2f').value; selS = -1; logS('filtre → ' + $('s2f').selectedOptions[0].text); draw(); };
+        $('s2in').addEventListener('keydown', (e) => { if (e.key === 'Enter') $('s2add').click(); });
+        $('s2add').onclick = () => {
+          const v = $('s2in').value; const r = v2.ajouter(v);
+          if (!r.ok) { logS('ajouter_action() → texte vide : QMessageBox.warning', 'e'); dialog(w, r.title, r.msg, r.dialog); return; }
+          logS('ajouter_action() → donnees.append({"action": ' + JSON.stringify(v.trim()) + ', "terminee": false})'); $('s2in').value = ''; draw();
+        };
+        $('s2done').onclick = () => {
+          const r = v2.terminer(idx());
+          if (!r.ok) { logS('marquer_terminee() → aucune sélection : QMessageBox.information', 'e'); dialog(w, r.title, r.msg, r.dialog); return; }
+          logS('marquer_terminee() → donnees[' + idx() + ']["terminee"] = True'); selS = -1; draw();
+        };
+        $('s2del').onclick = () => {
+          const i = idx(), r = v2.demanderSuppression(i);
+          if (!r.ok) { logS('supprimer_action() → aucune sélection, rien à faire', 'e'); return; }
+          logS('supprimer_action() → QMessageBox.question (confirmation)');
+          dialog(w, r.title, r.msg, 'question', () => { v2.supprimer(i); logS('  réponse Yes → donnees.pop(' + i + ')'); selS = -1; draw(); });
+        };
+        $('s2save').onclick = () => { store.set('ihm-suivi_medical.json', v2.exporter()); logS('sauvegarder_donnees() → suivi_medical.json = ' + v2.exporter(), 'ok'); dialog(w, 'Succès', 'Données sauvegardées en JSON.', 'info'); };
+        $('s2load').onclick = () => {
+          const j = store.get('ihm-suivi_medical.json');
+          if (!j) { logS('charger_donnees() → FileNotFoundError : QMessageBox.warning', 'e'); dialog(w, 'Fichier introuvable', 'Aucune sauvegarde trouvée.', 'warning'); return; }
+          v2.importer(j); logS('charger_donnees() ← suivi_medical.json', 'ok'); selS = -1; draw();
+        };
+      }
+      $('explSuivi').innerHTML = '<h2>' + (lang === 'fr' ? 'Ce que montre cette version' : 'What this version shows') + '</h2>' + t(ver === 'v1' ? 'explV1' : 'explV2');
+    }
+    document.querySelectorAll('#verSeg button').forEach((b) => b.addEventListener('click', () => {
+      ver = b.dataset.ver; selS = -1; document.querySelectorAll('#verSeg button').forEach((x) => x.setAttribute('aria-pressed', x === b));
+      logS('— ' + (ver === 'v1' ? 'V1 : SuiviMedical(QWidget)' : 'V2 : AppSanteUX(QMainWindow)') + ' —', 'c'); renderSuivi();
+    }));
+
+    // ================= Salle d'attente =================
+    let arch = 'mvp', selP = -1;
+    const logP = logTo('logSalle');
+    function renderSalle() {
+      const w = $('salleWin'); selP = -1;
+      const mvp = arch === 'mvp';
+      w.innerHTML = '<div class="win-bar"><span>Gestion Salle d\'Attente - ' + (mvp ? 'MVP' : 'MVVM') + '</span><i><b></b><b></b><b></b></i></div><div class="win-body">' +
+        '<label>Nom:</label><input id="pNom" placeholder="' + (mvp ? 'Nom du patient' : '') + '" aria-label="Nom">' + (mvp ? '<label>Âge:</label>' : '') +
+        '<input id="pAge" type="number" min="0" max="150" value="0" aria-label="Âge">' + (mvp ? '<label>Motif:</label>' : '') +
+        '<input id="pMotif" placeholder="' + (mvp ? 'Motif de visite' : '') + '" aria-label="Motif">' +
+        '<button type="button" id="pAdd">' + (mvp ? 'Ajouter Patient' : 'Ajouter') + '</button><button type="button" id="pDel">' + (mvp ? 'Supprimer Sélection' : 'Supprimer') + '</button>' +
+        '<ul class="list" id="pList" role="listbox"></ul><label id="pMsg"></label></div>';
+      let items = [];
+      const drawList = () => { $('pList').innerHTML = listHtml(items, selP); };
+      $('pList').addEventListener('click', (e) => { const li = e.target.closest('li'); if (li) { selP = +li.dataset.k; drawList(); } });
+      const age = () => Math.max(0, Math.min(150, parseInt($('pAge').value, 10) || 0));
+      const setMsg = (m, c) => { $('pMsg').textContent = m; $('pMsg').style.color = { red: '#c53030', green: '#2f855a', orange: '#c05621' }[c] || '#1a202c'; };
+      const repo = new I.PatientRepository();
+      logP('— ' + (mvp ? 'MVP : model, view, PatientPresenter(model, view)' : 'MVVM : repository, PatientViewModel(repo), PatientView(vm)') + ' —', 'c');
+      if (mvp) {
+        const view = {
+          get_patient_input: () => [$('pNom').value, age(), $('pMotif').value],
+          clear_inputs: () => { $('pNom').value = ''; $('pAge').value = 0; $('pMotif').value = ''; },
+          set_patients: (l) => { items = l; selP = -1; drawList(); },
+          set_message: setMsg,
+          get_selected_index: () => selP,
+        };
+        const presenter = new I.PatientPresenter(repo, view, logP);
+        $('pAdd').onclick = () => presenter.handle_add_patient();
+        $('pDel').onclick = () => presenter.handle_remove_patient();
+      } else {
+        const vm = new I.PatientViewModel(repo, logP);
+        // la vue s'abonne aux signaux
+        vm.patients_changed.connect((l) => { logP('  ↳ vue.update_list() (slot)', 'ok'); items = l; selP = -1; drawList(); $('pNom').value = ''; $('pMotif').value = ''; });
+        vm.message_changed.connect((m, c) => { logP('  ↳ vue.update_message() (slot)', 'ok'); setMsg(m, c); });
+        $('pAdd').onclick = () => vm.add_patient($('pNom').value, age(), $('pMotif').value);
+        $('pDel').onclick = () => vm.remove_patient(selP);
+      }
+      $('explSalle').innerHTML = '<h2>' + (lang === 'fr' ? 'Architecture' : 'Architecture') + '</h2>' + t(mvp ? 'explMvp' : 'explMvvm');
+    }
+    document.querySelectorAll('#archSeg button').forEach((b) => b.addEventListener('click', () => {
+      arch = b.dataset.arch; document.querySelectorAll('#archSeg button').forEach((x) => x.setAttribute('aria-pressed', x === b)); renderSalle();
+    }));
+
+    // ================= Monitoring =================
+    const ORIG = 'ID:1234;NAME:Doe;HR:85;TEMP:37.2;STATUS:OK\nID:5678;NAME:Smith;HR:120;TEMP:39.1;STATUS:ALERT\nID:9012;NAME:Martin;HR:78;TEMP:36.8;STATUS:OK\nID:3456;NAME:Dupont;HR:110;TEMP:37.4;STATUS:ALERT\nID:7890;NAME:Durand;HR:88;TEMP:38.9;STATUS:OK\n';
+    const logM = logTo('logMon');
+    $('monFile').value = ORIG;
+    $('monRun').onclick = () => {
+      $('monOut').textContent = '';
+      logM('analyze("data/patients.txt")', 'c');
+      try {
+        const [ps, crit] = I.analyze($('monFile').value);
+        logM('  load_data → ' + ps.length + ' lignes valides (regex PATTERN.fullmatch)');
+        ps.forEach((p) => logM('  ' + p.name + ' : HR ' + p.heart_rate + ', T ' + p.temperature + ' → is_critical() = ' + p.is_critical() + ' → STATUS ' + p.status, p.is_critical() ? 'e' : ''));
+        $('monOut').textContent = I.report(ps, crit);
+        $('monCount').textContent = 'Nombre de patients critiques : ' + crit.length;
+      } catch (e) {
+        logM('  ' + e.constructor.name + ' : ' + e.message, 'e');
+        $('monCount').textContent = 'Nombre de patients critiques : 0';
+        dialog($('monWin'), 'Erreur', e.message, 'critical');
+      }
+    };
+    $('monReset').onclick = () => { $('monFile').value = ORIG; };
+    $('monBad').onclick = () => { $('monFile').value = $('monFile').value.replace(/\n?$/, '\n') + 'ID:4321;NAME:Leroy;HR:quatre-vingt;TEMP:37.0;STATUS:OK\n'; };
+    $('monAdd').onclick = () => { $('monFile').value = $('monFile').value.replace(/\n?$/, '\n') + 'ID:2468;NAME:Bernard;HR:92;TEMP:39.4;STATUS:OK\n'; };
+
+    // ================= Web scraping =================
+    const STATIC = '<!DOCTYPE html>\n<html><head><title>Web scraping — exemple</title></head><body>\n<h1>Web scraping</h1>\n<p>Le web scraping est une technique d\'extraction du contenu de sites web…</p>\n<h2>Sommaire</h2>\n<h2>Principes<span>[modifier | modifier le code]</span></h2>\n<p>…</p>\n<h2>Techniques<span>[modifier | modifier le code]</span></h2>\n<p>…</p>\n<h2>Aspects juridiques<span>[modifier | modifier le code]</span></h2>\n<p>…</p>\n<h2>Voir aussi<span>[modifier | modifier le code]</span></h2>\n</body></html>';
+    const JOBS = [
+      ['Technicien réseau et télécoms', 'Entreprise A (fictive)', 'Évry-Courcouronnes (91)'],
+      ['Développeur Python junior', 'Entreprise B (fictive)', 'Paris (75)'],
+      ['Administrateur systèmes Linux', 'Entreprise C (fictive)', 'Massy (91)'],
+      ['Ingénieur cybersécurité', null, 'La Défense (92)'],
+      ['Analyste de données santé', 'Entreprise E (fictive)', 'Créteil (94)'],
+      ['Technicien support informatique', 'Entreprise F (fictive)', 'Saint-Denis (93)'],
+    ];
+    const card = ([ti, en, li]) => '  <div class="job_seen_beacon">\n    <h2 class="jobTitle">' + esc(ti) + '</h2>\n' + (en ? '    <span data-testid="company-name">' + esc(en) + '</span>\n' : '') + '    <div data-testid="text-location">' + esc(li) + '</div>\n  </div>';
+    const DYN_RAW = '<!DOCTYPE html>\n<html><head><title>Offres d\'emploi — exemple</title></head><body>\n<div id="mosaic-provider-jobcards"></div>\n<script src="/static/app.js"></' + 'script>\n<!-- les offres sont ajoutées par le JavaScript après le chargement -->\n</body></html>';
+    const DYN_RENDERED = '<!DOCTYPE html>\n<html><head><title>Offres d\'emploi — exemple</title></head><body>\n<div id="mosaic-provider-jobcards">\n' + JOBS.map(card).join('\n') + '\n</div>\n</body></html>';
+    const PY = {
+      s1: 'url = "https://fr.wikipedia.org/wiki/Web_scraping"\nresponse = requests.get(url, headers=headers)\nsoup = BeautifulSoup(response.text, "html.parser")\nsections = soup.find_all("h2")\ndata = []\nfor s in sections:\n    titre = s.get_text().replace(\'[modifier | modifier le code]\', \'\').strip()\n    if titre:\n        data.append({"titre": titre, "info": "Section Wikipedia"})',
+      s2: 'response = requests.get(url, headers=headers)\nsoup = BeautifulSoup(response.text, "html.parser")\njobs = soup.find_all("div", class_="job_seen_beacon")\nprint(f"Nombre d\'offres trouvées avec requests : {len(jobs)}")\nif len(jobs) == 0:\n    print("ÉCHEC : ... chargé par JavaScript.")',
+      s4: 'driver = webdriver.Chrome()\ndriver.get(url)\ntime.sleep(5)  # attente du JavaScript\nhtml = driver.page_source\nsoup = BeautifulSoup(html, "html.parser")\noffres = soup.find_all("h2", class_="jobTitle")\nfor index, offre in enumerate(offres[:10]):\n    print(f"{index+1}. {offre.get_text(strip=True)}")',
+      s5: 'for card in cards:\n    try:\n        titre = card.find(\'h2\', class_=\'jobTitle\').get_text(strip=True)\n        entreprise = card.find(\'span\', {\'data-testid\': \'company-name\'}).get_text(strip=True)\n        lieu = card.find(\'div\', {\'data-testid\': \'text-location\'}).get_text(strip=True)\n        data_extracted.append({"intitulé": titre, "entreprise": entreprise, "localisation": lieu})\n    except AttributeError:\n        continue  # saute l\'élément si une info manque\n\njson.dump(resultats, f, indent=4, ensure_ascii=False)\nwriter = csv.DictWriter(f, fieldnames=resultats[0].keys())',
+    };
+    let lastRows = [];
+    const parse = (html) => new DOMParser().parseFromString(html, 'text/html');
+    function scrStep(k) {
+      document.querySelectorAll('#scrSteps button').forEach((b) => b.classList.toggle('on', b.dataset.s === k));
+      const out = $('scrOut'); out.innerHTML = ''; $('scrTable').innerHTML = ''; $('scrExport').hidden = true;
+      const say = logTo('scrOut');
+      $('scrPy').textContent = PY[k];
+      $('srcTitle').textContent = k === 's4' || k === 's5' ? t('srcT2') : t('srcT');
+      if (k === 's1') {
+        $('scrSrc').textContent = STATIC;
+        say('Récupération de la page : https://fr.wikipedia.org/wiki/Web_scraping', 'c');
+        const data = I.extraireSections(parse(STATIC));
+        say('\n--- DONNÉES EXTRAITES ---');
+        data.forEach((d) => say('Titre : ' + d.titre));
+      } else if (k === 's2') {
+        $('scrSrc').textContent = DYN_RAW;
+        say('Tentative de scraping classique sur : https://fr.indeed.com/jobs?q=informatique&l=Île-de-France', 'c');
+        const r = I.extraireJobs(parse(DYN_RAW));
+        say('\nNombre d\'offres trouvées avec requests : ' + r.cards);
+        if (r.cards === 0) say('ÉCHEC : Aucune donnée n\'a été récupérée. Le contenu est probablement chargé par JavaScript.', 'e');
+      } else if (k === 's4') {
+        $('scrSrc').textContent = DYN_RENDERED;
+        say('Ouverture du navigateur pour : https://fr.indeed.com/jobs?q=informatique&l=Île-de-France', 'c');
+        say('Attente de 5 secondes pour le chargement du JavaScript...', 'c');
+        const offres = [...parse(DYN_RENDERED).querySelectorAll('h2.jobTitle')];
+        say('\n--- OFFRES TROUVÉES AVEC SELENIUM ---');
+        offres.slice(0, 10).forEach((o, i) => say((i + 1) + '. ' + o.textContent.trim()));
+      } else {
+        $('scrSrc').textContent = DYN_RENDERED;
+        const r = I.extraireJobs(parse(DYN_RENDERED));
+        r.ignorees.forEach((n) => say('carte ' + n + ' : AttributeError (entreprise manquante) → continue', 'e'));
+        lastRows = r.data;
+        say('TP Terminé : ' + r.data.length + ' offres exportées en JSON et CSV.', 'ok');
+        $('scrTable').innerHTML = '<table><thead><tr><th>' + t('hTitle') + '</th><th>' + t('hCompany') + '</th><th>' + t('hPlace') + '</th></tr></thead><tbody>' +
+          r.data.map((d) => '<tr><td>' + esc(d['intitulé']) + '</td><td>' + esc(d.entreprise) + '</td><td>' + esc(d.localisation) + '</td></tr>').join('') + '</tbody></table>';
+        $('scrExport').hidden = false;
+      }
+    }
+    function renderSteps() {
+      $('scrSteps').innerHTML = ['s1', 's2', 's4', 's5'].map((k) => '<button type="button" class="btn" data-s="' + k + '">' + esc(t(k)) + '</button>').join('');
+      document.querySelectorAll('#scrSteps button').forEach((b) => b.addEventListener('click', () => scrStep(b.dataset.s)));
+    }
+    $('dlJson').onclick = () => download('resultats.json', JSON.stringify(lastRows, null, 4), 'application/json');
+    $('dlCsv').onclick = () => download('resultats.csv', I.toCsv(lastRows), 'text/csv;charset=utf-8');
+
+    // ================= Onglets, langue =================
+    let view = 'suivi';
+    function setView(v) {
+      view = v;
+      document.querySelectorAll('.tab').forEach((x) => x.setAttribute('aria-selected', x.dataset.view === v));
+      document.querySelectorAll('.view').forEach((s) => (s.hidden = s.id !== 'view-' + v));
+      try { history.replaceState(null, '', '#' + v); } catch (e) {}
+    }
+    document.querySelectorAll('.tab').forEach((b) => b.addEventListener('click', () => setView(b.dataset.view)));
+    function setLang(l) {
+      lang = l; document.documentElement.lang = l;
+      document.querySelectorAll('[data-t]').forEach((el) => { const v = T[l][el.dataset.t]; if (typeof v === 'string') el.innerHTML = v; });
+      document.title = l === 'fr' ? 'Démo des projets IHM' : 'HCI projects demo';
+      document.querySelectorAll('.lang button').forEach((b) => b.setAttribute('aria-pressed', b.dataset.lang === l));
+      try { localStorage.setItem('lang', l); } catch (e) {}
+      $('explSuivi').innerHTML = '<h2>' + (l === 'fr' ? 'Ce que montre cette version' : 'What this version shows') + '</h2>' + t(ver === 'v1' ? 'explV1' : 'explV2');
+      $('explSalle').innerHTML = '<h2>Architecture</h2>' + t(arch === 'mvp' ? 'explMvp' : 'explMvvm');
+      $('explMon').innerHTML = '<h2>' + (l === 'fr' ? 'Ce que fait le code' : 'What the code does') + '</h2>' + t('explMon');
+      const on = document.querySelector('#scrSteps button.on'); renderSteps(); scrStep(on ? on.dataset.s : 's1');
+    }
+    document.querySelectorAll('.lang button').forEach((b) => b.addEventListener('click', () => setLang(b.dataset.lang)));
+    // données d'exemple pour ne pas démarrer à vide
+    ['Mesurer la tension artérielle', 'Administrer le traitement de 14 h', 'Prise de température'].forEach((a) => { v2.ajouter(a); v1.ajouter(a); });
+    v2.terminer(2); v1.terminer(2);
+    logS('— V2 : AppSanteUX(QMainWindow), 3 actions d\'exemple —', 'c');
+    renderSuivi(); renderSalle();
+    setLang(lang);
+    const h = location.hash.slice(1);
+    setView(['suivi', 'salle', 'monitoring', 'scraping'].includes(h) ? h : 'suivi');
+  })();
+  </script>
+</body>
+</html>
