@@ -86,6 +86,7 @@
         <button class="filter" data-filter="sante" data-i18n="tag.health">Application santé</button>
         <button class="filter" data-filter="data" data-i18n="tag.data">Données</button>
         <button class="filter" data-filter="electronique" data-i18n="tag.electronics">Électronique</button>
+        <button class="filter" data-filter="mecanique" data-i18n="tag.mechanics">Mécanique</button>
         <button class="filter" data-filter="ia" data-i18n="tag.ai">IA</button>
         <button class="filter" data-filter="web" data-i18n="tag.web">Web</button>
       </div>
@@ -168,6 +169,54 @@
             <span class="card-links">
               <a class="card-link card-link--secondary" href="https://github.com/Valentin-Auger-Laboratoire/conception-bobine-tesla" target="_blank" rel="noopener" data-i18n="projects.code">Voir le code ↗</a>
               <a class="card-link" href="outils/bobine-tesla/index.html" data-i18n="projects.tool">Essayer l'outil ↗</a>
+            </span>
+          </div>
+        </article>
+        <article class="project-card project-card--wide" data-tags="mecanique web">
+          <div class="card-top">
+            <span class="card-type" data-i18n="tag.mechanics">Mécanique</span>
+            <span class="card-date" data-i18n="p18.date">Nov. 2026</span>
+          </div>
+          <h3 data-i18n="p18.title">Simulateur bielle-manivelle : animation et loi entrée-sortie</h3>
+          <p data-i18n="p18.desc">Simulateur du système qui transforme la rotation d'une manivelle en translation d'un piston. À partir du rayon de manivelle, de la longueur de bielle, de l'excentration et de la vitesse, il anime le mécanisme, trace la position, la vitesse et l'accélération du piston sur un tour, et donne la course, les valeurs maximales, l'angle de bielle et les points morts. Il signale une bielle trop courte, un effort latéral important sur le piston et l'effet de retour rapide dû à l'excentration. Vitesse et accélération vérifiées par dérivation numérique sur 2 000 cas aléatoires.</p>
+          <ul class="tags"><li>Cinématique</li><li>Bielle-manivelle</li><li>Loi entrée-sortie</li><li>JavaScript</li><li>SVG</li></ul>
+          <div class="card-foot">
+            <span class="card-context" data-i18n="projects.contextTool">Outil web · projet personnel</span>
+            <span class="card-links">
+              <a class="card-link card-link--secondary" href="https://github.com/Valentin-Auger-Laboratoire/simulateur-bielle-manivelle" target="_blank" rel="noopener" data-i18n="projects.code">Voir le code ↗</a>
+              <a class="card-link" href="outils/bielle-manivelle/index.html" data-i18n="projects.tool">Essayer l'outil ↗</a>
+            </span>
+          </div>
+        </article>
+        <article class="project-card project-card--wide" data-tags="mecanique web">
+          <div class="card-top">
+            <span class="card-type" data-i18n="tag.mechanics">Mécanique</span>
+            <span class="card-date" data-i18n="p19.date">Nov. 2026</span>
+          </div>
+          <h3 data-i18n="p19.title">Calculateur de trains d'engrenages simples et épicycloïdaux</h3>
+          <p data-i18n="p19.desc">Outil de calcul de transmissions par engrenages à denture droite. Train simple à plusieurs étages : rapport de réduction, sens de rotation, vitesse et couple de sortie avec rendement, entraxes et diamètres primitifs. Train épicycloïdal : choix de l'élément fixe et de l'entrée, rapport par la relation de Willis, vitesse des satellites, vérification des conditions de coaxialité, de montage et de voisinage. Les roues dentées sont dessinées et tournent à l'écran dans le bon rapport. Relation de Willis vérifiée sur 2 000 cas aléatoires.</p>
+          <ul class="tags"><li>Engrenages</li><li>Train épicycloïdal</li><li>Relation de Willis</li><li>Transmission de puissance</li><li>JavaScript</li></ul>
+          <div class="card-foot">
+            <span class="card-context" data-i18n="projects.contextTool">Outil web · projet personnel</span>
+            <span class="card-links">
+              <a class="card-link card-link--secondary" href="https://github.com/Valentin-Auger-Laboratoire/calculateur-engrenages" target="_blank" rel="noopener" data-i18n="projects.code">Voir le code ↗</a>
+              <a class="card-link" href="outils/engrenages/index.html" data-i18n="projects.tool">Essayer l'outil ↗</a>
+            </span>
+          </div>
+        </article>
+        <article class="project-card project-card--wide" data-tags="mecanique web">
+          <div class="card-top">
+            <span class="card-type" data-i18n="tag.mechanics">Mécanique</span>
+            <span class="card-date" data-i18n="p20.date">Nov. 2026</span>
+          </div>
+          <h3 data-i18n="p20.title">Outil de choix de roulements (durée de vie ISO 281)</h3>
+          <p data-i18n="p20.desc">Dimensionnement de roulements selon la méthode normalisée : charge dynamique équivalente avec interpolation des facteurs X et Y, durée de vie L10 en heures, correction de fiabilité, capacité de charge nécessaire pour la durée voulue et sécurité statique. Verdict suffisant ou insuffisant, courbe de la durée de vie selon la charge, et comparaison de roulements courants (séries 62, 63 et NU 2). Calculs vérifiés par des tests sur des valeurs calculées à la main ; capacités de catalogue indicatives.</p>
+          <ul class="tags"><li>Roulements</li><li>ISO 281</li><li>Durée de vie L10</li><li>Guidage en rotation</li><li>JavaScript</li></ul>
+          <div class="card-foot">
+            <span class="card-context" data-i18n="projects.contextTool">Outil web · projet personnel</span>
+            <span class="card-links">
+              <a class="card-link card-link--secondary" href="https://github.com/Valentin-Auger-Laboratoire/choix-roulements" target="_blank" rel="noopener" data-i18n="projects.code">Voir le code ↗</a>
+              <a class="card-link" href="outils/roulements/index.html" data-i18n="projects.tool">Essayer l'outil ↗</a>
             </span>
           </div>
         </article>

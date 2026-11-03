@@ -1,0 +1,365 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Choix de roulements</title>
+  <meta name="description" content="Outil de choix de roulements : charge équivalente, durée de vie L10 selon ISO 281, fiabilité, capacité nécessaire, sécurité statique et comparaison de roulements courants.">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --bg: #0c0c0d; --panel: #161618; --border: #262628; --border-hi: #3a3a3d;
+      --text: #f2f2f2; --dim: #9b9b9f; --muted: #6c6c70; --accent: #c8102e; --line: #c9c9cc; --warn: #e0a458; --good: #8fd18f;
+      --mono: "JetBrains Mono", ui-monospace, monospace; --sans: "Inter", system-ui, sans-serif;
+      color-scheme: dark;
+    }
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    body { background: var(--bg); color: var(--text); font-family: var(--sans); line-height: 1.55; -webkit-font-smoothing: antialiased; }
+    .wrap { max-width: 1240px; margin: 0 auto; padding: 24px max(16px, env(safe-area-inset-right, 0px)) 48px max(16px, env(safe-area-inset-left, 0px)); }
+    .top { display: flex; justify-content: space-between; align-items: center; gap: 12px; flex-wrap: wrap; margin-bottom: 24px; }
+    .back { font-size: 0.9rem; color: var(--dim); text-decoration: none; }
+    .back:hover { color: var(--accent); }
+    .lang { display: flex; border: 1px solid var(--border-hi); }
+    .lang button { font: 500 0.78rem var(--mono); letter-spacing: .05em; background: none; color: var(--dim); border: 0; padding: 5px 10px; cursor: pointer; }
+    .lang button + button { border-left: 1px solid var(--border-hi); }
+    .lang button[aria-pressed="true"] { background: var(--text); color: var(--bg); }
+    .eyebrow { font: 500 0.82rem var(--mono); color: var(--accent); letter-spacing: .04em; }
+    h1 { font-size: clamp(1.6rem, 3.4vw, 2.3rem); line-height: 1.15; margin: 6px 0 10px; text-wrap: balance; }
+    .intro { color: var(--dim); max-width: 80ch; }
+    .grid { display: grid; grid-template-columns: 380px minmax(0, 1fr); gap: 20px; align-items: start; margin-top: 26px; }
+    .panel { background: var(--panel); border: 1px solid var(--border); border-radius: 8px; padding: 18px; min-width: 0; }
+    .panel + .panel { margin-top: 16px; }
+    h2 { font: 600 0.78rem var(--mono); letter-spacing: .12em; text-transform: uppercase; color: var(--dim); margin-bottom: 12px; }
+    h3 { font: 600 0.74rem var(--mono); letter-spacing: .08em; text-transform: uppercase; color: var(--dim); margin: 18px 0 10px; padding-top: 14px; border-top: 1px solid var(--border); }
+    .fields { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px 12px; }
+    .full { grid-column: 1 / -1; }
+    label.f { display: grid; gap: 5px; font: 500 0.74rem var(--mono); color: var(--dim); min-width: 0; }
+    .inp { display: flex; align-items: center; min-width: 0; border: 1px solid var(--border-hi); border-radius: 6px; background: var(--bg); }
+    .inp input, .inp select { flex: 1; width: 100%; min-width: 0; font: 0.9rem var(--mono); background: none; color: var(--text); border: 0; padding: 8px 9px; }
+    .inp select option { background: var(--bg); }
+    .inp span { font: 0.74rem var(--mono); color: var(--muted); padding-right: 9px; white-space: nowrap; }
+    .inp:focus-within { outline: 2px solid var(--accent); outline-offset: 2px; }
+    button:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+    .seg { display: flex; gap: 6px; flex-wrap: wrap; }
+    .seg button { font: 0.8rem var(--mono); background: none; color: var(--dim); border: 1px solid var(--border); border-radius: 6px; padding: 6px 10px; cursor: pointer; }
+    .seg button[aria-pressed="true"] { color: var(--text); border-color: var(--text); }
+    .check { font-size: 0.85rem; display: flex; gap: 8px; align-items: center; margin-top: 10px; }
+    .check input { accent-color: var(--accent); }
+    .btn { font: 500 0.85rem var(--sans); background: none; color: var(--text); border: 1px solid var(--border-hi); border-radius: 6px; padding: 7px 12px; cursor: pointer; }
+    .btn:hover { border-color: var(--accent); color: var(--accent); }
+    .row { display: flex; gap: 8px; flex-wrap: wrap; }
+    .hint { font-size: 0.8rem; color: var(--dim); margin-top: 8px; }
+    .presets { margin-top: 18px; padding-top: 14px; border-top: 1px solid var(--border); }
+    .presets p { font: 0.75rem var(--mono); color: var(--dim); margin-bottom: 8px; }
+    [hidden] { display: none !important; }
+    .verdict { display: flex; gap: 12px; align-items: center; padding: 12px 14px; border: 1px solid var(--border); border-radius: 6px; margin-bottom: 12px; font-size: 0.95rem; }
+    .verdict b { font: 700 0.8rem var(--mono); letter-spacing: .06em; text-transform: uppercase; padding: 3px 8px; border-radius: 3px; white-space: nowrap; }
+    .verdict.ok { border-color: #2e4a2e; } .verdict.ok b { background: var(--good); color: #0c0c0d; }
+    .verdict.ko { border-color: #5a2326; } .verdict.ko b { background: var(--accent); color: #fff; }
+    .kpis { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 10px; }
+    .kpi { border: 1px solid var(--border); border-radius: 6px; padding: 10px 12px; min-width: 0; }
+    .kpi dt { font: 0.72rem var(--mono); color: var(--dim); }
+    .kpi dd { font: 600 1.25rem var(--sans); font-variant-numeric: tabular-nums; margin-top: 2px; overflow-wrap: anywhere; }
+    .kpi dd small { font: 400 0.78rem var(--mono); color: var(--dim); margin-left: 3px; }
+    .kpi.main dd { color: var(--accent); }
+    .issues { list-style: none; display: grid; gap: 6px; margin-top: 14px; }
+    .issues li { font-size: 0.86rem; display: grid; grid-template-columns: auto minmax(0, 1fr); gap: 10px; align-items: baseline; padding: 7px 10px; border: 1px solid var(--border); border-radius: 6px; }
+    .issues .lv { font: 600 0.68rem var(--mono); letter-spacing: .06em; text-transform: uppercase; padding: 1px 6px; border-radius: 3px; border: 1px solid var(--warn); color: var(--warn); }
+    .issues .err .lv { background: var(--accent); border-color: var(--accent); color: #fff; }
+    .kv { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 6px 16px; font: 0.84rem var(--mono); font-variant-numeric: tabular-nums; margin-top: 14px; }
+    .kv dt { color: var(--dim); } .kv dd { text-align: right; }
+    .two { display: grid; grid-template-columns: minmax(0, 0.9fr) minmax(0, 1.1fr); gap: 18px; align-items: start; }
+    .chart-wrap { position: relative; margin-top: 14px; }
+    .chart { width: 100%; height: 230px; display: block; overflow: visible; }
+    .chart .grid-l { stroke: var(--border); }
+    .chart .axis-t { font: 10px var(--mono); fill: var(--muted); }
+    .chart .ln { fill: none; stroke: var(--line); stroke-width: 2; stroke-linejoin: round; }
+    .chart .req { stroke: var(--warn); stroke-dasharray: 5 4; stroke-width: 1.5; }
+    .chart .cur { fill: var(--accent); stroke: var(--panel); stroke-width: 2; }
+    .chart .cross { stroke: var(--muted); }
+    .chart .dot { fill: var(--text); stroke: var(--panel); stroke-width: 2; }
+    .tip { position: absolute; pointer-events: none; font: 0.74rem var(--mono); background: var(--bg); border: 1px solid var(--border-hi); border-radius: 4px; padding: 3px 7px; white-space: nowrap; transform: translate(-50%, -120%); }
+    .legend { font: 0.74rem var(--mono); color: var(--dim); margin-top: 6px; display: flex; gap: 14px; flex-wrap: wrap; }
+    .legend b { display: inline-block; width: 16px; height: 2px; background: var(--line); vertical-align: 3px; margin-right: 6px; }
+    .legend u { display: inline-block; width: 16px; border-top: 2px dashed var(--warn); vertical-align: 3px; margin-right: 6px; }
+    .legend i { display: inline-block; width: 10px; height: 10px; border-radius: 50%; background: var(--accent); vertical-align: -1px; margin-right: 6px; }
+    .tablewrap { overflow-x: auto; }
+    table { width: 100%; border-collapse: collapse; font: 0.8rem var(--mono); font-variant-numeric: tabular-nums; }
+    th, td { text-align: left; padding: 6px 8px; border-bottom: 1px solid var(--border); white-space: nowrap; }
+    th { color: var(--dim); font-weight: 500; }
+    td.okc { color: var(--good); } td.koc { color: var(--accent); }
+    tr.sel td { background: #1d1d20; }
+    .note { font-size: 0.82rem; color: var(--dim); margin-top: 14px; }
+    .note p + p { margin-top: 6px; }
+    @media (max-width: 1000px) { .grid { grid-template-columns: minmax(0, 1fr); } }
+    @media (max-width: 760px) { .kpis { grid-template-columns: repeat(2, minmax(0, 1fr)); } .two { grid-template-columns: 1fr; } }
+  </style>
+</head>
+<body>
+  <div class="wrap">
+    <div class="top">
+      <a class="back" href="../../index.html#projets" data-t="back">← Retour au portfolio</a>
+      <div class="lang" role="group" aria-label="Langue / Language">
+        <button type="button" data-lang="fr" aria-pressed="true">FR</button>
+        <button type="button" data-lang="en" aria-pressed="false">EN</button>
+      </div>
+    </div>
+    <p class="eyebrow" data-t="eyebrow">Outil mécanique · guidage en rotation</p>
+    <h1 data-t="title">Choix de roulements</h1>
+    <p class="intro" data-t="intro">Donnez les charges, la vitesse et la durée de vie voulue : l'outil calcule la charge équivalente, la durée de vie du roulement selon la méthode normalisée (ISO 281), la capacité de charge nécessaire et la sécurité statique, puis compare plusieurs roulements courants.</p>
+
+    <div class="grid">
+      <div class="panel">
+        <h2 data-t="bearingT">Roulement</h2>
+        <div class="seg" role="group" aria-label="Type">
+          <button type="button" data-type="ball" aria-pressed="true" data-t="tBall">Rigide à billes</button>
+          <button type="button" data-type="cyl" aria-pressed="false" data-t="tCyl">À rouleaux cylindriques</button>
+          <button type="button" data-type="manual" aria-pressed="false" data-t="tManual">Autre (X, Y du catalogue)</button>
+        </div>
+        <div class="fields" style="margin-top:12px">
+          <label class="f full"><span data-t="fRef">Référence</span><span class="inp"><select id="ref"></select></span></label>
+          <label class="f"><span data-t="fC">Charge dynamique C</span><span class="inp"><input type="number" id="C" min="0.1" step="0.1"><span>kN</span></span></label>
+          <label class="f"><span data-t="fC0">Charge statique C0</span><span class="inp"><input type="number" id="C0" min="0.1" step="0.1"><span>kN</span></span></label>
+        </div>
+        <div class="fields" id="manualFields" style="margin-top:10px" hidden>
+          <label class="f"><span>X</span><span class="inp"><input type="number" id="X" min="0" step="0.01"></span></label>
+          <label class="f"><span>Y</span><span class="inp"><input type="number" id="Y" min="0" step="0.01"></span></label>
+          <label class="check full"><input type="checkbox" id="roller"> <span data-t="fRoller">Roulement à rouleaux (exposant 10/3)</span></label>
+        </div>
+        <h3 data-t="loadT">Conditions de fonctionnement</h3>
+        <div class="fields">
+          <label class="f"><span data-t="fFr">Charge radiale Fr</span><span class="inp"><input type="number" id="fr" min="0" step="10"><span>N</span></span></label>
+          <label class="f"><span data-t="fFa">Charge axiale Fa</span><span class="inp"><input type="number" id="fa" min="0" step="10"><span>N</span></span></label>
+          <label class="f"><span data-t="fN">Vitesse</span><span class="inp"><input type="number" id="n" min="1" step="10"><span>tr/min</span></span></label>
+          <label class="f"><span data-t="fLh">Durée de vie voulue</span><span class="inp"><input type="number" id="lh" min="1" step="100"><span>h</span></span></label>
+          <label class="f"><span data-t="fRel">Fiabilité</span><span class="inp"><select id="rel"><option>90</option><option>95</option><option>96</option><option>97</option><option>98</option><option>99</option></select><span>%</span></span></label>
+          <label class="f"><span data-t="fFs">Facteur de service</span><span class="inp"><input type="number" id="fs" min="1" step="0.1"></span></label>
+        </div>
+        <p class="hint" data-t="fsHint">Facteur de service : 1 pour un fonctionnement régulier, 1,2 à 1,5 avec des chocs modérés, jusqu'à 2 ou 3 avec des chocs violents.</p>
+        <div class="presets"><p data-t="presets">Exemples :</p><div class="row" id="presets"></div></div>
+      </div>
+
+      <div>
+        <div class="panel" aria-live="polite">
+          <h2 data-t="result">Résultat</h2>
+          <div class="verdict" id="verdict"></div>
+          <dl class="kpis" id="kpis"></dl>
+          <ul class="issues" id="issues"></ul>
+          <div class="two">
+            <dl class="kv" id="details"></dl>
+            <div>
+              <div class="chart-wrap" id="chartWrap"><svg class="chart" id="chart" role="img" aria-label="Durée de vie"></svg></div>
+              <div class="legend"><span><b></b><span data-t="lgCurve">durée de vie selon la charge radiale</span></span><span><u></u><span data-t="lgReq">durée voulue</span></span><span><i></i><span data-t="lgCur">point de fonctionnement</span></span></div>
+            </div>
+          </div>
+        </div>
+        <div class="panel">
+          <h2 data-t="compareT">Comparaison de roulements courants</h2>
+          <div class="tablewrap" id="compare"></div>
+          <div class="note" data-t="note"></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script src="roulements.js"></script>
+  <script>
+  (() => {
+    'use strict';
+    const R = window.Roulements, $ = (id) => document.getElementById(id);
+    const esc = (s) => String(s).replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+    const T = {
+      fr: {
+        back: '← Retour au portfolio', eyebrow: 'Outil mécanique · guidage en rotation', title: 'Choix de roulements',
+        intro: "Donnez les charges, la vitesse et la durée de vie voulue : l'outil calcule la charge équivalente, la durée de vie du roulement selon la méthode normalisée (ISO 281), la capacité de charge nécessaire et la sécurité statique, puis compare plusieurs roulements courants.",
+        bearingT: 'Roulement', tBall: 'Rigide à billes', tCyl: 'À rouleaux cylindriques', tManual: 'Autre (X, Y du catalogue)', fRef: 'Référence', manualRef: 'Saisie manuelle',
+        fC: 'Charge dynamique C', fC0: 'Charge statique C0', fRoller: 'Roulement à rouleaux (exposant 10/3)', loadT: 'Conditions de fonctionnement',
+        fFr: 'Charge radiale Fr', fFa: 'Charge axiale Fa', fN: 'Vitesse', fLh: 'Durée de vie voulue', fRel: 'Fiabilité', fFs: 'Facteur de service',
+        fsHint: "Facteur de service : 1 pour un fonctionnement régulier, 1,2 à 1,5 avec des chocs modérés, jusqu'à 2 ou 3 avec des chocs violents.",
+        presets: 'Exemples :', pMotor: 'Arbre de moteur électrique', pPulley: 'Poulie avec poussée axiale', pHeavy: 'Charge lourde avec chocs',
+        result: 'Résultat', okV: 'Suffisant', koV: 'Insuffisant',
+        vText: 'Durée de vie à {r} % de fiabilité : {l} h pour {q} h demandées ({m} × la durée voulue).',
+        kP: 'Charge équivalente P', kL: 'Durée de vie L10h', kCreq: 'C nécessaire', kS0: 'Sécurité statique s0',
+        dX: 'Facteur X', dY: 'Facteur Y', dE: 'Seuil e', dRatio: 'Fa / C0', dFaFr: 'Fa / Fr', dExp: 'Exposant p', dL10: 'L10 (millions de tours)', dA1: 'Facteur de fiabilité a1', dLnh: 'Durée de vie à la fiabilité choisie', dP0: 'Charge statique équivalente P0',
+        lgCurve: 'durée de vie selon la charge radiale', lgReq: 'durée voulue', lgCur: 'point de fonctionnement', axFr: 'Fr (N)', hours: 'h',
+        compareT: 'Comparaison de roulements courants', hRef: 'Réf.', hDim: 'd × D × B (mm)', hLife: 'Durée de vie', hS0: 's0', hVerdict: 'Verdict', yes: 'convient', no: 'trop juste',
+        note: "<p>P = fs · (X·Fr + Y·Fa), L10 = (C / P)^p avec p = 3 pour les billes et 10/3 pour les rouleaux, L10h = 10⁶·L10 / (60·n), Lnh = a1·L10h. Pour un roulement rigide à billes, e et Y sont interpolés dans le tableau usuel selon Fa / C0 (jeu normal).</p><p>Les valeurs C et C0 du tableau sont indicatives (catalogues courants) : à vérifier chez le fabricant avant tout choix réel. Lubrification, température et pollution (facteur a_ISO) ne sont pas prises en compte.</p>",
+        lvErr: 'Erreur', lvWarn: 'À vérifier', none: '—',
+        m: {
+          fr: 'Charge radiale invalide.', fa: 'Charge axiale invalide.', noLoad: 'Il faut au moins une charge non nulle.', n: 'Vitesse invalide.', lh: 'Durée de vie voulue invalide.',
+          C: 'Charge dynamique C invalide.', C0: 'Charge statique C0 invalide.', fs: 'Le facteur de service doit valoir au moins 1.', rel: 'Fiabilité invalide.', xy: 'Facteurs X et Y invalides.',
+          bigAxial: 'Fa / C0 au-delà de 0,5 : charge axiale très forte pour un roulement rigide à billes, préférez un roulement à contact oblique.',
+          cylAxial: 'Un roulement à rouleaux cylindriques type NU ne supporte pas de charge axiale : elle est ignorée ici, il faut un autre roulement pour la reprendre.',
+          short: 'Durée de vie insuffisante : choisissez un roulement de capacité C plus grande (voir la comparaison).',
+          static: 'Sécurité statique s0 = {v} < 1 : le roulement se déforme de façon permanente sous la charge.',
+          staticLow: 'Sécurité statique s0 = {v} : faible si des chocs sont possibles (on vise souvent s0 ≥ 2).',
+          heavy: 'P dépasse la moitié de C : charge très élevée, la méthode de calcul devient moins fiable.',
+        },
+      },
+      en: {
+        back: '← Back to portfolio', eyebrow: 'Mechanical tool · rotating guidance', title: 'Bearing selection',
+        intro: 'Enter the loads, speed and required life: the tool computes the equivalent load, the bearing life with the standard method (ISO 281), the required load rating and the static safety factor, then compares several common bearings.',
+        bearingT: 'Bearing', tBall: 'Deep groove ball', tCyl: 'Cylindrical roller', tManual: 'Other (catalogue X, Y)', fRef: 'Reference', manualRef: 'Manual entry',
+        fC: 'Dynamic load rating C', fC0: 'Static load rating C0', fRoller: 'Roller bearing (exponent 10/3)', loadT: 'Operating conditions',
+        fFr: 'Radial load Fr', fFa: 'Axial load Fa', fN: 'Speed', fLh: 'Required life', fRel: 'Reliability', fFs: 'Service factor',
+        fsHint: 'Service factor: 1 for smooth operation, 1.2 to 1.5 with moderate shocks, up to 2 or 3 with heavy shocks.',
+        presets: 'Examples:', pMotor: 'Electric motor shaft', pPulley: 'Pulley with axial thrust', pHeavy: 'Heavy load with shocks',
+        result: 'Output', okV: 'Sufficient', koV: 'Insufficient',
+        vText: 'Life at {r} % reliability: {l} h for {q} h required ({m} × the required life).',
+        kP: 'Equivalent load P', kL: 'L10h life', kCreq: 'Required C', kS0: 'Static safety s0',
+        dX: 'X factor', dY: 'Y factor', dE: 'Threshold e', dRatio: 'Fa / C0', dFaFr: 'Fa / Fr', dExp: 'Exponent p', dL10: 'L10 (million revolutions)', dA1: 'Reliability factor a1', dLnh: 'Life at chosen reliability', dP0: 'Static equivalent load P0',
+        lgCurve: 'life versus radial load', lgReq: 'required life', lgCur: 'operating point', axFr: 'Fr (N)', hours: 'h',
+        compareT: 'Comparison of common bearings', hRef: 'Ref.', hDim: 'd × D × B (mm)', hLife: 'Life', hS0: 's0', hVerdict: 'Verdict', yes: 'suitable', no: 'too weak',
+        note: '<p>P = fs · (X·Fr + Y·Fa), L10 = (C / P)^p with p = 3 for balls and 10/3 for rollers, L10h = 10⁶·L10 / (60·n), Lnh = a1·L10h. For a deep groove ball bearing, e and Y are interpolated from the usual table according to Fa / C0 (normal clearance).</p><p>C and C0 values in the table are indicative (common catalogues): check them with the manufacturer before any real choice. Lubrication, temperature and contamination (a_ISO factor) are not taken into account.</p>',
+        lvErr: 'Error', lvWarn: 'Check', none: '—',
+        m: {
+          fr: 'Invalid radial load.', fa: 'Invalid axial load.', noLoad: 'At least one load must be non-zero.', n: 'Invalid speed.', lh: 'Invalid required life.',
+          C: 'Invalid dynamic load rating C.', C0: 'Invalid static load rating C0.', fs: 'Service factor must be at least 1.', rel: 'Invalid reliability.', xy: 'Invalid X and Y factors.',
+          bigAxial: 'Fa / C0 above 0.5: very high axial load for a deep groove ball bearing, an angular contact bearing is better.',
+          cylAxial: 'An NU cylindrical roller bearing takes no axial load: it is ignored here, another bearing must carry it.',
+          short: 'Life too short: choose a bearing with a higher rating C (see the comparison).',
+          static: 'Static safety s0 = {v} < 1: the bearing deforms permanently under load.',
+          staticLow: 'Static safety s0 = {v}: low if shocks may occur (s0 ≥ 2 is common).',
+          heavy: 'P exceeds half of C: very high load, the calculation method becomes less reliable.',
+        },
+      },
+    };
+    let lang = 'fr';
+    try { lang = localStorage.getItem('lang') || ((navigator.language || 'fr').toLowerCase().startsWith('fr') ? 'fr' : 'en'); } catch (e) {}
+    if (!T[lang]) lang = 'fr';
+    const t = (k) => T[lang][k];
+    const num = (v, d) => v.toLocaleString(lang === 'fr' ? 'fr-FR' : 'en-GB', { maximumFractionDigits: d, minimumFractionDigits: 0 });
+    const hrs = (h) => (h >= 1e6 ? num(h / 1e6, 1) + ' M' : num(h, h < 100 ? 1 : 0));
+
+    const PRESETS = {
+      pMotor: { type: 'ball', ref: '6205', fr: 1200, fa: 0, n: 1450, lh: 20000, rel: 90, fs: 1 },
+      pPulley: { type: 'ball', ref: '6305', fr: 1500, fa: 500, n: 960, lh: 15000, rel: 90, fs: 1.2 },
+      pHeavy: { type: 'cyl', ref: 'NU 206', fr: 4500, fa: 0, n: 700, lh: 8000, rel: 90, fs: 1.5 },
+    };
+    let type = 'ball';
+
+    function fillRefs() {
+      const sel = $('ref'), cur = sel.value;
+      const list = R.CATALOG.filter((b) => type === 'manual' || b.type === type);
+      sel.innerHTML = '<option value="">' + esc(t('manualRef')) + '</option>' + list.map((b) => '<option value="' + b.ref + '">' + b.ref + ' (' + b.d + ' × ' + b.D + ' × ' + b.B + ')</option>').join('');
+      if (list.some((b) => b.ref === cur)) sel.value = cur;
+    }
+    function useRef() {
+      const b = R.CATALOG.find((x) => x.ref === $('ref').value);
+      if (b) { $('C').value = b.C; $('C0').value = b.C0; }
+    }
+    function setType(tp, silent) {
+      type = tp;
+      document.querySelectorAll('[data-type]').forEach((b) => b.setAttribute('aria-pressed', b.dataset.type === tp));
+      $('manualFields').hidden = tp !== 'manual';
+      fillRefs();
+      if (!silent) run();
+    }
+    function read() {
+      const f = (id) => parseFloat(String($(id).value).replace(',', '.'));
+      return { type, fr: f('fr'), fa: f('fa'), n: f('n'), lh: f('lh'), C: f('C'), C0: f('C0'), fs: f('fs'), rel: parseInt($('rel').value, 10), X: f('X'), Y: f('Y'), roller: $('roller').checked };
+    }
+
+    // ---------- Courbe : durée de vie (échelle log) selon Fr ----------
+    let CHART = null;
+    function drawChart(p, r) {
+      const svg = $('chart');
+      const W = svg.clientWidth || 420, H = 230, L = 54, Rm = 10, Tp = 10, B = 30;
+      svg.setAttribute('viewBox', '0 0 ' + W + ' ' + H);
+      const pts = R.sweep(p, 80);
+      if (!pts.length) { svg.innerHTML = ''; return; }
+      const x0 = pts[0].fr, x1 = pts[pts.length - 1].fr;
+      const hs = pts.map((q) => q.h).concat([p.lh, r.Lnh]);
+      const lo = Math.floor(Math.log10(Math.min(...hs))), hi = Math.ceil(Math.log10(Math.max(...hs)));
+      const X = (v) => L + ((v - x0) / (x1 - x0)) * (W - L - Rm);
+      const Y = (h) => Tp + (1 - (Math.log10(h) - lo) / Math.max(1, hi - lo)) * (H - Tp - B);
+      let g = '';
+      for (let k = lo; k <= hi; k++) {
+        g += '<line class="grid-l" x1="' + L + '" x2="' + (W - Rm) + '" y1="' + Y(10 ** k) + '" y2="' + Y(10 ** k) + '"/>';
+        g += '<text class="axis-t" x="' + (L - 6) + '" y="' + (Y(10 ** k) + 3) + '" text-anchor="end">' + hrs(10 ** k) + ' h</text>';
+      }
+      for (let i = 0; i <= 4; i++) { const v = x0 + ((x1 - x0) * i) / 4; g += '<text class="axis-t" x="' + X(v) + '" y="' + (H - 12) + '" text-anchor="middle">' + num(v, 0) + '</text>'; }
+      g += '<text class="axis-t" x="' + (W - Rm) + '" y="' + (H - 1) + '" text-anchor="end">' + esc(t('axFr')) + '</text>';
+      g += '<line class="req" x1="' + L + '" x2="' + (W - Rm) + '" y1="' + Y(p.lh) + '" y2="' + Y(p.lh) + '"/>';
+      g += '<path class="ln" d="' + pts.map((q, i) => (i ? 'L' : 'M') + X(q.fr).toFixed(1) + ' ' + Y(q.h).toFixed(1)).join('') + '"/>';
+      if (p.fr >= x0 && p.fr <= x1) g += '<circle class="cur" cx="' + X(p.fr) + '" cy="' + Y(r.Lnh) + '" r="5"/>';
+      g += '<g id="hov"></g><rect id="hit" x="' + L + '" y="0" width="' + (W - L - Rm) + '" height="' + H + '" fill="transparent"/>';
+      svg.innerHTML = g;
+      CHART = { pts, X, Y, W, L, Rm, x0, x1 };
+      const hit = svg.querySelector('#hit');
+      hit.addEventListener('pointermove', (e) => {
+        const rect = svg.getBoundingClientRect(), vx = ((e.clientX - rect.left) / rect.width) * W;
+        const fr = x0 + ((vx - L) / (W - L - Rm)) * (x1 - x0);
+        let best = pts[0]; for (const q of pts) if (Math.abs(q.fr - fr) < Math.abs(best.fr - fr)) best = q;
+        const x = X(best.fr), y = Y(best.h);
+        svg.querySelector('#hov').innerHTML = '<line class="cross" x1="' + x + '" x2="' + x + '" y1="10" y2="' + (H - 30) + '"/><circle class="dot" cx="' + x + '" cy="' + y + '" r="4"/>';
+        let tip = $('chartWrap').querySelector('.tip'); if (!tip) { tip = document.createElement('div'); tip.className = 'tip'; $('chartWrap').appendChild(tip); }
+        tip.textContent = 'Fr ' + num(best.fr, 0) + ' N · ' + hrs(best.h) + ' h';
+        tip.style.left = Math.max(80, Math.min(rect.width - 80, (x / W) * rect.width)) + 'px'; tip.style.top = (y / H) * rect.height + 'px';
+      });
+      hit.addEventListener('pointerleave', () => { svg.querySelector('#hov').innerHTML = ''; const tip = $('chartWrap').querySelector('.tip'); if (tip) tip.remove(); });
+    }
+
+    function run() {
+      const p = read();
+      const r = R.select(p);
+      const ul = $('issues'); ul.innerHTML = '';
+      (r.issues || []).slice().sort((a, b) => (a.lvl === b.lvl ? 0 : a.lvl === 'err' ? -1 : 1)).forEach((i) => {
+        const li = document.createElement('li'); li.className = i.lvl;
+        li.innerHTML = '<span class="lv">' + esc(i.lvl === 'err' ? t('lvErr') : t('lvWarn')) + '</span><span>' + esc(t('m')[i.code].replace('{v}', typeof i.v === 'number' ? num(i.v, 2) : '')) + '</span>';
+        ul.appendChild(li);
+      });
+      if (!r.ok) { $('verdict').hidden = true; $('kpis').innerHTML = ''; $('details').innerHTML = ''; $('chart').innerHTML = ''; $('compare').innerHTML = ''; return; }
+      const v = $('verdict'); v.hidden = false; v.className = 'verdict ' + (r.enough ? 'ok' : 'ko');
+      v.innerHTML = '<b>' + (r.enough ? '✓ ' + esc(t('okV')) : '✕ ' + esc(t('koV'))) + '</b><span>' + esc(t('vText').replace('{r}', p.rel).replace('{l}', hrs(r.Lnh)).replace('{q}', num(p.lh, 0)).replace('{m}', num(r.margin, 2))) + '</span>';
+      const kpi = (k, val, u, main) => '<div class="kpi' + (main ? ' main' : '') + '"><dt>' + esc(t(k)) + '</dt><dd>' + val + '<small>' + u + '</small></dd></div>';
+      $('kpis').innerHTML = kpi('kP', num(r.P, 0), 'N') + kpi('kL', hrs(r.L10h), 'h', true) + kpi('kCreq', num(r.Creq, 2), 'kN') + kpi('kS0', num(r.s0, 2), '');
+      const row = (k, val) => '<dt>' + esc(t(k)) + '</dt><dd>' + esc(val) + '</dd>';
+      $('details').innerHTML = row('dX', num(r.X, 2)) + row('dY', num(r.Y, 3)) + row('dE', r.e == null ? t('none') : num(r.e, 3)) +
+        row('dRatio', r.ratio == null ? t('none') : num(r.ratio, 3)) + row('dFaFr', p.fr > 0 ? num(p.fa / p.fr, 3) : t('none')) + row('dExp', r.pExp === 3 ? '3' : '10/3') +
+        row('dL10', num(r.L10, 1)) + row('dA1', num(r.a1, 2)) + row('dLnh', hrs(r.Lnh) + ' h') + row('dP0', num(r.P0, 0) + ' N');
+      drawChart(p, r);
+      // comparaison
+      const list = R.CATALOG.filter((b) => (type === 'manual' ? true : b.type === type));
+      $('compare').innerHTML = '<table><thead><tr><th>' + t('hRef') + '</th><th>' + t('hDim') + '</th><th>C / C0 (kN)</th><th>' + t('hLife') + '</th><th>' + t('hS0') + '</th><th>' + t('hVerdict') + '</th></tr></thead><tbody>' +
+        list.map((b) => {
+          const q = R.select({ ...p, type: type === 'manual' ? b.type : type, C: b.C, C0: b.C0 });
+          if (!q.ok) return '';
+          const good = q.enough && q.s0 >= 1;
+          return '<tr class="' + (b.ref === $('ref').value ? 'sel' : '') + '"><td>' + b.ref + '</td><td>' + b.d + ' × ' + b.D + ' × ' + b.B + '</td><td>' + num(b.C, 1) + ' / ' + num(b.C0, 2) + '</td><td>' + hrs(q.Lnh) + ' h</td><td>' + num(q.s0, 1) + '</td><td class="' + (good ? 'okc' : 'koc') + '">' + (good ? '✓ ' + t('yes') : '✕ ' + t('no')) + '</td></tr>';
+        }).join('') + '</tbody></table>';
+    }
+
+    document.querySelectorAll('[data-type]').forEach((b) => b.addEventListener('click', () => setType(b.dataset.type)));
+    $('ref').addEventListener('change', () => { useRef(); run(); });
+    ['C', 'C0'].forEach((id) => $(id).addEventListener('input', () => { $('ref').value = ''; run(); }));
+    ['fr', 'fa', 'n', 'lh', 'fs', 'X', 'Y'].forEach((id) => $(id).addEventListener('input', run));
+    ['rel', 'roller'].forEach((id) => $(id).addEventListener('change', run));
+    window.addEventListener('resize', run);
+
+    function load(o) {
+      setType(o.type, true); $('ref').value = o.ref; useRef();
+      ['fr', 'fa', 'n', 'lh', 'fs'].forEach((k) => ($(k).value = o[k])); $('rel').value = String(o.rel); run();
+    }
+    function renderPresets() {
+      const box = $('presets'); box.innerHTML = '';
+      Object.entries(PRESETS).forEach(([k, o]) => { const b = document.createElement('button'); b.type = 'button'; b.className = 'btn'; b.textContent = t(k); b.addEventListener('click', () => load(o)); box.appendChild(b); });
+    }
+    function setLang(l) {
+      lang = l; document.documentElement.lang = l;
+      document.querySelectorAll('[data-t]').forEach((el) => { const v = T[l][el.dataset.t]; if (typeof v === 'string') el.innerHTML = v; });
+      document.title = l === 'fr' ? 'Choix de roulements' : 'Bearing selection';
+      document.querySelectorAll('.lang button').forEach((b) => b.setAttribute('aria-pressed', b.dataset.lang === l));
+      try { localStorage.setItem('lang', l); } catch (e) {}
+      fillRefs(); renderPresets(); run();
+    }
+    document.querySelectorAll('.lang button').forEach((b) => b.addEventListener('click', () => setLang(b.dataset.lang)));
+    $('X').value = 0.56; $('Y').value = 1.5;
+    fillRefs(); load(PRESETS.pMotor);
+    setLang(lang);
+  })();
+  </script>
+</body>
+</html>
