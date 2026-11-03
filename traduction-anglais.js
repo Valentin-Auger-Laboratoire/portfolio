@@ -15,7 +15,7 @@ window.I18N_EN = {
   'nav.background': 'Background',
   'nav.experience': 'Experience',
   'nav.contact': 'Contact',
-  'hero.contact': 'Contact',
+  'hero.contact': 'Contact me',
 
   'hero.eyebrow': 'Engineering student',
   'hero.tagline': '<span>Networks, electronics and mechanics.</span><span>I test, I build, I document.</span><span>Here are the projects from my experimentation lab,</span><span>and how I built them.</span>',

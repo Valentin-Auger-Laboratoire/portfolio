@@ -157,15 +157,14 @@ main { max-width: var(--maxw); margin: 0 auto; padding: 0 16px; }
     0 -1px 0 #000, 0 1px 0 #000, -1px 0 0 #000, 1px 0 0 #000,
     2px 2px 0 #000;
 }
-/* bouton Contact de l'accueil : sobre, gris foncé, liseré clair en bas */
+/* lien Contact de l'accueil : texte souligné, rouge au survol (comme le menu) */
 .hero-contact {
-  display: inline-block; padding: 9px 22px; font-size: 0.95rem; color: var(--text-dim);
-  background: linear-gradient(#1d1d20, #141416);
-  border: 1px solid rgba(255, 255, 255, 0.10);
-  box-shadow: inset 0 -2px 0 rgba(255, 255, 255, 0.28);
-  transition: color .2s, border-color .2s;
+  display: inline-block; font-size: 1.05rem; color: var(--text);
+  text-decoration: underline; text-underline-offset: 5px; text-decoration-thickness: 1px;
+  text-shadow: 0 1px 10px rgba(0,0,0,0.9);
+  transition: color .2s;
 }
-.hero-contact:hover { color: var(--text); border-color: rgba(255, 255, 255, 0.25); }
+.hero-contact:hover, .hero-contact:focus-visible { color: var(--accent); }
 .btn-primary:hover { filter: brightness(1.1); transform: translateY(-1px); }
 
 .status-panel {

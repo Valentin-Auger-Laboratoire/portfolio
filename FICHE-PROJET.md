@@ -32,7 +32,7 @@
 - Fond animé (réseau de nœuds) SUPPRIMÉ : Valentin le trouvait pas pro / pas personnalisé.
 - Nom en grand : blanc, contour noir + ombre décalée. Sur-titre "Élève ingénieur" en rouge.
 - Phrase sous le nom (écrite par Valentin, NE PAS reformuler) : "Réseaux, électronique et mécanique. Je teste, je construis, je documente." / "Voici les projets de mon laboratoire d'expérimentation, et comment je les ai construits." Pas de lien dans la phrase. Affichée ligne par ligne (4 lignes, coupure après la virgule de la dernière phrase). Tailles du bloc nom/phrase proportionnelles à l'écran (vw), réduites d'environ 15 % à la demande de Valentin ; bloc calé juste à droite de la photo (padding-left ≈ 0,42 × hauteur). Son GitHub s'appelle "Laboratoire" = son labo d'expérimentation.
-- Barre du haut : PAS de nom/logo (doublon), juste le menu centré. Accueil : un SEUL bouton « Contact » SOBRE (gris foncé, texte gris clair, liseré clair en bas, PAS rouge — modèle fourni par Valentin) sous la phrase, vers #contact (demandé par Valentin en nov. 2026) ; pas d'autres boutons.
+- Barre du haut : PAS de nom/logo (doublon), juste le menu centré. Accueil : un SEUL lien « Me Contacter » (EN « Contact me ») : texte blanc souligné, sans cadre, rouge au survol sous la phrase, vers #contact (demandé par Valentin en nov. 2026) ; pas d'autres boutons.
 - Polices : Inter (texte) + JetBrains Mono (accents techniques).
 - Couleurs : toutes dans `:root` de style.css. Accent = rouge profond #c8102e (choisi par Valentin), surtout pas orangé. Secondaire = gris clair #c9c9cc.
 - Valentin a REFUSÉ : lettrage rétro (Shrikhand) sur le titre, couleur crème. Garder le design de base, ne changer que ce qui est demandé.
