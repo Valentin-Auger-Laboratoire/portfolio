@@ -62,7 +62,7 @@ window.I18N_EN = {
   'projects.contextProto': 'Web application · prototype',
   'p8.date': 'Apr 2026',
   'p8.title': 'SantéConnect: patient / doctor teleconsultation platform',
-  'p8.desc': 'Web application covering the whole remote consultation journey: patient and doctor accounts verified by e-mail code, slot publishing and booking, peer-to-peer video call (WebRTC), live chat, prescription sent by e-mail, invoice and simulated payment. Security reviewed before publishing: hashed passwords, role and appointment-ownership checks on every request, prepared statements, XSS escaping, locked-down file uploads, secrets kept out of the repository. Educational prototype, fictitious data.',
+  'p8.desc': 'Web application covering the whole remote consultation journey: patient and doctor accounts verified by e-mail code, slot publishing and booking, peer-to-peer video call (WebRTC), live chat, prescription sent by e-mail, invoice and simulated payment. Security reviewed before publishing: hashed passwords, role and appointment-ownership checks on every request, prepared statements, XSS escaping, locked-down file uploads, secrets kept out of the repository. Serverless online demo: open two tabs (patient and doctor) to watch chat, invoice and video call sync. Educational prototype, fictitious data.',
   'tag.electronics': 'Electronics',
   'projects.contextIot': 'Connected device · sensor → app → server',
   'p9.date': 'Apr 2026',
