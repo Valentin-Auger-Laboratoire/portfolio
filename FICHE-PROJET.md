@@ -54,6 +54,7 @@
 Copier un bloc `<article class="project-card" data-tags="...">` dans index.html (+ clés pN.date/title/desc dans traduction-anglais.js).
 data-tags possibles : reseau, sante, data, electronique, mecanique, ia, web (filtres "Réseaux" / "Application santé" / "Données" / "Électronique" / "Mécanique" / "IA" / "Web"). Cartes pleine largeur (project-card--wide), en tête : POC réseau téléradiologie, Calculateur VLSM, Générateur de config, Homelab, Bobine Tesla, Vérin SolidWorks, Bielle-manivelle, Engrenages, Roulements, Aileron éléments finis, Back-office officine, Athletix-Data, SantéConnect (téléconsultation), Vision IA, Signal FFT MATLAB ; puis les 4 projets IHM en 2x2. Ajouter un filtre seulement s'il a au moins un projet.
 Grille projets : 2 colonnes (1 sur mobile).
+Images des cartes (nov. 2026, demandé par Valentin pour alléger) : chaque carte a une image `.card-media` (assets/projets/<nom>.jpg, 960x600, 16:10, alt traduit via clé pN.img). Grandes cartes : image à gauche (2/5), texte à droite ; petites cartes et mobile : image en haut. Images = vraies captures de SON travail : démos et outils (Playwright), apps PyQt lancées hors écran avec données d'exemple saisies via leurs boutons, captures des dépôts (GNS3, oscillo, Athletix), SolidWorks (vérin), extrait de code pour le scraping. Couleurs d'origine (pas de N&B). Nouvelle carte = ajouter aussi son image.
 
 ## À faire
 - [x] Nom : Valentin Auger
