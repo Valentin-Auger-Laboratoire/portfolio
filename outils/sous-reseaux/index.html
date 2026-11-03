@@ -1,0 +1,303 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Calculateur de sous-réseaux</title>
+  <meta name="description" content="Calculateur de sous-réseaux IPv4 et découpage VLSM : plan d'adressage, masques, passerelles, plages et export CSV.">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --bg: #0c0c0d; --panel: #161618; --border: #262628; --border-hi: #3a3a3d;
+      --text: #f2f2f2; --dim: #9b9b9f; --accent: #c8102e; --ok: #8fd18f; --warn: #e0a458;
+      --mono: "JetBrains Mono", ui-monospace, monospace; --sans: "Inter", system-ui, sans-serif;
+      color-scheme: dark;
+    }
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    body { background: var(--bg); color: var(--text); font-family: var(--sans); line-height: 1.55; -webkit-font-smoothing: antialiased; }
+    .wrap { max-width: 1180px; margin: 0 auto; padding: 24px max(16px, env(safe-area-inset-right, 0px)) 48px max(16px, env(safe-area-inset-left, 0px)); }
+    .top { display: flex; justify-content: space-between; align-items: center; gap: 12px; flex-wrap: wrap; margin-bottom: 24px; }
+    .back { font-size: 0.9rem; color: var(--dim); text-decoration: none; }
+    .back:hover { color: var(--accent); }
+    .lang { display: flex; border: 1px solid var(--border-hi); }
+    .lang button { font: 500 0.78rem var(--mono); letter-spacing: .05em; background: none; color: var(--dim); border: 0; padding: 5px 10px; cursor: pointer; }
+    .lang button + button { border-left: 1px solid var(--border-hi); }
+    .lang button[aria-pressed="true"] { background: var(--text); color: var(--bg); }
+    .eyebrow { font: 500 0.82rem var(--mono); color: var(--accent); letter-spacing: .04em; }
+    h1 { font-size: clamp(1.6rem, 3.4vw, 2.3rem); line-height: 1.15; margin: 6px 0 10px; text-wrap: balance; }
+    .intro { color: var(--dim); max-width: 78ch; }
+
+    .tabs { display: flex; gap: 8px; margin: 26px 0 16px; flex-wrap: wrap; }
+    .tab { font: 0.85rem var(--mono); background: none; color: var(--dim); border: 1px solid var(--border); border-radius: 999px; padding: 6px 14px; cursor: pointer; }
+    .tab[aria-selected="true"] { color: var(--accent); border-color: var(--accent); }
+    .view[hidden] { display: none; }
+
+    .panel { background: var(--panel); border: 1px solid var(--border); border-radius: 8px; padding: 18px; min-width: 0; }
+    .panel h2 { font: 600 0.78rem var(--mono); letter-spacing: .12em; text-transform: uppercase; color: var(--dim); margin-bottom: 12px; }
+    .grid { display: grid; grid-template-columns: 360px minmax(0, 1fr); gap: 20px; align-items: start; }
+    label.f { display: grid; gap: 6px; font: 500 0.78rem var(--mono); color: var(--dim); }
+    input[type=text], input[type=number] { width: 100%; min-width: 0; font: 0.95rem var(--mono); background: var(--bg); color: var(--text); border: 1px solid var(--border-hi); border-radius: 6px; padding: 9px 10px; }
+    input.bad { border-color: var(--accent); }
+    input:focus-visible, button:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+    .needs { display: grid; gap: 8px; margin-top: 16px; }
+    .need { display: grid; grid-template-columns: minmax(0, 1fr) 96px 34px; gap: 8px; }
+    .need button { background: none; border: 1px solid var(--border); border-radius: 6px; color: var(--dim); cursor: pointer; font-size: 1rem; }
+    .need button:hover { color: var(--accent); border-color: var(--accent); }
+    .needs-head { display: grid; grid-template-columns: minmax(0, 1fr) 96px 34px; gap: 8px; font: 0.72rem var(--mono); color: var(--dim); }
+    .btn { font: 500 0.85rem var(--sans); background: none; color: var(--text); border: 1px solid var(--border-hi); border-radius: 6px; padding: 8px 12px; cursor: pointer; }
+    .btn:hover { border-color: var(--accent); color: var(--accent); }
+    .btn.primary { background: var(--accent); border-color: var(--accent); color: #fff; }
+    .btn.primary:hover { filter: brightness(1.1); color: #fff; }
+    .row { display: flex; gap: 8px; flex-wrap: wrap; margin-top: 12px; align-items: center; }
+    .check { font-size: 0.85rem; color: var(--dim); display: flex; gap: 8px; align-items: center; margin-top: 14px; }
+    .check input { accent-color: var(--accent); }
+    .presets { margin-top: 18px; padding-top: 14px; border-top: 1px solid var(--border); }
+    .presets p { font: 0.75rem var(--mono); color: var(--dim); margin-bottom: 8px; }
+
+    .summary { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 10px; }
+    .stat { border: 1px solid var(--border); border-radius: 6px; padding: 10px 12px; min-width: 0; }
+    .stat dt { font: 0.72rem var(--mono); color: var(--dim); }
+    .stat dd { font: 600 1rem var(--mono); margin-top: 2px; overflow-wrap: anywhere; font-variant-numeric: tabular-nums; }
+    .map { display: flex; height: 26px; margin: 16px 0 6px; border: 1px solid var(--border-hi); border-radius: 4px; overflow: hidden; background: repeating-linear-gradient(45deg, #141416 0 6px, #19191c 6px 12px); }
+    .map div { height: 100%; border-right: 1px solid var(--bg); min-width: 2px; }
+    .map-legend { font: 0.72rem var(--mono); color: var(--dim); }
+    .tablewrap { overflow-x: auto; margin-top: 16px; }
+    table { width: 100%; border-collapse: collapse; font: 0.82rem var(--mono); font-variant-numeric: tabular-nums; }
+    th, td { text-align: left; padding: 8px 10px; border-bottom: 1px solid var(--border); white-space: nowrap; }
+    th { color: var(--dim); font-weight: 500; font-size: 0.74rem; }
+    td.name { font-family: var(--sans); font-weight: 600; }
+    td .sw { display: inline-block; width: 10px; height: 10px; border-radius: 2px; margin-right: 8px; vertical-align: -1px; }
+    .err { color: var(--warn); font-size: 0.9rem; }
+    .msg { font-size: 0.82rem; color: var(--dim); margin-top: 10px; }
+
+    .calc { display: grid; grid-template-columns: 360px minmax(0, 1fr); gap: 20px; align-items: start; }
+    .kv { display: grid; grid-template-columns: max-content minmax(0, 1fr); gap: 6px 18px; font: 0.88rem var(--mono); }
+    .kv dt { color: var(--dim); }
+    .kv dd { overflow-wrap: anywhere; }
+    .bin { margin-top: 18px; font: 0.86rem var(--mono); overflow-x: auto; }
+    .bin div { white-space: nowrap; padding: 3px 0; }
+    .bin .lbl { display: inline-block; width: 110px; color: var(--dim); }
+    .bin .n { color: var(--accent); font-weight: 600; }
+    .bin .h { color: var(--ok); }
+
+    @media (max-width: 900px) { .grid, .calc { grid-template-columns: 1fr; } .summary { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+  </style>
+</head>
+<body>
+  <div class="wrap">
+    <div class="top">
+      <a class="back" href="../../index.html#projets" data-t="back">← Retour au portfolio</a>
+      <div class="lang" role="group" aria-label="Langue / Language">
+        <button type="button" data-lang="fr" aria-pressed="true">FR</button>
+        <button type="button" data-lang="en" aria-pressed="false">EN</button>
+      </div>
+    </div>
+    <p class="eyebrow" data-t="eyebrow">Outil réseau · adressage IPv4</p>
+    <h1 data-t="title">Calculateur de sous-réseaux et découpage VLSM</h1>
+    <p class="intro" data-t="intro">Donnez un réseau et la liste des besoins en hôtes : l'outil attribue à chaque sous-réseau le plus petit bloc possible, sans chevauchement, et produit le plan d'adressage complet (masque, passerelle, plage, broadcast).</p>
+
+    <div class="tabs" role="tablist">
+      <button type="button" class="tab" role="tab" data-view="vlsm" aria-selected="true" data-t="tabVlsm">Découpage VLSM</button>
+      <button type="button" class="tab" role="tab" data-view="calc" aria-selected="false" data-t="tabCalc">Analyser une adresse</button>
+    </div>
+
+    <!-- ===== Découpage VLSM ===== -->
+    <section class="view" id="view-vlsm">
+      <div class="grid">
+        <div class="panel">
+          <h2 data-t="inputs">Données</h2>
+          <label class="f"><span data-t="baseLbl">Réseau à découper (CIDR)</span><input type="text" id="base" value="172.16.0.0/24" spellcheck="false" autocomplete="off"></label>
+          <div class="needs">
+            <div class="needs-head"><span data-t="colName">Sous-réseau</span><span data-t="colHosts">Hôtes</span><span></span></div>
+            <div id="needs"></div>
+          </div>
+          <div class="row"><button type="button" class="btn" id="add" data-t="add">+ Ajouter un sous-réseau</button></div>
+          <label class="check"><input type="checkbox" id="p2p"> <span data-t="p2p">Liens point à point en /31 (RFC 3021) pour 2 hôtes</span></label>
+          <div class="presets">
+            <p data-t="presets">Exemples :</p>
+            <div class="row" style="margin-top:0" id="presetBtns"></div>
+          </div>
+        </div>
+        <div class="panel" id="vlsmOut" aria-live="polite"></div>
+      </div>
+    </section>
+
+    <!-- ===== Analyse d'une adresse ===== -->
+    <section class="view" id="view-calc" hidden>
+      <div class="calc">
+        <div class="panel">
+          <h2 data-t="inputs">Données</h2>
+          <label class="f"><span data-t="addrLbl">Adresse et préfixe</span><input type="text" id="addr" value="172.16.10.37/26" spellcheck="false" autocomplete="off"></label>
+          <p class="msg" data-t="addrHelp">Exemples : 192.168.1.130/25, 10.0.0.5/30, 172.17.40.1/24.</p>
+        </div>
+        <div class="panel" id="calcOut" aria-live="polite"></div>
+      </div>
+    </section>
+  </div>
+
+  <script src="vlsm.js"></script>
+  <script>
+  (() => {
+    'use strict';
+    const V = window.VLSM, $ = (id) => document.getElementById(id);
+    const T = {
+      fr: {
+        back: '← Retour au portfolio', eyebrow: 'Outil réseau · adressage IPv4', title: 'Calculateur de sous-réseaux et découpage VLSM',
+        intro: "Donnez un réseau et la liste des besoins en hôtes : l'outil attribue à chaque sous-réseau le plus petit bloc possible, sans chevauchement, et produit le plan d'adressage complet (masque, passerelle, plage, broadcast).",
+        tabVlsm: 'Découpage VLSM', tabCalc: 'Analyser une adresse', inputs: 'Données', baseLbl: 'Réseau à découper (CIDR)',
+        colName: 'Sous-réseau', colHosts: 'Hôtes', add: '+ Ajouter un sous-réseau', p2p: 'Liens point à point en /31 (RFC 3021) pour 2 hôtes',
+        presets: 'Exemples :', pPoc: 'Site Paris du PoC', pSchool: "Cas d'école /24", pWan: 'Liens WAN',
+        plan: "Plan d'adressage", base: 'Réseau de base', used: 'Adresses utilisées', free: 'Adresses libres', next: 'Prochain bloc libre',
+        hName: 'Nom', hNeed: 'Besoin', hNet: 'Réseau', hMask: 'Masque', hGw: 'Passerelle', hRange: 'Plage utilisable', hBc: 'Broadcast', hUsable: 'Utilisables', hWaste: 'Perdues',
+        copy: 'Copier le CSV', dl: 'Télécharger le CSV', copied: 'Copié dans le presse-papiers.', copyFail: 'Copie impossible : sélectionnez le tableau à la main.',
+        adjusted: "L'adresse saisie n'était pas le début du réseau : le calcul part de", mapLegend: 'Répartition du réseau de base (zone hachurée = libre)',
+        errCidr: 'Réseau invalide. Format attendu : 192.168.1.0/24.', errHosts: "Chaque sous-réseau doit avoir au moins 1 hôte (nombre entier).",
+        errTooBig: 'Un sous-réseau demande plus d\'adresses que le réseau de base entier.', errFull: "Le réseau de base est trop petit pour tous les besoins : augmentez sa taille (préfixe plus petit) ou réduisez les besoins.",
+        none: '—', newName: 'Sous-réseau', remove: 'Supprimer',
+        cNet: 'Réseau', cMask: 'Masque', cWild: 'Masque inverse (wildcard)', cBc: 'Broadcast', cFirst: 'Première adresse', cLast: 'Dernière adresse', cUsable: 'Hôtes utilisables', cClass: 'Classe', cType: 'Type', cPriv: 'privée (RFC 1918)', cPub: 'publique',
+        binTitle: 'Vue binaire', bAddr: 'Adresse', bMask: 'Masque', bNet: 'Réseau', legend: 'rouge = partie réseau, vert = partie hôte',
+        csvHead: ['Sous-réseau', 'Hôtes demandés', 'Réseau', 'Masque', 'Passerelle', 'Plage utilisable', 'Broadcast', 'Hôtes utilisables', 'Adresses perdues'],
+        errAddr: 'Adresse invalide. Format attendu : 192.168.1.130/25.',
+      },
+      en: {
+        back: '← Back to portfolio', eyebrow: 'Network tool · IPv4 addressing', title: 'Subnet calculator and VLSM planner',
+        intro: 'Enter a network and the list of host requirements: the tool gives each subnet the smallest possible block, with no overlap, and builds the full addressing plan (mask, gateway, range, broadcast).',
+        tabVlsm: 'VLSM planner', tabCalc: 'Analyse an address', inputs: 'Inputs', baseLbl: 'Network to split (CIDR)',
+        colName: 'Subnet', colHosts: 'Hosts', add: '+ Add a subnet', p2p: 'Point-to-point links as /31 (RFC 3021) for 2 hosts',
+        presets: 'Examples:', pPoc: 'PoC Paris site', pSchool: 'Textbook /24', pWan: 'WAN links',
+        plan: 'Addressing plan', base: 'Base network', used: 'Addresses used', free: 'Addresses free', next: 'Next free block',
+        hName: 'Name', hNeed: 'Need', hNet: 'Network', hMask: 'Mask', hGw: 'Gateway', hRange: 'Usable range', hBc: 'Broadcast', hUsable: 'Usable', hWaste: 'Wasted',
+        copy: 'Copy CSV', dl: 'Download CSV', copied: 'Copied to clipboard.', copyFail: 'Copy failed: select the table manually.',
+        adjusted: 'The address entered was not the start of the network: the calculation starts from', mapLegend: 'Use of the base network (hatched area = free)',
+        errCidr: 'Invalid network. Expected format: 192.168.1.0/24.', errHosts: 'Each subnet needs at least 1 host (whole number).',
+        errTooBig: 'A subnet needs more addresses than the whole base network.', errFull: 'The base network is too small for all requirements: make it larger (shorter prefix) or reduce the needs.',
+        none: '—', newName: 'Subnet', remove: 'Remove',
+        cNet: 'Network', cMask: 'Mask', cWild: 'Wildcard mask', cBc: 'Broadcast', cFirst: 'First address', cLast: 'Last address', cUsable: 'Usable hosts', cClass: 'Class', cType: 'Type', cPriv: 'private (RFC 1918)', cPub: 'public',
+        binTitle: 'Binary view', bAddr: 'Address', bMask: 'Mask', bNet: 'Network', legend: 'red = network part, green = host part',
+        csvHead: ['Subnet', 'Hosts needed', 'Network', 'Mask', 'Gateway', 'Usable range', 'Broadcast', 'Usable hosts', 'Wasted addresses'],
+        errAddr: 'Invalid address. Expected format: 192.168.1.130/25.',
+      },
+    };
+    let lang = 'fr';
+    try { lang = localStorage.getItem('lang') || ((navigator.language || 'fr').toLowerCase().startsWith('fr') ? 'fr' : 'en'); } catch (e) {}
+    const t = (k) => T[lang][k];
+    const COLORS = ['#c8102e', '#e8e8ea', '#8a8a90', '#e0a458', '#8fd18f', '#b5525f', '#c9c9cc', '#6c6c72'];
+
+    const PRESETS = {
+      pPoc: ['172.16.0.0/24', [['VLAN 10 USERS', 50], ['VLAN 20 SERVEURS', 4], ['VLAN 30 ADMIN', 10], ['VLAN 40 IMAGERIE', 20]], false],
+      pSchool: ['192.168.1.0/24', [['LAN A', 50], ['LAN B', 20], ['LAN C', 10], ['WAN', 2]], false],
+      pWan: ['10.0.0.0/28', [['Paris–Lyon', 2], ['Lyon–Marseille', 2], ['Paris–Marseille', 2]], false],
+    };
+    let needs = PRESETS.pPoc[1].map(([name, hosts]) => ({ name, hosts }));
+
+    function renderNeeds() {
+      $('needs').innerHTML = '';
+      needs.forEach((n, i) => {
+        const row = document.createElement('div'); row.className = 'need';
+        row.innerHTML = `<input type="text" aria-label="${t('colName')} ${i + 1}" value="${n.name.replace(/"/g, '&quot;')}"><input type="number" min="1" step="1" aria-label="${t('colHosts')} ${i + 1}" value="${n.hosts}"><button type="button" aria-label="${t('remove')}" title="${t('remove')}">×</button>`;
+        const [nm, hs, rm] = row.children;
+        nm.addEventListener('input', () => { n.name = nm.value; runVlsm(); });
+        hs.addEventListener('input', () => { n.hosts = hs.value; runVlsm(); });
+        rm.addEventListener('click', () => { needs.splice(i, 1); renderNeeds(); runVlsm(); });
+        $('needs').appendChild(row);
+      });
+    }
+
+    let lastCsv = '';
+    function runVlsm() {
+      const out = $('vlsmOut'), s = V.ipStr;
+      const res = V.vlsm($('base').value, needs.map((n) => ({ name: n.name || t('newName'), hosts: n.hosts })), { allow31: $('p2p').checked });
+      $('base').classList.toggle('bad', res.error === 'cidr');
+      if (res.error) {
+        const k = { cidr: 'errCidr', hosts: 'errHosts', tooBig: 'errTooBig', full: 'errFull' }[res.error];
+        out.innerHTML = `<h2>${t('plan')}</h2><p class="err">${t(k)}</p>`; lastCsv = ''; return;
+      }
+      const b = res.base, total = b.size;
+      let h = `<h2>${t('plan')}</h2>`;
+      if (res.adjusted) h += `<p class="msg" style="margin:0 0 12px">${t('adjusted')} ${s(b.network)}/${b.prefix}.</p>`;
+      h += `<dl class="summary">
+        <div class="stat"><dt>${t('base')}</dt><dd>${s(b.network)}/${b.prefix}</dd></div>
+        <div class="stat"><dt>${t('used')}</dt><dd>${res.used} / ${total} (${Math.round((res.used / total) * 100)} %)</dd></div>
+        <div class="stat"><dt>${t('free')}</dt><dd>${res.free}</dd></div>
+        <div class="stat"><dt>${t('next')}</dt><dd>${res.nextFree || t('none')}</dd></div></dl>`;
+      h += '<div class="map" role="img" aria-label="' + t('mapLegend') + '">' + res.subnets.map((x, i) => `<div title="${x.name} ${s(x.network)}/${x.prefix}" style="width:${(x.size / total) * 100}%;background:${COLORS[i % COLORS.length]}"></div>`).join('') + '</div>';
+      h += `<p class="map-legend">${t('mapLegend')}</p>`;
+      h += `<div class="tablewrap"><table><thead><tr><th>${t('hName')}</th><th>${t('hNeed')}</th><th>${t('hNet')}</th><th>${t('hMask')}</th><th>${t('hGw')}</th><th>${t('hRange')}</th><th>${t('hBc')}</th><th>${t('hUsable')}</th><th>${t('hWaste')}</th></tr></thead><tbody>`;
+      res.subnets.forEach((x, i) => {
+        h += `<tr><td class="name"><span class="sw" style="background:${COLORS[i % COLORS.length]}"></span>${x.name.replace(/</g, '&lt;')}</td><td>${x.hosts}</td><td>${s(x.network)}/${x.prefix}</td><td>${s(x.mask)}</td><td>${s(x.first)}</td><td>${s(x.first)} – ${s(x.last)}</td><td>${x.broadcast === null ? t('none') : s(x.broadcast)}</td><td>${x.usable}</td><td>${x.wasted}</td></tr>`;
+      });
+      h += '</tbody></table></div>';
+      h += `<div class="row"><button type="button" class="btn" id="copy">${t('copy')}</button><button type="button" class="btn" id="dl">${t('dl')}</button><span class="msg" id="copyMsg" style="margin:0"></span></div>`;
+      out.innerHTML = h;
+      lastCsv = V.toCsv(res, t('csvHead'));
+      $('copy').addEventListener('click', async () => {
+        try { await navigator.clipboard.writeText(lastCsv); $('copyMsg').textContent = t('copied'); }
+        catch (e) { $('copyMsg').textContent = t('copyFail'); }
+      });
+      $('dl').addEventListener('click', () => {
+        const blob = new Blob(['﻿' + lastCsv], { type: 'text/csv;charset=utf-8' });
+        const a = document.createElement('a'); a.href = URL.createObjectURL(blob);
+        a.download = 'plan-adressage-' + s(b.network) + '-' + b.prefix + '.csv'; a.click();
+        setTimeout(() => URL.revokeObjectURL(a.href), 1000);
+      });
+    }
+
+    function runCalc() {
+      const out = $('calcOut'), s = V.ipStr, c = V.parseCidr($('addr').value);
+      $('addr').classList.toggle('bad', !c);
+      if (!c) { out.innerHTML = `<p class="err">${t('errAddr')}</p>`; return; }
+      const d = V.describe(c.network, c.prefix);
+      const bitsHtml = (n) => V.toBin(n).split('').map((ch, i, arr) => {
+        if (ch === '.') return '.';
+        const bit = arr.slice(0, i).filter((x) => x !== '.').length;
+        return `<span class="${bit < c.prefix ? 'n' : 'h'}">${ch}</span>`;
+      }).join('');
+      out.innerHTML = `<h2>${s(c.given)}/${c.prefix}</h2><dl class="kv">
+        <dt>${t('cNet')}</dt><dd>${s(d.network)}/${d.prefix}</dd>
+        <dt>${t('cMask')}</dt><dd>${s(d.mask)}</dd>
+        <dt>${t('cWild')}</dt><dd>${s(d.wildcard)}</dd>
+        <dt>${t('cBc')}</dt><dd>${d.broadcast === null ? t('none') : s(d.broadcast)}</dd>
+        <dt>${t('cFirst')}</dt><dd>${s(d.first)}</dd>
+        <dt>${t('cLast')}</dt><dd>${s(d.last)}</dd>
+        <dt>${t('cUsable')}</dt><dd>${d.usable.toLocaleString(lang)}</dd>
+        <dt>${t('cClass')}</dt><dd>${d.cls}</dd>
+        <dt>${t('cType')}</dt><dd>${d.private ? t('cPriv') : t('cPub')}</dd></dl>
+        <h2 style="margin-top:20px">${t('binTitle')}</h2>
+        <div class="bin"><div><span class="lbl">${t('bAddr')}</span>${bitsHtml(c.given)}</div><div><span class="lbl">${t('bMask')}</span>${bitsHtml(d.mask)}</div><div><span class="lbl">${t('bNet')}</span>${bitsHtml(d.network)}</div></div>
+        <p class="msg">${t('legend')}</p>`;
+    }
+
+    function renderPresets() {
+      const box = $('presetBtns'); box.innerHTML = '';
+      Object.entries(PRESETS).forEach(([k, [base, list, p2p]]) => {
+        const b = document.createElement('button'); b.type = 'button'; b.className = 'btn'; b.textContent = t(k);
+        b.addEventListener('click', () => { $('base').value = base; $('p2p').checked = p2p; needs = list.map(([name, hosts]) => ({ name, hosts })); renderNeeds(); runVlsm(); });
+        box.appendChild(b);
+      });
+    }
+
+    function setLang(l) {
+      lang = l; document.documentElement.lang = l;
+      document.querySelectorAll('[data-t]').forEach((el) => { const v = T[l][el.dataset.t]; if (typeof v === 'string') el.innerHTML = v; });
+      document.title = l === 'fr' ? 'Calculateur de sous-réseaux' : 'Subnet calculator';
+      document.querySelectorAll('.lang button').forEach((b) => b.setAttribute('aria-pressed', b.dataset.lang === l));
+      try { localStorage.setItem('lang', l); } catch (e) {}
+      renderNeeds(); renderPresets(); runVlsm(); runCalc();
+    }
+
+    $('base').addEventListener('input', runVlsm);
+    $('p2p').addEventListener('change', runVlsm);
+    $('addr').addEventListener('input', runCalc);
+    $('add').addEventListener('click', () => { needs.push({ name: t('newName') + ' ' + (needs.length + 1), hosts: 10 }); renderNeeds(); runVlsm(); });
+    document.querySelectorAll('.tab').forEach((b) => b.addEventListener('click', () => {
+      document.querySelectorAll('.tab').forEach((x) => x.setAttribute('aria-selected', x === b));
+      document.querySelectorAll('.view').forEach((v) => (v.hidden = v.id !== 'view-' + b.dataset.view));
+    }));
+    document.querySelectorAll('.lang button').forEach((b) => b.addEventListener('click', () => setLang(b.dataset.lang)));
+    setLang(lang);
+  })();
+  </script>
+</body>
+</html>
