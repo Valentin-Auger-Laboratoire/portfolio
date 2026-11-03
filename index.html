@@ -81,6 +81,7 @@
 
       <div class="filters" role="group" data-i18n-attr="aria-label:projects.filterLabel" aria-label="Filtrer les projets">
         <button class="filter active" data-filter="all" data-i18n="projects.all">Tous</button>
+        <button class="filter" data-filter="reseau" data-i18n="tag.network">Réseaux</button>
         <button class="filter" data-filter="sante" data-i18n="tag.health">Application santé</button>
         <button class="filter" data-filter="data" data-i18n="tag.data">Données</button>
         <button class="filter" data-filter="electronique" data-i18n="tag.electronics">Électronique</button>
@@ -89,6 +90,19 @@
       </div>
 
       <div class="projects-grid">
+        <article class="project-card project-card--wide" data-tags="reseau sante">
+          <div class="card-top">
+            <span class="card-type" data-i18n="tag.network">Réseaux</span>
+            <span class="card-date" data-i18n="p13.date">Janv. — avril 2026</span>
+          </div>
+          <h3 data-i18n="p13.title">Infrastructure réseau sécurisée pour une plateforme de téléradiologie (PoC GNS3)</h3>
+          <p data-i18n="p13.desc">Maquette GNS3 d'un réseau santé multi-sites : trois sites reliés en OSPF, quatre VLAN par site avec routage inter-VLAN (router-on-a-stick, trunks 802.1Q), DMZ hébergeant la plateforme web, zone Cloud et deux extranets (radiologues, établissements). Ma partie : le pare-feu stateful VyOS au centre, avec des règles par zone en refus par défaut, et l'intégration des machines virtuelles dans GNS3. Projet mené en cinq jalons, du cahier des charges (RGPD, HDS, DICOM) à la recette. Limites documentées honnêtement dans le dépôt.</p>
+          <ul class="tags"><li>GNS3</li><li>Cisco IOS</li><li>VyOS</li><li>OSPF</li><li>VLAN / 802.1Q</li><li>DMZ</li><li>Debian / Apache</li></ul>
+          <div class="card-foot">
+            <span class="card-context" data-i18n="projects.contextPoc">Projet de groupe (4) · EPISEN, filière ITS</span>
+            <a class="card-link" href="https://github.com/Valentin-Auger-Laboratoire/poc-reseau-teleradiologie" target="_blank" rel="noopener" data-i18n="projects.code">Voir le projet ↗</a>
+          </div>
+        </article>
         <article class="project-card project-card--wide" data-tags="sante">
           <div class="card-top">
             <span class="card-type" data-i18n="tag.health">Application santé</span>
@@ -270,7 +284,7 @@
       <div class="skills-grid">
         <div class="skill-block">
           <h3 data-i18n="tag.network">Réseaux</h3>
-          <ul><li data-i18n="skills.net1">TCP/IP, routage, VLAN</li><li>Cisco IOS</li><li>Wireshark</li><li>GNS3 / Packet Tracer</li><li data-i18n="skills.net2">Administration de routeurs et switchs</li><li data-i18n="skills.net3">Sécurité des données</li></ul>
+          <ul><li data-i18n="skills.net1">TCP/IP, routage, VLAN</li><li>Cisco IOS</li><li>Wireshark</li><li>GNS3 / Packet Tracer</li><li data-i18n="skills.net2">Administration de routeurs et switchs</li><li data-i18n="skills.net4">OSPF, pare-feu VyOS, DMZ</li><li data-i18n="skills.net3">Sécurité des données</li></ul>
         </div>
         <div class="skill-block">
           <h3 data-i18n="skills.infra">Infrastructure & auto-hébergement</h3>
