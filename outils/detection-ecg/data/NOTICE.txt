@@ -1,0 +1,28 @@
+Données ECG / ECG data
+
+mitdb100.bin, mitdb100-ann.json
+  Enregistrement 100 de la MIT-BIH Arrhythmia Database (voie MLII, 360 Hz), converti depuis les fichiers
+  100.dat / 100.atr distribués avec wfdb-python (MIT Laboratory for Computational Physiology).
+  Record 100 of the MIT-BIH Arrhythmia Database (MLII lead, 360 Hz), converted from the 100.dat / 100.atr
+  files shipped with wfdb-python (MIT Laboratory for Computational Physiology).
+
+mitdb208-extrait.bin
+  Extrait de 5 minutes de l'enregistrement 208 de la même base, tel que distribué par le module
+  scipy.datasets (fichier ecg.dat du dépôt scipy/dataset-ecg). Sans annotations.
+  5-minute excerpt of record 208 of the same database, as distributed by scipy.datasets
+  (ecg.dat from the scipy/dataset-ecg repository). No annotations.
+
+Format : entiers signés 16 bits petit-boutistes, valeur = (échantillon ADC − 1024) ; tension en mV = valeur / 200.
+Format: 16-bit little-endian signed integers, value = (ADC sample − 1024); voltage in mV = value / 200.
+
+Licence : Open Data Commons Attribution License v1.0 (ODC-By).
+
+Sources à citer / please cite:
+  Moody GB, Mark RG. The impact of the MIT-BIH Arrhythmia Database.
+  IEEE Engineering in Medicine and Biology 20(3):45-50 (May-June 2001).
+
+  Goldberger AL, Amaral LAN, Glass L, Hausdorff JM, Ivanov PCh, Mark RG, Mietus JE, Moody GB, Peng C-K, Stanley HE.
+  PhysioBank, PhysioToolkit, and PhysioNet: Components of a new research resource for complex physiologic signals.
+  Circulation 101(23):e215-e220 (2000).
+
+https://physionet.org/content/mitdb/1.0.0/
