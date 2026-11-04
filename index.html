@@ -88,6 +88,7 @@
         <button class="filter" data-filter="data" data-i18n="tag.data">Données</button>
         <button class="filter" data-filter="electronique" data-i18n="tag.electronics">Électronique</button>
         <button class="filter" data-filter="signal" data-i18n="tag.signal">Traitement du signal</button>
+        <button class="filter" data-filter="imagerie" data-i18n="tag.imaging">Imagerie médicale</button>
         <button class="filter" data-filter="mecanique" data-i18n="tag.mechanics">Mécanique</button>
         <button class="filter" data-filter="robotique" data-i18n="tag.robotics">Robotique</button>
         <button class="filter" data-filter="automatique" data-i18n="tag.control">Automatique</button>
@@ -364,6 +365,23 @@
             <span class="card-links">
               <a class="card-link card-link--secondary" href="https://github.com/Valentin-Auger-Laboratoire/detection-ecg" target="_blank" rel="noopener" data-i18n="projects.code">Voir le code ↗</a>
               <a class="card-link" href="outils/detection-ecg/index.html" data-i18n="projects.tool">Essayer l'outil ↗</a>
+            </span>
+          </div>
+        </article>
+        <article class="project-card project-card--wide" data-tags="imagerie sante signal web">
+          <div class="card-media"><img src="assets/projets/scanner-tomographie.jpg" alt="Simulateur de scanner : patient virtuel, sinogramme, image reconstruite par rétroprojection filtrée et carte d'écart" data-i18n-attr="alt:p30.img" width="960" height="600" loading="lazy" decoding="async"></div>
+          <div class="card-top">
+            <span class="card-type" data-i18n="tag.imaging">Imagerie médicale</span>
+            <span class="card-date" data-i18n="p30.date">Nov. 2026</span>
+          </div>
+          <h3 data-i18n="p30.title">Simulateur de scanner : du sinogramme à l'image</h3>
+          <p data-i18n="p30.desc">Simulation complète d'un scanner (tomodensitométrie) : le tube et le détecteur tournent autour d'un patient virtuel (crâne avec hématome, thorax, implants métalliques), les mesures forment le sinogramme, puis l'image de la coupe est reconstruite par rétroprojection simple, rétroprojection filtrée (la méthode des scanners cliniques, avec transformée de Fourier rapide écrite à la main) ou méthode itérative SART. Bruit selon la dose, artefacts d'angle limité et du métal, fenêtres en unités Hounsfield (cerveau, poumon, os), erreur par rapport à la vérité. Animation de l'acquisition et 38 tests, dont un disque reconstruit à sa valeur exacte.</p>
+          <ul class="tags"><li>Tomodensitométrie</li><li>Rétroprojection filtrée</li><li>FFT</li><li>SART</li><li>JavaScript</li></ul>
+          <div class="card-foot">
+            <span class="card-context" data-i18n="projects.contextTool">Outil web · projet personnel</span>
+            <span class="card-links">
+              <a class="card-link card-link--secondary" href="https://github.com/Valentin-Auger-Laboratoire/scanner-tomographie" target="_blank" rel="noopener" data-i18n="projects.code">Voir le code ↗</a>
+              <a class="card-link" href="outils/scanner/index.html" data-i18n="projects.tool">Essayer l'outil ↗</a>
             </span>
           </div>
         </article>
