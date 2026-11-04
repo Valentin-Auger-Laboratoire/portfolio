@@ -1,0 +1,989 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Simulateur de pendules</title>
+  <meta name="description" content="Simulateur de pendules : pendule simple (grands angles, amortissement, résonance), pendule double et chaos, pendules couplés, horloge à balancier avec échappement à ancre et calcul de la marche, et comparaison des méthodes numériques.">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --bg: #0c0c0d; --panel: #161618; --border: #262628; --border-hi: #3a3a3d;
+      --text: #f2f2f2; --dim: #9b9b9f; --muted: #6c6c70; --accent: #c8102e; --line: #c9c9cc; --warn: #e0a458; --ok: #8fd18f; --brass: #c9a45c;
+      --mono: "JetBrains Mono", ui-monospace, monospace; --sans: "Inter", system-ui, sans-serif;
+      color-scheme: dark;
+    }
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    body { background: var(--bg); color: var(--text); font-family: var(--sans); line-height: 1.55; -webkit-font-smoothing: antialiased; }
+    .wrap { max-width: 1280px; margin: 0 auto; padding: 24px max(16px, env(safe-area-inset-right, 0px)) 48px max(16px, env(safe-area-inset-left, 0px)); }
+    .top { display: flex; justify-content: space-between; align-items: center; gap: 12px; flex-wrap: wrap; margin-bottom: 24px; }
+    .back { font-size: 0.9rem; color: var(--dim); text-decoration: none; }
+    .back:hover { color: var(--accent); }
+    .lang { display: flex; border: 1px solid var(--border-hi); }
+    .lang button { font: 500 0.78rem var(--mono); letter-spacing: .05em; background: none; color: var(--dim); border: 0; padding: 5px 10px; cursor: pointer; }
+    .lang button + button { border-left: 1px solid var(--border-hi); }
+    .lang button[aria-pressed="true"] { background: var(--text); color: var(--bg); }
+    .eyebrow { font: 500 0.82rem var(--mono); color: var(--accent); letter-spacing: .04em; }
+    h1 { font-size: clamp(1.6rem, 3.4vw, 2.3rem); line-height: 1.15; margin: 6px 0 10px; text-wrap: balance; }
+    .intro { color: var(--dim); max-width: 82ch; }
+    .tabs { display: flex; gap: 8px; margin: 26px 0 16px; flex-wrap: wrap; }
+    .tab { font: 0.85rem var(--mono); background: none; color: var(--dim); border: 1px solid var(--border); border-radius: 999px; padding: 6px 14px; cursor: pointer; }
+    .tab[aria-selected="true"] { color: var(--accent); border-color: var(--accent); }
+    [hidden] { display: none !important; }
+    .grid { display: grid; grid-template-columns: 340px minmax(0, 1fr); gap: 20px; align-items: start; }
+    .panel { background: var(--panel); border: 1px solid var(--border); border-radius: 8px; padding: 16px; min-width: 0; }
+    .stack { display: grid; gap: 16px; min-width: 0; }
+    h2 { font: 600 0.78rem var(--mono); letter-spacing: .12em; text-transform: uppercase; color: var(--dim); margin-bottom: 12px; }
+    h3 { font: 600 0.72rem var(--mono); letter-spacing: .08em; text-transform: uppercase; color: var(--dim); margin: 16px 0 10px; padding-top: 12px; border-top: 1px solid var(--border); }
+    button:focus-visible, input:focus-visible, select:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+    .btn { font: 500 0.82rem var(--sans); background: none; color: var(--text); border: 1px solid var(--border-hi); border-radius: 6px; padding: 6px 11px; cursor: pointer; white-space: nowrap; }
+    .btn:hover { border-color: var(--accent); color: var(--accent); }
+    .btn[aria-pressed="true"] { border-color: var(--accent); color: var(--accent); }
+    .row { display: flex; gap: 8px; flex-wrap: wrap; align-items: center; }
+    .ctl { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 2px 10px; margin-bottom: 10px; }
+    .ctl label { font: 500 0.76rem var(--mono); color: var(--dim); }
+    .ctl output { font: 0.8rem var(--mono); font-variant-numeric: tabular-nums; text-align: right; }
+    .ctl input[type=range] { grid-column: 1 / -1; width: 100%; accent-color: var(--accent); }
+    .sel { width: 100%; font: 0.84rem var(--mono); background: var(--bg); color: var(--text); border: 1px solid var(--border-hi); border-radius: 6px; padding: 6px 8px; margin-bottom: 10px; }
+    label.ck { display: flex; gap: 8px; align-items: center; font-size: 0.86rem; cursor: pointer; margin-bottom: 8px; }
+    label.ck input { accent-color: var(--accent); }
+    .kpis { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 10px; }
+    .kpi { border: 1px solid var(--border); border-radius: 6px; padding: 9px 11px; min-width: 0; }
+    .kpi dt { font: 0.7rem var(--mono); color: var(--dim); }
+    .kpi dd { font: 600 1.15rem var(--sans); font-variant-numeric: tabular-nums; margin-top: 2px; overflow-wrap: anywhere; }
+    .kpi dd small { font: 400 0.74rem var(--mono); color: var(--dim); margin-left: 3px; }
+    .kpi.main dd { color: var(--accent); }
+    .scene { width: 100%; height: 360px; display: block; border: 1px solid var(--border); border-radius: 6px; background: #0a0a0b; touch-action: none; }
+    .charts { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px; }
+    .chart { min-width: 0; }
+    .chart p { font: 0.72rem var(--mono); color: var(--dim); margin-bottom: 4px; display: flex; gap: 10px; flex-wrap: wrap; }
+    .chart p i { display: inline-block; width: 12px; height: 2px; vertical-align: 3px; margin-right: 5px; }
+    .chart canvas { width: 100%; height: 170px; display: block; border: 1px solid var(--border); border-radius: 6px; background: #0a0a0b; }
+    .controls { display: flex; gap: 8px; flex-wrap: wrap; align-items: center; margin-top: 10px; font: 0.78rem var(--mono); color: var(--dim); }
+    .hint { font-size: 0.8rem; color: var(--dim); margin-top: 8px; }
+    .note { font-size: 0.82rem; color: var(--dim); }
+    .note p + p { margin-top: 6px; }
+    .presets { display: flex; flex-wrap: wrap; gap: 6px; }
+    table { width: 100%; border-collapse: collapse; font: 0.8rem var(--mono); font-variant-numeric: tabular-nums; }
+    th, td { text-align: left; padding: 6px 8px; border-bottom: 1px solid var(--border); }
+    td.n, th.n { text-align: right; }
+    th { color: var(--dim); font-weight: 500; }
+    .pos { color: var(--ok); } .neg { color: #ff8a8a; }
+    .times { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 10px; margin-top: 12px; }
+    @media (max-width: 1000px) { .grid { grid-template-columns: minmax(0, 1fr); } .grid > .stack:last-child { order: -1; } }
+    @media (max-width: 700px) { #sc-double { height: 360px !important; } #sc-clock { height: 500px !important; } #sc-simple { height: 300px !important; } .kpis { grid-template-columns: repeat(2, minmax(0, 1fr)); } .charts { grid-template-columns: minmax(0, 1fr); } .times { grid-template-columns: minmax(0, 1fr); } }
+  </style>
+</head>
+<body>
+  <div class="wrap">
+    <div class="top">
+      <a class="back" href="../../index.html#projets" data-t="back">← Retour au portfolio</a>
+      <div class="lang" role="group" aria-label="Langue / Language">
+        <button type="button" data-lang="fr" aria-pressed="true">FR</button>
+        <button type="button" data-lang="en" aria-pressed="false">EN</button>
+      </div>
+    </div>
+    <p class="eyebrow" data-t="eyebrow">Outil mécanique · oscillateurs et horlogerie</p>
+    <h1 data-t="title">Simulateur de pendules : du pendule simple à l'horloge</h1>
+    <p class="intro" data-t="intro">Quatre oscillateurs simulés en temps réel par intégration numérique (Runge-Kutta d'ordre 4) : le pendule simple aux grands angles, amorti ou forcé ; le pendule double et son comportement chaotique ; deux pendules couplés qui s'échangent leur énergie ; et une horloge à balancier, avec son échappement à ancre, ses rouages et le calcul de son avance ou de son retard. Un dernier onglet compare les méthodes numériques : Euler, Heun, Verlet, Runge-Kutta, Simpson, pivot de Gauss.</p>
+
+    <div class="tabs" role="tablist">
+      <button type="button" class="tab" role="tab" data-view="simple" aria-selected="true" data-t="tabSimple">Pendule simple</button>
+      <button type="button" class="tab" role="tab" data-view="double" aria-selected="false" data-t="tabDouble">Pendule double</button>
+      <button type="button" class="tab" role="tab" data-view="coupled" aria-selected="false" data-t="tabCoupled">Pendules couplés</button>
+      <button type="button" class="tab" role="tab" data-view="clock" aria-selected="false" data-t="tabClock">Horloge à balancier</button>
+      <button type="button" class="tab" role="tab" data-view="methods" aria-selected="false" data-t="tabMethods">Méthodes numériques</button>
+    </div>
+
+    <!-- ===== Pendule simple ===== -->
+    <section class="view" id="view-simple">
+      <div class="grid">
+        <div class="stack">
+          <div class="panel" id="ctl-simple"></div>
+          <div class="panel"><h2 data-t="presets">Exemples</h2><div class="presets" id="pre-simple"></div></div>
+        </div>
+        <div class="stack">
+          <div class="panel">
+            <dl class="kpis" id="kpi-simple"></dl>
+            <canvas class="scene" id="sc-simple" style="margin-top:12px;height:360px" aria-label="Pendule simple"></canvas>
+            <div class="controls"><button type="button" class="btn" data-play="simple" data-t="pause">Pause</button><button type="button" class="btn" data-reset="simple" data-t="restart">Relancer</button><span data-t="dragHint">Glisser la masse pour changer l'angle de départ.</span></div>
+          </div>
+          <div class="panel charts">
+            <div class="chart"><p><span><i style="background:var(--accent)"></i><span data-t="real">pendule réel</span></span><span><i style="background:#8a8a90"></i><span data-t="linear">approximation petits angles</span></span></p><canvas id="ch-s-theta"></canvas></div>
+            <div class="chart"><p data-t="phase">Portrait de phase : vitesse angulaire selon l'angle</p><canvas id="ch-s-phase"></canvas></div>
+            <div class="chart"><p><span><i style="background:var(--accent)"></i><span data-t="epot">énergie potentielle</span></span><span><i style="background:var(--line)"></i><span data-t="ekin">énergie cinétique</span></span><span><i style="background:var(--warn)"></i>total</span></p><canvas id="ch-s-energy"></canvas></div>
+            <div class="chart"><p data-t="periodCurve">Période selon l'amplitude (exacte, et formule des petits angles)</p><canvas id="ch-s-period"></canvas></div>
+            <div class="chart" id="resoBox"><p data-t="reso">Résonance : amplitude du régime permanent selon la pulsation du forçage</p><canvas id="ch-s-reso"></canvas></div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ===== Pendule double ===== -->
+    <section class="view" id="view-double" hidden>
+      <div class="grid">
+        <div class="stack">
+          <div class="panel" id="ctl-double"></div>
+          <div class="panel"><h2 data-t="presets">Exemples</h2><div class="presets" id="pre-double"></div></div>
+        </div>
+        <div class="stack">
+          <div class="panel">
+            <dl class="kpis" id="kpi-double"></dl>
+            <canvas class="scene" id="sc-double" style="margin-top:12px;height:440px" aria-label="Pendule double"></canvas>
+            <div class="controls"><button type="button" class="btn" data-play="double" data-t="pause">Pause</button><button type="button" class="btn" data-reset="double" data-t="restart">Relancer</button><span data-t="chaosHint">Chaque pendule fantôme part avec un angle différent d'un millième de degré.</span></div>
+          </div>
+          <div class="panel charts">
+            <div class="chart"><p data-t="sep">Écart entre le pendule de référence et le premier fantôme (échelle logarithmique)</p><canvas id="ch-d-sep"></canvas></div>
+            <div class="chart"><p data-t="drift">Dérive de l'énergie totale (erreur numérique, sans frottement)</p><canvas id="ch-d-energy"></canvas></div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ===== Pendules couplés ===== -->
+    <section class="view" id="view-coupled" hidden>
+      <div class="grid">
+        <div class="stack">
+          <div class="panel" id="ctl-coupled"></div>
+          <div class="panel"><h2 data-t="presets">Exemples</h2><div class="presets" id="pre-coupled"></div></div>
+        </div>
+        <div class="stack">
+          <div class="panel">
+            <dl class="kpis" id="kpi-coupled"></dl>
+            <canvas class="scene" id="sc-coupled" style="margin-top:12px;height:320px" aria-label="Pendules couplés"></canvas>
+            <div class="controls"><button type="button" class="btn" data-play="coupled" data-t="pause">Pause</button><button type="button" class="btn" data-reset="coupled" data-t="restart">Relancer</button></div>
+          </div>
+          <div class="panel charts">
+            <div class="chart"><p><span><i style="background:var(--accent)"></i>θ₁</span><span><i style="background:var(--line)"></i>θ₂</span></p><canvas id="ch-c-theta"></canvas></div>
+            <div class="chart"><p><span><i style="background:var(--accent)"></i><span data-t="e1">énergie du pendule 1</span></span><span><i style="background:var(--line)"></i><span data-t="e2">énergie du pendule 2</span></span></p><canvas id="ch-c-energy"></canvas></div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ===== Horloge ===== -->
+    <section class="view" id="view-clock" hidden>
+      <div class="grid">
+        <div class="stack">
+          <div class="panel" id="ctl-clock"></div>
+          <div class="panel"><h2 data-t="presets">Exemples</h2><div class="presets" id="pre-clock"></div></div>
+        </div>
+        <div class="stack">
+          <div class="panel">
+            <dl class="kpis" id="kpi-clock"></dl>
+            <canvas class="scene" id="sc-clock" style="margin-top:12px;height:560px" aria-label="Horloge à balancier"></canvas>
+            <div class="times" id="times"></div>
+            <div class="controls"><span data-t="speed">Vitesse :</span><span class="row" id="speeds"></span><button type="button" class="btn" data-play="clock" data-t="pause">Pause</button><button type="button" class="btn" data-reset="clock" data-t="restart">Relancer</button></div>
+          </div>
+          <div class="panel">
+            <h2 data-t="rateT">Marche de l'horloge (secondes par jour)</h2>
+            <table id="rateTable"></table>
+            <h3 data-t="trainT">Rouages</h3>
+            <table id="trainTable"></table>
+          </div>
+        </div>
+      </div>
+    </section>
+
+
+    <!-- ===== Méthodes numériques ===== -->
+    <section class="view" id="view-methods" hidden>
+      <div class="grid">
+        <div class="stack">
+          <div class="panel" id="ctl-methods"></div>
+          <div class="panel"><h2 data-t="presets">Exemples</h2><div class="presets" id="pre-methods"></div></div>
+          <div class="panel note"><p data-t="mIntro">Les méthodes comparées ici sont celles de mon cours de physique numérique : Euler, Heun et Runge-Kutta 4 pour les équations différentielles, rectangles, trapèzes et Simpson pour les intégrales, pivot de Gauss et moindres carrés pour les systèmes linéaires. Elles sont appliquées au même pendule.</p></div>
+        </div>
+        <div class="stack">
+          <div class="panel">
+            <h2 data-t="mOdeT">1. Équation du mouvement : cinq intégrateurs, même pendule, même pas</h2>
+            <canvas class="scene" id="sc-methods" style="height:300px" aria-label="Comparaison des méthodes"></canvas>
+            <div class="controls"><button type="button" class="btn" data-play="methods" data-t="pause">Pause</button><button type="button" class="btn" data-reset="methods" data-t="restart">Relancer</button><span id="mLegend" class="row"></span></div>
+            <div class="charts" style="margin-top:12px">
+              <div class="chart"><p data-t="mEnergy">Erreur relative sur l'énergie au cours du temps (limitée à ±20 %)</p><canvas id="ch-m-energy"></canvas></div>
+              <div class="chart"><p data-t="mConv">Ordre de convergence : erreur sur θ à t = 2 s selon le pas h (log-log)</p><canvas id="ch-m-conv"></canvas></div>
+            </div>
+            <div style="overflow-x:auto;margin-top:12px"><table id="mTable"></table></div>
+          </div>
+          <div class="panel">
+            <h2 data-t="mQuadT">2. Période exacte par intégration numérique</h2>
+            <p class="hint" style="margin:0 0 10px" data-t="mQuadHint">T = 4·√(L/g)·∫₀^{π/2} dφ / √(1 − k²·sin²φ), avec k = sin(θ₀/2). Erreur de chaque méthode selon le nombre de subdivisions n, comparée à la valeur de référence (moyenne arithmético-géométrique).</p>
+            <div style="overflow-x:auto"><table id="qTable"></table></div>
+            <p class="hint" data-t="mQuadNote">Ici les trapèzes battent Simpson : la fonction intégrée est périodique et régulière, et pour ce type de fonction la méthode des trapèzes converge beaucoup plus vite que ne le prévoit son ordre.</p>
+          </div>
+          <div class="panel">
+            <h2 data-t="mLsqT">3. Moindres carrés et pivot de Gauss : retrouver la formule de Borda</h2>
+            <p class="hint" style="margin:0 0 10px" data-t="mLsqHint">Les périodes sont mesurées sur la simulation (RK4) pour des amplitudes de 5° à 60°, puis ajustées par T/T₀ − 1 = a·θ₀² + b·θ₀⁴. Les équations normales (2 × 2) sont résolues par le pivot de Gauss avec pivot partiel.</p>
+            <div class="charts"><div class="chart"><p><span><i style="background:var(--accent)"></i><span data-t="mMeasured">mesures (simulation)</span></span><span><i style="background:var(--line)"></i><span data-t="mFit">ajustement</span></span></p><canvas id="ch-m-lsq"></canvas></div><div><table id="lsqTable"></table></div></div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <div class="panel note" style="margin-top:20px">
+      <p data-t="note1">Méthode : les équations du mouvement sont intégrées avec la méthode de Runge-Kutta d'ordre 4, à pas fixe et petit (1 ms pour le pendule double). Sans frottement, l'énergie totale doit rester constante : sa dérive affichée mesure l'erreur numérique. La période aux grands angles est comparée à la valeur exacte, 4·√(L/g)·K(sin(θ₀/2)), où K est l'intégrale elliptique complète de première espèce.</p>
+      <p data-t="note2">Modèles : masses ponctuelles, tiges rigides sans masse, frottement visqueux proportionnel à la vitesse. Pour l'horloge, l'échappement rend à chaque alternance l'énergie perdue (l'amplitude reste constante), et la marche est calculée pour une horloge réglée à 20 °C au lieu de réglage. Les coefficients de dilatation sont des valeurs usuelles.</p>
+    </div>
+  </div>
+
+  <script src="pendules.js"></script>
+  <script>
+  (function () {
+    'use strict';
+    const P = window.Pendules, DEG = P.DEG;
+    const $ = (id) => document.getElementById(id);
+
+    // ---------- Textes ----------
+    const T = {
+      fr: {
+        back: '← Retour au portfolio', eyebrow: 'Outil mécanique · oscillateurs et horlogerie', title: "Simulateur de pendules : du pendule simple à l'horloge",
+        intro: "Quatre oscillateurs simulés en temps réel par intégration numérique (Runge-Kutta d'ordre 4) : le pendule simple aux grands angles, amorti ou forcé ; le pendule double et son comportement chaotique ; deux pendules couplés qui s'échangent leur énergie ; et une horloge à balancier, avec son échappement à ancre, ses rouages et le calcul de son avance ou de son retard. Un dernier onglet compare les méthodes numériques : Euler, Heun, Verlet, Runge-Kutta, Simpson, pivot de Gauss.",
+        tabSimple: 'Pendule simple', tabDouble: 'Pendule double', tabCoupled: 'Pendules couplés', tabClock: 'Horloge à balancier',
+        presets: 'Exemples', pause: 'Pause', play: 'Lecture', restart: 'Relancer', dragHint: "Glisser la masse pour changer l'angle de départ.",
+        real: 'pendule réel', linear: 'approximation petits angles', phase: "Portrait de phase : vitesse angulaire selon l'angle",
+        epot: 'énergie potentielle', ekin: 'énergie cinétique', periodCurve: "Période selon l'amplitude (exacte, et formule des petits angles)",
+        reso: 'Résonance : amplitude du régime permanent selon la pulsation du forçage',
+        chaosHint: "Chaque pendule fantôme part avec un angle différent d'un millième de degré.",
+        sep: "Écart entre le pendule de référence et le premier fantôme (échelle logarithmique)", drift: "Dérive de l'énergie totale (erreur numérique, sans frottement)",
+        e1: 'énergie du pendule 1', e2: 'énergie du pendule 2', speed: 'Vitesse :', rateT: "Marche de l'horloge (secondes par jour)", trainT: 'Rouages',
+        note1: "Méthode : les équations du mouvement sont intégrées avec la méthode de Runge-Kutta d'ordre 4, à pas fixe et petit (1 ms pour le pendule double). Sans frottement, l'énergie totale doit rester constante : sa dérive affichée mesure l'erreur numérique. La période aux grands angles est comparée à la valeur exacte, 4·√(L/g)·K(sin(θ₀/2)), où K est l'intégrale elliptique complète de première espèce.",
+        note2: "Modèles : masses ponctuelles, tiges rigides sans masse, frottement visqueux proportionnel à la vitesse. Pour l'horloge, l'échappement rend à chaque alternance l'énergie perdue (l'amplitude reste constante), et la marche est calculée pour une horloge réglée à 20 °C au lieu de réglage. Les coefficients de dilatation sont des valeurs usuelles.",
+        // contrôles
+        L: 'Longueur L', m: 'Masse m', theta0: 'Angle de départ θ₀', planet: 'Pesanteur', gamma: 'Frottement γ', F: 'Forçage F', wd: 'Pulsation du forçage ωd',
+        showLinear: 'Afficher le pendule « petits angles »', L1: 'Longueur L₁', L2: 'Longueur L₂', m1: 'Masse m₁', m2: 'Masse m₂', a1: 'Angle θ₁', a2: 'Angle θ₂',
+        ghosts: 'Pendules fantômes', trail: 'Trace du bout', k: 'Raideur du ressort k', c1: 'Angle de départ θ₁', c2: 'Angle de départ θ₂',
+        material: 'Matériau de la tige', temp: 'Température', dL: 'Réglage de la lentille', lat: 'Latitude', amp: 'Amplitude du balancier',
+        mats: { acier: 'acier', laiton: 'laiton', invar: 'invar (fer-nickel)', bois: 'bois (dans le fil)', aluminium: 'aluminium' },
+        planets: { earth: 'Terre (9,807)', moon: 'Lune (1,62)', mars: 'Mars (3,71)', jupiter: 'Jupiter (24,79)' },
+        // KPI
+        kT: 'Période réelle', kT0: 'Petits angles', kErr: 'Écart', kE: 'Énergie', kQ: 'Facteur de qualité Q', kPeak: 'Pic de résonance',
+        kEdrift: "Dérive d'énergie", kSep: 'Écart des fantômes', kModes: 'Modes propres (petits angles)', kTime: 'Temps simulé',
+        kW1: 'Mode en phase', kW2: 'Mode en opposition', kBeat: 'Période des battements', kExch: "Transfert complet d'énergie",
+        kLsec: 'Balancier qui bat la seconde', kPer: 'Période du balancier', kRate: 'Marche calculée', kMeas: 'Marche mesurée',
+        tReal: 'Heure exacte', tClock: "Heure de l'horloge", tGap: 'Écart',
+        perDay: 's/jour', ahead: 'avance', behind: 'retard', exact: "à l'heure",
+        rTherm: 'Dilatation de la tige', rLen: 'Réglage de la lentille', rGrav: 'Pesanteur du lieu', rAmp: "Amplitude (erreur circulaire)", rTotal: 'Total',
+        trEsc: "Roue d'échappement : 30 dents, 1 tour par minute (aiguille des secondes)", trMin: 'Vers l’aiguille des minutes', trHour: 'Vers l’aiguille des heures', ratio: 'rapport',
+        waiting: 'mesure en cours…',
+        // exemples
+        pSmall: 'Petites oscillations', pLarge: 'Grand angle (150°)', pTop: 'Presque à la verticale', pDamped: 'Amorti', pReso: 'Résonance', pMoon: 'Sur la Lune',
+        pChaos: 'Chaos', pCalm: 'Petits angles (régulier)', pFlip: 'Retournements', pHeavy: 'Masse du bas lourde',
+        pBeats: 'Battements', pPhase: 'Mode en phase', pAnti: 'Mode en opposition', pStrong: 'Couplage fort',
+        tabMethods: 'Méthodes numériques', mIntro: 'Les méthodes comparées ici sont celles de mon cours de physique numérique : Euler, Heun et Runge-Kutta 4 pour les équations différentielles, rectangles, trapèzes et Simpson pour les intégrales, pivot de Gauss et moindres carrés pour les systèmes linéaires. Elles sont appliquées au même pendule.',
+        mOdeT: '1. Équation du mouvement : cinq intégrateurs, même pendule, même pas', mEnergy: "Erreur relative sur l'énergie au cours du temps (limitée à ±20 %)", mConv: 'Ordre de convergence : erreur sur θ à t = 2 s selon le pas h (log-log)',
+        mQuadT: '2. Période exacte par intégration numérique', mQuadHint: 'T = 4·√(L/g)·∫₀^{π/2} dφ / √(1 − k²·sin²φ), avec k = sin(θ₀/2). Erreur de chaque méthode selon le nombre de subdivisions n, comparée à la valeur de référence (moyenne arithmético-géométrique).',
+        mQuadNote: "Ici les trapèzes battent Simpson : la fonction intégrée est périodique et régulière, et pour ce type de fonction la méthode des trapèzes converge beaucoup plus vite que ne le prévoit son ordre.",
+        mLsqT: '3. Moindres carrés et pivot de Gauss : retrouver la formule de Borda', mLsqHint: 'Les périodes sont mesurées sur la simulation (RK4) pour des amplitudes de 5° à 60°, puis ajustées par T/T₀ − 1 = a·θ₀² + b·θ₀⁴. Les équations normales (2 × 2) sont résolues par le pivot de Gauss avec pivot partiel.',
+        mMeasured: 'mesures (simulation)', mFit: 'ajustement', h: 'Pas de temps h', mTh: 'Angle de départ θ₀',
+        mNames: { euler: 'Euler', cromer: 'Euler-Cromer', heun: 'Heun (RK2)', verlet: 'Verlet', rk4: 'Runge-Kutta 4' },
+        mCols: ['Méthode', 'Ordre théorique', 'Ordre mesuré', 'Erreur sur E (maintenant)', 'Énergie'], mSympl: 'conservée en moyenne (symplectique)', mGrow: 'augmente', mDecay: 'diminue', mStable: 'quasi constante',
+        qCols: ['n', 'Rectangles', 'Trapèzes', 'Simpson'], qRef: 'Référence', lCols: ['', 'Ajusté', 'Théorie (série)'],
+        pFine: 'Pas fin (1 ms)', pCoarse: 'Pas grossier (50 ms)', pHuge: 'Pas énorme (150 ms)', pBig: 'Grand angle',
+        pRef: 'Horloge réglée (20 °C)', pSummer: 'Laiton en été (+15 °C)', pInvar: 'Tige en invar', pPole: 'Transportée au pôle Nord', pTurn: 'Lentille descendue de 1 mm', pWide: 'Grande amplitude (10°)',
+      },
+      en: {
+        back: '← Back to portfolio', eyebrow: 'Mechanics tool · oscillators and clockmaking', title: 'Pendulum simulator: from the simple pendulum to the clock',
+        intro: 'Four oscillators simulated in real time by numerical integration (4th-order Runge-Kutta): the simple pendulum at large angles, damped or driven; the double pendulum and its chaotic behaviour; two coupled pendulums exchanging their energy; and a pendulum clock, with its anchor escapement, its gear train and the calculation of how fast or slow it runs. A last tab compares numerical methods: Euler, Heun, Verlet, Runge-Kutta, Simpson, Gaussian elimination.',
+        tabSimple: 'Simple pendulum', tabDouble: 'Double pendulum', tabCoupled: 'Coupled pendulums', tabClock: 'Pendulum clock',
+        presets: 'Examples', pause: 'Pause', play: 'Play', restart: 'Restart', dragHint: 'Drag the bob to change the starting angle.',
+        real: 'real pendulum', linear: 'small-angle approximation', phase: 'Phase portrait: angular velocity versus angle',
+        epot: 'potential energy', ekin: 'kinetic energy', periodCurve: 'Period versus amplitude (exact, and small-angle formula)',
+        reso: 'Resonance: steady-state amplitude versus driving frequency',
+        chaosHint: 'Each ghost pendulum starts one thousandth of a degree apart.',
+        sep: 'Distance between the reference pendulum and the first ghost (log scale)', drift: 'Drift of total energy (numerical error, no friction)',
+        e1: 'energy of pendulum 1', e2: 'energy of pendulum 2', speed: 'Speed:', rateT: 'Clock rate (seconds per day)', trainT: 'Gear train',
+        note1: 'Method: the equations of motion are integrated with the 4th-order Runge-Kutta method, with a small fixed step (1 ms for the double pendulum). Without friction, total energy must stay constant: the drift shown measures the numerical error. The period at large angles is compared with the exact value, 4·√(L/g)·K(sin(θ₀/2)), where K is the complete elliptic integral of the first kind.',
+        note2: 'Models: point masses, rigid massless rods, viscous friction proportional to speed. For the clock, the escapement gives back the lost energy at each swing (amplitude stays constant), and the rate is computed for a clock regulated at 20 °C at its place of adjustment. Expansion coefficients are typical values.',
+        L: 'Length L', m: 'Mass m', theta0: 'Starting angle θ₀', planet: 'Gravity', gamma: 'Friction γ', F: 'Driving F', wd: 'Driving frequency ωd',
+        showLinear: 'Show the "small-angle" pendulum', L1: 'Length L₁', L2: 'Length L₂', m1: 'Mass m₁', m2: 'Mass m₂', a1: 'Angle θ₁', a2: 'Angle θ₂',
+        ghosts: 'Ghost pendulums', trail: 'Tip trail', k: 'Spring stiffness k', c1: 'Starting angle θ₁', c2: 'Starting angle θ₂',
+        material: 'Rod material', temp: 'Temperature', dL: 'Bob adjustment', lat: 'Latitude', amp: 'Pendulum amplitude',
+        mats: { acier: 'steel', laiton: 'brass', invar: 'invar (iron-nickel)', bois: 'wood (along the grain)', aluminium: 'aluminium' },
+        planets: { earth: 'Earth (9.807)', moon: 'Moon (1.62)', mars: 'Mars (3.71)', jupiter: 'Jupiter (24.79)' },
+        kT: 'Real period', kT0: 'Small angles', kErr: 'Difference', kE: 'Energy', kQ: 'Quality factor Q', kPeak: 'Resonance peak',
+        kEdrift: 'Energy drift', kSep: 'Ghost spread', kModes: 'Normal modes (small angles)', kTime: 'Simulated time',
+        kW1: 'In-phase mode', kW2: 'Anti-phase mode', kBeat: 'Beat period', kExch: 'Full energy transfer',
+        kLsec: 'Seconds pendulum', kPer: 'Pendulum period', kRate: 'Computed rate', kMeas: 'Measured rate',
+        tReal: 'Exact time', tClock: 'Clock time', tGap: 'Difference',
+        perDay: 's/day', ahead: 'fast', behind: 'slow', exact: 'on time',
+        rTherm: 'Rod expansion', rLen: 'Bob adjustment', rGrav: 'Local gravity', rAmp: 'Amplitude (circular error)', rTotal: 'Total',
+        trEsc: 'Escape wheel: 30 teeth, 1 turn per minute (seconds hand)', trMin: 'To the minute hand', trHour: 'To the hour hand', ratio: 'ratio',
+        waiting: 'measuring…',
+        pSmall: 'Small oscillations', pLarge: 'Large angle (150°)', pTop: 'Almost upside down', pDamped: 'Damped', pReso: 'Resonance', pMoon: 'On the Moon',
+        pChaos: 'Chaos', pCalm: 'Small angles (regular)', pFlip: 'Flips', pHeavy: 'Heavy lower bob',
+        pBeats: 'Beats', pPhase: 'In-phase mode', pAnti: 'Anti-phase mode', pStrong: 'Strong coupling',
+        tabMethods: 'Numerical methods', mIntro: 'The methods compared here are those of my numerical physics course: Euler, Heun and Runge-Kutta 4 for differential equations, rectangles, trapezoids and Simpson for integrals, Gaussian elimination and least squares for linear systems. They are applied to the same pendulum.',
+        mOdeT: '1. Equation of motion: five integrators, same pendulum, same step', mEnergy: 'Relative energy error over time (capped at ±20%)', mConv: 'Order of convergence: error on θ at t = 2 s versus step h (log-log)',
+        mQuadT: '2. Exact period by numerical integration', mQuadHint: 'T = 4·√(L/g)·∫₀^{π/2} dφ / √(1 − k²·sin²φ), with k = sin(θ₀/2). Error of each method versus the number of subdivisions n, compared with the reference value (arithmetic-geometric mean).',
+        mQuadNote: 'Here trapezoids beat Simpson: the integrand is periodic and smooth, and for such functions the trapezoidal rule converges much faster than its order suggests.',
+        mLsqT: "3. Least squares and Gaussian elimination: recovering Borda's formula", mLsqHint: 'Periods are measured on the simulation (RK4) for amplitudes from 5° to 60°, then fitted with T/T₀ − 1 = a·θ₀² + b·θ₀⁴. The 2 × 2 normal equations are solved by Gaussian elimination with partial pivoting.',
+        mMeasured: 'measurements (simulation)', mFit: 'fit', h: 'Time step h', mTh: 'Starting angle θ₀',
+        mNames: { euler: 'Euler', cromer: 'Euler-Cromer', heun: 'Heun (RK2)', verlet: 'Verlet', rk4: 'Runge-Kutta 4' },
+        mCols: ['Method', 'Theoretical order', 'Measured order', 'Energy error (now)', 'Energy'], mSympl: 'conserved on average (symplectic)', mGrow: 'grows', mDecay: 'decays', mStable: 'almost constant',
+        qCols: ['n', 'Rectangles', 'Trapezoids', 'Simpson'], qRef: 'Reference', lCols: ['', 'Fitted', 'Theory (series)'],
+        pFine: 'Fine step (1 ms)', pCoarse: 'Coarse step (50 ms)', pHuge: 'Huge step (150 ms)', pBig: 'Large angle',
+        pRef: 'Regulated clock (20 °C)', pSummer: 'Brass in summer (+15 °C)', pInvar: 'Invar rod', pPole: 'Moved to the North Pole', pTurn: 'Bob lowered by 1 mm', pWide: 'Large amplitude (10°)',
+      },
+    };
+    let lang = 'fr';
+    try { lang = localStorage.getItem('lang') || ((navigator.language || 'fr').toLowerCase().startsWith('fr') ? 'fr' : 'en'); } catch (e) {}
+    if (!T[lang]) lang = 'fr';
+    const t = (k) => T[lang][k];
+    const fmt = (v, d = 3) => (Number.isFinite(v) ? v.toLocaleString(lang === 'fr' ? 'fr-FR' : 'en-GB', { maximumFractionDigits: d, minimumFractionDigits: 0 }) : '—');
+    const fmtSigned = (v, d = 2) => (Number.isFinite(v) ? (v > 0 ? '+' : v < 0 ? '−' : '') + fmt(Math.abs(v), d) : '—');
+    const kpi = (k, v, u, main) => '<div class="kpi' + (main ? ' main' : '') + '"><dt>' + k + '</dt><dd>' + v + (u ? '<small>' + u + '</small>' : '') + '</dd></div>';
+    const PLANETS = { earth: P.G0, moon: 1.62, mars: 3.71, jupiter: 24.79 };
+    const COLORS = { accent: '#c8102e', line: '#c9c9cc', warn: '#e0a458', grey: '#8a8a90', brass: '#c9a45c' };
+
+    // ---------- Commandes (curseurs) ----------
+    // def : [clé, min, max, pas, unité, décimales]
+    function buildControls(boxId, title, defs, state, onChange, extra) {
+      const box = $(boxId);
+      box.innerHTML = '<h2>' + title + '</h2>';
+      defs.forEach((d) => {
+        if (d.type === 'select') {
+          const wrap = document.createElement('div');
+          wrap.innerHTML = '<label class="ctl" style="display:block"><span style="font:500 .76rem var(--mono);color:var(--dim)">' + t(d.key) + '</span></label>';
+          const s = document.createElement('select');
+          s.className = 'sel'; s.setAttribute('aria-label', t(d.key));
+          Object.entries(d.options()).forEach(([v, label]) => { const o = document.createElement('option'); o.value = v; o.textContent = label; s.appendChild(o); });
+          s.value = state[d.key];
+          s.addEventListener('change', () => { state[d.key] = s.value; onChange(d.key); });
+          wrap.appendChild(s); box.appendChild(wrap); d.el = s;
+          return;
+        }
+        if (d.type === 'check') {
+          const l = document.createElement('label');
+          l.className = 'ck';
+          l.innerHTML = '<input type="checkbox"> <span>' + t(d.key) + '</span>';
+          const c = l.querySelector('input'); c.checked = !!state[d.key];
+          c.addEventListener('change', () => { state[d.key] = c.checked; onChange(d.key); });
+          box.appendChild(l); d.el = c;
+          return;
+        }
+        const row = document.createElement('div');
+        row.className = 'ctl';
+        const id = boxId + '-' + d.key;
+        row.innerHTML = '<label for="' + id + '">' + t(d.key) + '</label><output></output><input type="range" id="' + id + '">';
+        const r = row.querySelector('input'), out = row.querySelector('output');
+        Object.assign(r, { min: d.min, max: d.max, step: d.step });
+        r.value = state[d.key];
+        const show = () => (out.textContent = (d.show ? d.show(state[d.key]) : fmt(state[d.key], d.dec)) + (d.unit ? ' ' + d.unit : ''));
+        r.addEventListener('input', () => { state[d.key] = parseFloat(r.value); show(); onChange(d.key); });
+        show();
+        d.el = r; d.refresh = () => { r.value = state[d.key]; show(); };
+        box.appendChild(row);
+      });
+      if (extra) extra(box);
+      return defs;
+    }
+    const refreshAll = (defs, state) => defs.forEach((d) => { if (d.refresh) d.refresh(); else if (d.el) { if (d.type === 'check') d.el.checked = !!state[d.key]; else d.el.value = state[d.key]; } });
+    function presetButtons(boxId, list, apply) {
+      const box = $(boxId); box.innerHTML = '';
+      list.forEach(([k, o]) => { const b = document.createElement('button'); b.type = 'button'; b.className = 'btn'; b.textContent = t(k); b.addEventListener('click', () => apply(o)); box.appendChild(b); });
+    }
+
+    // ---------- Petits graphiques (canvas) ----------
+    function setupCanvas(cv) {
+      const dpr = window.devicePixelRatio || 1, w = cv.clientWidth, h = cv.clientHeight || +cv.getAttribute('height');
+      if (cv.width !== Math.round(w * dpr) || cv.height !== Math.round(h * dpr)) { cv.width = Math.round(w * dpr); cv.height = Math.round(h * dpr); }
+      const c = cv.getContext('2d'); c.setTransform(dpr, 0, 0, dpr, 0, 0);
+      return { c, w, h };
+    }
+    function niceStep(range, n) { const r = range / n, m = Math.pow(10, Math.floor(Math.log10(r))), q = r / m; return (q < 1.5 ? 1 : q < 3.5 ? 2 : q < 7.5 ? 5 : 10) * m; }
+    // séries : [{ pts: [[x, y]…], color, width, dash }], opts : { xmin, xmax, ymin, ymax, logY, marker, xlabel }
+    function plot(cv, series, opts = {}) {
+      const { c, w, h } = setupCanvas(cv);
+      c.fillStyle = '#0a0a0b'; c.fillRect(0, 0, w, h);
+      const padL = 44, padR = 8, padT = 8, padB = 20;
+      let xmin = opts.xmin, xmax = opts.xmax, ymin = opts.ymin, ymax = opts.ymax;
+      const all = series.flatMap((s) => s.pts);
+      if (xmin === undefined) xmin = Math.min(...all.map((p) => p[0]));
+      if (xmax === undefined) xmax = Math.max(...all.map((p) => p[0]));
+      if (ymin === undefined || ymax === undefined) {
+        let lo = Infinity, hi = -Infinity;
+        all.forEach((p) => { if (Number.isFinite(p[1])) { lo = Math.min(lo, p[1]); hi = Math.max(hi, p[1]); } });
+        if (!Number.isFinite(lo)) { lo = -1; hi = 1; }
+        if (hi - lo < 1e-12) { hi += 1e-6 + Math.abs(hi) * 0.1; lo -= 1e-6 + Math.abs(lo) * 0.1; }
+        const m = (hi - lo) * 0.08;
+        if (ymin === undefined) ymin = lo - m;
+        if (ymax === undefined) ymax = hi + m;
+      }
+      if (!(xmax > xmin)) xmax = xmin + 1;
+      const X = (x) => padL + ((x - xmin) / (xmax - xmin)) * (w - padL - padR);
+      const Y = (y) => padT + (1 - (y - ymin) / (ymax - ymin)) * (h - padT - padB);
+      c.font = '10px "JetBrains Mono", monospace'; c.fillStyle = '#6c6c70'; c.strokeStyle = '#1e1e21'; c.lineWidth = 1;
+      const sy = niceStep(ymax - ymin, 4);
+      c.textAlign = 'right'; c.textBaseline = 'middle';
+      for (let v = Math.ceil(ymin / sy) * sy; v <= ymax; v += sy) {
+        c.beginPath(); c.moveTo(padL, Y(v)); c.lineTo(w - padR, Y(v)); c.stroke();
+        c.fillText(opts.logY ? '1e' + Math.round(v) : opts.yfmt ? opts.yfmt(v) : fmt(Math.abs(v) < sy / 1e6 ? 0 : v, 3), padL - 5, Y(v));
+      }
+      const sx = niceStep(xmax - xmin, 5);
+      c.textAlign = 'center'; c.textBaseline = 'top';
+      for (let v = Math.ceil(xmin / sx) * sx; v <= xmax; v += sx) {
+        c.beginPath(); c.moveTo(X(v), padT); c.lineTo(X(v), h - padB); c.stroke();
+        c.fillText((opts.xfmt ? opts.xfmt(v) : fmt(Math.abs(v) < sx / 1e6 ? 0 : v, 2)) + (opts.xunit || ''), X(v), h - padB + 4);
+      }
+      if (ymin < 0 && ymax > 0) { c.strokeStyle = '#3a3a3d'; c.beginPath(); c.moveTo(padL, Y(0)); c.lineTo(w - padR, Y(0)); c.stroke(); }
+      c.save(); c.beginPath(); c.rect(padL, padT, w - padL - padR, h - padT - padB); c.clip();
+      series.forEach((s) => {
+        c.strokeStyle = s.color; c.lineWidth = s.width || 1.6; c.setLineDash(s.dash || []); c.lineJoin = 'round';
+        c.beginPath(); let pen = false;
+        s.pts.forEach(([x, y]) => { if (!Number.isFinite(y)) { pen = false; return; } if (pen) c.lineTo(X(x), Y(y)); else { c.moveTo(X(x), Y(y)); pen = true; } });
+        c.stroke(); c.setLineDash([]);
+        if (s.dot && s.pts.length) { const [x, y] = s.pts[s.pts.length - 1]; c.fillStyle = s.color; c.beginPath(); c.arc(X(x), Y(y), 3.5, 0, Math.PI * 2); c.fill(); }
+      });
+      if (opts.points) opts.points.pts.forEach(([x, y]) => { c.fillStyle = opts.points.color; c.beginPath(); c.arc(X(x), Y(y), 3.5, 0, Math.PI * 2); c.fill(); });
+      if (opts.marker) opts.marker.forEach((m) => { c.strokeStyle = m.color; c.setLineDash([3, 3]); c.beginPath(); c.moveTo(X(m.x), padT); c.lineTo(X(m.x), h - padB); c.stroke(); c.setLineDash([]); });
+      c.restore();
+    }
+
+    // Dessin d'un pendule (tige + masse) en coordonnées écran
+    function drawBob(c, x0, y0, x, y, r, color, alpha) {
+      c.globalAlpha = alpha === undefined ? 1 : alpha;
+      c.strokeStyle = alpha === undefined ? '#c9c9cc' : color; c.lineWidth = 2;
+      c.beginPath(); c.moveTo(x0, y0); c.lineTo(x, y); c.stroke();
+      c.fillStyle = color; c.beginPath(); c.arc(x, y, r, 0, Math.PI * 2); c.fill();
+      c.globalAlpha = 1;
+    }
+    function drawPivot(c, x, y) {
+      c.fillStyle = '#26262a'; c.fillRect(x - 40, y - 6, 80, 6);
+      c.fillStyle = '#c9c9cc'; c.beginPath(); c.arc(x, y, 4, 0, Math.PI * 2); c.fill();
+    }
+
+    // ---------- Boucle commune ----------
+    let view = 'simple';
+    const views = {};
+    let lastTs = 0;
+    function frame(ts) {
+      const dt = lastTs ? Math.min(0.05, (ts - lastTs) / 1000) : 0;
+      lastTs = ts;
+      const v = views[view];
+      if (v) { if (v.playing && dt > 0) v.step(dt); v.draw(); }
+      requestAnimationFrame(frame);
+    }
+    const reduce = window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+
+    // ======================= Pendule simple =======================
+    views.simple = (() => {
+      const st = { L: 1, m: 1, theta0: 60, planet: 'earth', gamma: 0, F: 0, wd: 3.13, showLinear: true };
+      let y, yl, tt, hist, playing = !reduce, defs;
+      const par = () => ({ g: PLANETS[st.planet], L: st.L, m: st.m, gamma: st.gamma, F: st.F, wd: st.wd });
+      function reset() { y = [st.theta0 * DEG, 0]; yl = [st.theta0 * DEG, 0]; tt = 0; hist = []; kpis(); }
+      function kpis() {
+        const p = par(), w0 = Math.sqrt(p.g / p.L);
+        const T = P.periodExact(p.L, p.g, st.theta0 * DEG), T0 = P.periodSmall(p.L, p.g);
+        let h = kpi(t('kT'), fmt(T, 4), 's', true) + kpi(t('kT0'), fmt(T0, 4), 's') + kpi(t('kErr'), fmtSigned(((T - T0) / T0) * 100, 2), '%');
+        if (st.F > 0) h += kpi(t('kPeak'), fmt(P.resonancePeak(w0, st.gamma), 3), 'rad/s');
+        else if (st.gamma > 0) h += kpi(t('kQ'), fmt(P.qualityFactor(w0, st.gamma), 1), '');
+        else h += kpi(t('kE'), fmt(P.simpleEnergy([st.theta0 * DEG, 0], p).E, 3), 'J');
+        $('kpi-simple').innerHTML = h;
+        $('resoBox').hidden = !(st.F > 0);
+        drawPeriodCurve();
+      }
+      function onChange(k) {
+        if (['L', 'theta0', 'planet'].includes(k) || (k === 'gamma' && st.gamma === 0 && st.F === 0)) reset(); else kpis();
+      }
+      function step(dt) {
+        const p = par(), h = 1 / 1000, n = Math.round(dt / h);
+        for (let i = 0; i < n; i++) {
+          y = P.rk4(P.simpleDeriv, y, tt, h, p);
+          yl = P.rk4(P.linearDeriv, yl, tt, h, p);
+          tt += h;
+        }
+        const e = P.simpleEnergy(y, p);
+        hist.push({ t: tt, a: y[0], al: yl[0], w: y[1], K: e.K, U: e.U, E: e.E });
+        while (hist.length && hist[0].t < tt - 12) hist.shift();
+      }
+      // Glisser la masse
+      let drag = false;
+      const cv = $('sc-simple');
+      // la longueur affichée suit L (3 m remplissent le cadre)
+      function geom() { const w = cv.clientWidth, h = cv.clientHeight, Rmax = Math.min(h - 80, w / 2 - 30); return { px: w / 2, py: 40, R: Rmax * (0.35 + 0.65 * Math.min(1, st.L / 3)) }; }
+      function angleFrom(e) { const r = cv.getBoundingClientRect(), { px, py } = geom(); return Math.atan2(e.clientX - r.left - px, e.clientY - r.top - py); }
+      cv.addEventListener('pointerdown', (e) => { drag = true; cv.setPointerCapture(e.pointerId); st.theta0 = Math.round(angleFrom(e) / DEG); defs.forEach((d) => d.key === 'theta0' && d.refresh()); reset(); });
+      cv.addEventListener('pointermove', (e) => { if (!drag) return; st.theta0 = Math.max(-179, Math.min(179, Math.round(angleFrom(e) / DEG))); defs.forEach((d) => d.key === 'theta0' && d.refresh()); reset(); });
+      cv.addEventListener('pointerup', () => { drag = false; });
+      function draw() {
+        const { c, w, h } = setupCanvas(cv);
+        c.fillStyle = '#0a0a0b'; c.fillRect(0, 0, w, h);
+        const { px, py, R } = geom();
+        // rapporteur
+        c.strokeStyle = '#1e1e21'; c.lineWidth = 1;
+        c.beginPath(); c.arc(px, py, R, 0, Math.PI); c.stroke();
+        c.font = '10px "JetBrains Mono", monospace'; c.fillStyle = '#4a4a4e'; c.textAlign = 'center';
+        for (let a = -90; a <= 90; a += 30) { const r = a * DEG; c.fillText(a + '°', px + (R + 14) * Math.sin(r), py + (R + 14) * Math.cos(r) + 3); }
+        c.setLineDash([3, 4]); c.strokeStyle = '#2a2a2e'; c.beginPath(); c.moveTo(px, py); c.lineTo(px, py + R + 4); c.stroke(); c.setLineDash([]);
+        drawPivot(c, px, py);
+        const rb = 9 + 5 * Math.cbrt(st.m);
+        if (st.showLinear) drawBob(c, px, py, px + R * Math.sin(yl[0]), py + R * Math.cos(yl[0]), rb, '#8a8a90', 0.55);
+        drawBob(c, px, py, px + R * Math.sin(y[0]), py + R * Math.cos(y[0]), rb, COLORS.accent);
+        c.fillStyle = '#9b9b9f'; c.textAlign = 'left';
+        c.fillText('t = ' + fmt(tt, 1) + ' s   θ = ' + fmt(y[0] / DEG, 1) + '°', 12, h - 12);
+        // graphiques
+        const H = hist;
+        if (H.length > 1) {
+          const t0 = Math.max(0, tt - 12);
+          plot($('ch-s-theta'), [{ pts: H.map((s) => [s.t, s.al / DEG]), color: COLORS.grey, width: 1.3 }, { pts: H.map((s) => [s.t, s.a / DEG]), color: COLORS.accent }], { xmin: t0, xmax: t0 + 12, xunit: ' s' });
+          plot($('ch-s-phase'), [{ pts: H.map((s) => [s.a / DEG, s.w]), color: COLORS.accent, dot: true }], {});
+          plot($('ch-s-energy'), [{ pts: H.map((s) => [s.t, s.U]), color: COLORS.accent }, { pts: H.map((s) => [s.t, s.K]), color: COLORS.line }, { pts: H.map((s) => [s.t, s.E]), color: COLORS.warn }], { xmin: t0, xmax: t0 + 12, ymin: 0, xunit: ' s' });
+        }
+        if (st.F > 0) {
+          const p = par(), w0 = Math.sqrt(p.g / p.L), pts = [];
+          for (let k = 0; k <= 300; k++) { const wv = (k / 300) * 3 * w0; pts.push([wv, P.resonanceAmp(w0, st.gamma, st.F, wv) / DEG]); }
+          const top = Math.min(Math.max(...pts.map((q) => q[1])), 400);
+          plot($('ch-s-reso'), [{ pts, color: COLORS.accent }], { ymin: 0, ymax: top * 1.1, marker: [{ x: st.wd, color: COLORS.warn }], yfmt: (v) => fmt(v, 0) + '°' });
+        }
+      }
+      function drawPeriodCurve() {
+        const p = par(), pts = [], pts0 = [];
+        for (let a = 0; a <= 175; a += 1) { pts.push([a, P.periodExact(p.L, p.g, a * DEG)]); pts0.push([a, P.periodSmall(p.L, p.g)]); }
+        plot($('ch-s-period'), [{ pts: pts0, color: COLORS.grey, dash: [4, 4] }, { pts, color: COLORS.accent }], { xmin: 0, xmax: 180, xunit: '°', marker: [{ x: Math.abs(st.theta0), color: COLORS.warn }], yfmt: (v) => fmt(v, 2) + ' s' });
+      }
+      const PRE = [
+        ['pSmall', { theta0: 10, gamma: 0, F: 0, planet: 'earth', L: 1 }], ['pLarge', { theta0: 150, gamma: 0, F: 0, planet: 'earth', L: 1 }],
+        ['pTop', { theta0: 178, gamma: 0, F: 0, planet: 'earth', L: 1 }], ['pDamped', { theta0: 60, gamma: 0.3, F: 0, planet: 'earth', L: 1 }],
+        ['pReso', { theta0: 0, gamma: 0.15, F: 0.4, wd: 3.1, planet: 'earth', L: 1, showLinear: false }], ['pMoon', { theta0: 30, gamma: 0, F: 0, planet: 'moon', L: 1 }],
+      ];
+      function build() {
+        defs = buildControls('ctl-simple', t('tabSimple'), [
+          { key: 'L', min: 0.1, max: 3, step: 0.05, unit: 'm', dec: 2 },
+          { key: 'm', min: 0.1, max: 5, step: 0.1, unit: 'kg', dec: 1 },
+          { key: 'theta0', min: -179, max: 179, step: 1, unit: '°', dec: 0 },
+          { key: 'planet', type: 'select', options: () => T[lang].planets },
+          { key: 'gamma', min: 0, max: 1.5, step: 0.01, unit: 's⁻¹', dec: 2 },
+          { key: 'F', min: 0, max: 2, step: 0.01, unit: 'rad/s²', dec: 2 },
+          { key: 'wd', min: 0.2, max: 10, step: 0.01, unit: 'rad/s', dec: 2 },
+          { key: 'showLinear', type: 'check' },
+        ], st, onChange);
+        presetButtons('pre-simple', PRE, (o) => { Object.assign(st, { showLinear: true }, o); refreshAll(defs, st); reset(); });
+      }
+      return { build, reset, step, draw, get playing() { return playing; }, set playing(v) { playing = v; } };
+    })();
+
+    // ======================= Pendule double =======================
+    views.double = (() => {
+      const st = { L1: 1, L2: 1, m1: 1, m2: 1, a1: 120, a2: 150, ghosts: 3, trail: true };
+      let ys, tt, trail, hist, E0, playing = !reduce, defs;
+      const GHOST_COLORS = ['#c8102e', '#e6e6e6', '#e0a458', '#7fbf7f', '#c77dba', '#d96a5b', '#bfbf6a', '#9b9b9f'];
+      const par = () => ({ g: P.G0, L1: st.L1, L2: st.L2, m1: st.m1, m2: st.m2 });
+      function reset() {
+        const n = Math.max(1, Math.round(st.ghosts) + 1);
+        ys = []; for (let i = 0; i < n; i++) ys.push([st.a1 * DEG, 0, (st.a2 + i * 0.001) * DEG, 0]);
+        tt = 0; trail = ys.map(() => []); hist = []; E0 = P.doubleEnergy(ys[0], par()).E; kpis();
+      }
+      function kpis(sep) {
+        const p = par(), [w1, w2] = P.doubleModes(p);
+        const drift = ys ? (P.doubleEnergy(ys[0], p).E - E0) / (Math.abs(E0) || 1) : 0;
+        $('kpi-double').innerHTML = kpi(t('kTime'), fmt(tt || 0, 1), 's') + kpi(t('kEdrift'), drift === 0 ? '0' : drift.toExponential(1).replace('.', lang === 'fr' ? ',' : '.'), '', true) +
+          kpi(t('kSep'), sep === undefined ? '—' : fmt(sep, 1), '°') + kpi(t('kModes'), fmt(w1, 2) + ' · ' + fmt(w2, 2), 'rad/s');
+      }
+      function step(dt) {
+        const p = par(), h = 1 / 1000, n = Math.round(dt / h);
+        for (let i = 0; i < n; i++) { for (let k = 0; k < ys.length; k++) ys[k] = P.rk4(P.doubleDeriv, ys[k], tt, h, p); tt += h; }
+        ys.forEach((y, k) => { const q = P.doublePositions(y, p); trail[k].push([q.x2, q.y2]); if (trail[k].length > (k === 0 ? 900 : 300)) trail[k].shift(); });
+        const E = P.doubleEnergy(ys[0], p).E;
+        let sepDeg = NaN;
+        if (ys.length > 1) { const d1 = ys[0][0] - ys[1][0], d2 = ys[0][2] - ys[1][2]; sepDeg = Math.hypot(Math.atan2(Math.sin(d1), Math.cos(d1)), Math.atan2(Math.sin(d2), Math.cos(d2))) / DEG; }
+        hist.push({ t: tt, sep: sepDeg, dE: (E - E0) / (Math.abs(E0) || 1) });
+        while (hist.length && hist[0].t < tt - 30) hist.shift();
+        kpis(ys.length > 1 ? sepDeg : undefined);
+      }
+      function draw() {
+        const cv = $('sc-double'), { c, w, h } = setupCanvas(cv), p = par();
+        c.fillStyle = '#0a0a0b'; c.fillRect(0, 0, w, h);
+        const px = w / 2, py = h / 2 - 10, sc = Math.min(w, h - 40) / 2 / (st.L1 + st.L2) * 0.95;
+        if (st.trail) {
+          trail.forEach((tr, k) => {
+            if (tr.length < 2) return;
+            c.strokeStyle = GHOST_COLORS[k % GHOST_COLORS.length]; c.lineWidth = k === 0 ? 1.4 : 1;
+            for (let i = 1; i < tr.length; i++) {
+              c.globalAlpha = (i / tr.length) * (k === 0 ? 0.8 : 0.45);
+              c.beginPath(); c.moveTo(px + tr[i - 1][0] * sc, py - tr[i - 1][1] * sc); c.lineTo(px + tr[i][0] * sc, py - tr[i][1] * sc); c.stroke();
+            }
+          });
+          c.globalAlpha = 1;
+        }
+        drawPivot(c, px, py);
+        for (let k = ys.length - 1; k >= 0; k--) {
+          const q = P.doublePositions(ys[k], p), col = GHOST_COLORS[k % GHOST_COLORS.length], ghost = k > 0;
+          const x1 = px + q.x1 * sc, y1 = py - q.y1 * sc, x2 = px + q.x2 * sc, y2 = py - q.y2 * sc;
+          c.globalAlpha = ghost ? 0.55 : 1;
+          c.strokeStyle = ghost ? col : '#c9c9cc'; c.lineWidth = ghost ? 1.2 : 2.2;
+          c.beginPath(); c.moveTo(px, py); c.lineTo(x1, y1); c.lineTo(x2, y2); c.stroke();
+          c.fillStyle = ghost ? col : '#e6e6e6'; c.beginPath(); c.arc(x1, y1, 5 + 3 * Math.cbrt(st.m1), 0, Math.PI * 2); c.fill();
+          c.fillStyle = col; c.beginPath(); c.arc(x2, y2, 5 + 3 * Math.cbrt(st.m2), 0, Math.PI * 2); c.fill();
+          c.globalAlpha = 1;
+        }
+        if (hist.length > 1) {
+          const t0 = Math.max(0, tt - 30);
+          if (ys.length > 1) plot($('ch-d-sep'), [{ pts: hist.filter((s) => s.sep > 0).map((s) => [s.t, Math.log10(s.sep)]), color: COLORS.accent }], { xmin: t0, xmax: t0 + 30, ymin: -4, ymax: 3, logY: true, xunit: ' s' });
+          else plot($('ch-d-sep'), [], { xmin: 0, xmax: 30, ymin: -4, ymax: 3, logY: true });
+          plot($('ch-d-energy'), [{ pts: hist.map((s) => [s.t, s.dE]), color: COLORS.warn }], { xmin: t0, xmax: t0 + 30, xunit: ' s', yfmt: (v) => (v === 0 ? '0' : v.toExponential(0)) });
+        }
+      }
+      const PRE = [
+        ['pChaos', { a1: 120, a2: 150, L1: 1, L2: 1, m1: 1, m2: 1, ghosts: 3 }], ['pCalm', { a1: 10, a2: 10, L1: 1, L2: 1, m1: 1, m2: 1, ghosts: 3 }],
+        ['pFlip', { a1: 170, a2: 170, L1: 1, L2: 1, m1: 1, m2: 1, ghosts: 7 }], ['pHeavy', { a1: 90, a2: 0, L1: 1, L2: 0.7, m1: 0.5, m2: 3, ghosts: 3 }],
+      ];
+      function build() {
+        defs = buildControls('ctl-double', t('tabDouble'), [
+          { key: 'L1', min: 0.2, max: 2, step: 0.05, unit: 'm', dec: 2 }, { key: 'L2', min: 0.2, max: 2, step: 0.05, unit: 'm', dec: 2 },
+          { key: 'm1', min: 0.1, max: 5, step: 0.1, unit: 'kg', dec: 1 }, { key: 'm2', min: 0.1, max: 5, step: 0.1, unit: 'kg', dec: 1 },
+          { key: 'a1', min: -180, max: 180, step: 1, unit: '°', dec: 0 }, { key: 'a2', min: -180, max: 180, step: 1, unit: '°', dec: 0 },
+          { key: 'ghosts', min: 0, max: 7, step: 1, dec: 0 }, { key: 'trail', type: 'check' },
+        ], st, (k) => { if (k !== 'trail') reset(); });
+        presetButtons('pre-double', PRE, (o) => { Object.assign(st, o); refreshAll(defs, st); reset(); });
+      }
+      return { build, reset, step, draw, get playing() { return playing; }, set playing(v) { playing = v; } };
+    })();
+
+    // ======================= Pendules couplés =======================
+    views.coupled = (() => {
+      const st = { L: 1, m: 1, k: 0.6, gamma: 0, c1: 12, c2: 0 };
+      let y, tt, hist, playing = !reduce, defs;
+      const par = () => ({ g: P.G0, L: st.L, m: st.m, k: st.k, gamma: st.gamma });
+      function reset() { y = [st.c1 * DEG, 0, st.c2 * DEG, 0]; tt = 0; hist = []; kpis(); }
+      function kpis() {
+        const md = P.coupledModes(par());
+        $('kpi-coupled').innerHTML = kpi(t('kW1'), fmt(md.w1, 3), 'rad/s') + kpi(t('kW2'), fmt(md.w2, 3), 'rad/s') + kpi(t('kBeat'), fmt(md.beat, 2), 's', true) + kpi(t('kExch'), fmt(md.exchange, 2), 's');
+      }
+      function step(dt) {
+        const p = par(), h = 1 / 1000, n = Math.round(dt / h);
+        for (let i = 0; i < n; i++) { y = P.rk4(P.coupledDeriv, y, tt, h, p); tt += h; }
+        const e = P.coupledEnergy(y, p);
+        hist.push({ t: tt, a1: y[0], a2: y[2], e1: e.e1, e2: e.e2 });
+        while (hist.length && hist[0].t < tt - 40) hist.shift();
+      }
+      function draw() {
+        const cv = $('sc-coupled'), { c, w, h } = setupCanvas(cv);
+        c.fillStyle = '#0a0a0b'; c.fillRect(0, 0, w, h);
+        const R = Math.min(h - 70, 240), gap = Math.min(w * 0.36, 260), py = 30, xA = w / 2 - gap / 2, xB = w / 2 + gap / 2;
+        c.fillStyle = '#26262a'; c.fillRect(xA - 50, py - 6, gap + 100, 6);
+        const b1 = [xA + R * Math.sin(y[0]), py + R * Math.cos(y[0])], b2 = [xB + R * Math.sin(y[2]), py + R * Math.cos(y[2])];
+        // ressort entre les deux tiges, aux 2/3 de la longueur
+        const f = 0.62, s1 = [xA + f * R * Math.sin(y[0]), py + f * R * Math.cos(y[0])], s2 = [xB + f * R * Math.sin(y[2]), py + f * R * Math.cos(y[2])];
+        c.strokeStyle = COLORS.warn; c.lineWidth = 1.5; c.beginPath(); c.moveTo(s1[0], s1[1]);
+        const nz = 14;
+        for (let i = 1; i < nz; i++) {
+          const u = i / nz, x = s1[0] + (s2[0] - s1[0]) * u, yy = s1[1] + (s2[1] - s1[1]) * u, dx = s2[0] - s1[0], dy = s2[1] - s1[1], L = Math.hypot(dx, dy) || 1;
+          const o = (i % 2 ? 1 : -1) * 7; c.lineTo(x - (dy / L) * o, yy + (dx / L) * o);
+        }
+        c.lineTo(s2[0], s2[1]); c.stroke();
+        drawBob(c, xA, py, b1[0], b1[1], 13 + 4 * Math.cbrt(st.m), COLORS.accent);
+        drawBob(c, xB, py, b2[0], b2[1], 13 + 4 * Math.cbrt(st.m), '#e6e6e6');
+        [xA, xB].forEach((x) => { c.fillStyle = '#c9c9cc'; c.beginPath(); c.arc(x, py, 4, 0, Math.PI * 2); c.fill(); });
+        c.font = '10px "JetBrains Mono", monospace'; c.fillStyle = '#9b9b9f'; c.textAlign = 'left'; c.fillText('t = ' + fmt(tt, 1) + ' s', 12, h - 12);
+        if (hist.length > 1) {
+          const t0 = Math.max(0, tt - 40);
+          plot($('ch-c-theta'), [{ pts: hist.map((s) => [s.t, s.a1 / DEG]), color: COLORS.accent, width: 1.2 }, { pts: hist.map((s) => [s.t, s.a2 / DEG]), color: COLORS.line, width: 1.2 }], { xmin: t0, xmax: t0 + 40, xunit: ' s', yfmt: (v) => fmt(v, 0) + '°' });
+          plot($('ch-c-energy'), [{ pts: hist.map((s) => [s.t, s.e1]), color: COLORS.accent }, { pts: hist.map((s) => [s.t, s.e2]), color: COLORS.line }], { xmin: t0, xmax: t0 + 40, ymin: 0, xunit: ' s' });
+        }
+      }
+      const PRE = [
+        ['pBeats', { c1: 12, c2: 0, k: 0.6, gamma: 0 }], ['pPhase', { c1: 12, c2: 12, k: 0.6, gamma: 0 }],
+        ['pAnti', { c1: 12, c2: -12, k: 0.6, gamma: 0 }], ['pStrong', { c1: 12, c2: 0, k: 4, gamma: 0 }],
+      ];
+      function build() {
+        defs = buildControls('ctl-coupled', t('tabCoupled'), [
+          { key: 'L', min: 0.2, max: 2, step: 0.05, unit: 'm', dec: 2 }, { key: 'm', min: 0.2, max: 5, step: 0.1, unit: 'kg', dec: 1 },
+          { key: 'k', min: 0.05, max: 8, step: 0.05, unit: 'N/m', dec: 2 }, { key: 'gamma', min: 0, max: 0.5, step: 0.01, unit: 's⁻¹', dec: 2 },
+          { key: 'c1', min: -40, max: 40, step: 1, unit: '°', dec: 0 }, { key: 'c2', min: -40, max: 40, step: 1, unit: '°', dec: 0 },
+        ], st, (k) => { if (['c1', 'c2', 'L'].includes(k)) reset(); else kpis(); });
+        presetButtons('pre-coupled', PRE, (o) => { Object.assign(st, o); refreshAll(defs, st); reset(); });
+      }
+      return { build, reset, step, draw, get playing() { return playing; }, set playing(v) { playing = v; } };
+    })();
+
+    // ======================= Horloge à balancier =======================
+    views.clock = (() => {
+      const st = { material: 'laiton', temp: 20, dL: 0, lat: 45, amp: 4, speed: 1 };
+      const LAT_REF = 45; // lieu de réglage
+      let y, tt, beats, lastSign, playing = !reduce, defs, L0, gRef, startReal, wheelAngle, wheelTarget, ref0 = null;
+      const physics = () => {
+        gRef = P.gravityAtLatitude(LAT_REF);
+        L0 = P.lengthForPeriod(2, gRef, 4 * DEG); // horloge réglée à 20 °C, amplitude 4°, à 45° de latitude
+        const g = P.gravityAtLatitude(st.lat), alpha = P.MATERIALS[st.material];
+        const L = (L0 + st.dL / 1000) * (1 + alpha * (st.temp - 20));
+        return { g, L, alpha, rate: P.clockRate({ gRef, g, L0, dL: st.dL / 1000, alpha, dT: st.temp - 20, amp: st.amp * DEG, ampRef: 4 * DEG }) };
+      };
+      let ph;
+      function reset() {
+        ph = physics();
+        y = [st.amp * DEG, 0]; tt = 0; beats = 0; lastSign = 1; wheelAngle = 0; wheelTarget = 0; ref0 = null;
+        const now = new Date(); startReal = now.getHours() * 3600 + now.getMinutes() * 60 + now.getSeconds();
+        kpis(); tables();
+      }
+      // L'échappement rend l'énergie à chaque passage au point mort : amplitude constante
+      const target = () => 2 * ph.g / ph.L * (1 - Math.cos(st.amp * DEG));
+      function step(dt) {
+        const p = { g: ph.g, L: ph.L, gamma: 0.002 }, h = 1 / 400;
+        const n = Math.round((dt * st.speed) / h);
+        for (let i = 0; i < n; i++) {
+          const yn = P.rk4(P.simpleDeriv, y, tt, h, p);
+          tt += h;
+          if ((y[0] < 0) !== (yn[0] < 0)) {
+            beats++; // une alternance = un battement = une seconde affichée
+            // instant exact du passage (interpolé) : sert de référence pour mesurer la marche
+            const tc = tt - h + (h * Math.abs(y[0])) / (Math.abs(y[0]) + Math.abs(yn[0]));
+            if (!ref0) ref0 = { t: tc, beats }; else ref0.last = { t: tc, beats };
+            const w2 = target() - 2 * ph.g / ph.L * (1 - Math.cos(yn[0]));
+            yn[1] = Math.sign(yn[1] || 1) * Math.sqrt(Math.max(0, w2));
+            wheelTarget += (Math.PI * 2) / 60; // la roue de 30 dents avance d'une demi-dent par battement
+          }
+          y = yn;
+        }
+        wheelAngle += (wheelTarget - wheelAngle) * Math.min(1, dt * 30 * Math.max(1, st.speed / 4));
+        if (st.speed > 30) wheelAngle = wheelTarget;
+        kpis();
+      }
+      function kpis() {
+        const r = ph.rate;
+        // marche mesurée entre le premier et le dernier passage par la verticale
+        const meas = ref0 && ref0.last && ref0.last.t - ref0.t > 20 ? 86400 * ((ref0.last.beats - ref0.beats) - (ref0.last.t - ref0.t)) / (ref0.last.t - ref0.t) : NaN;
+        $('kpi-clock').innerHTML = kpi(t('kLsec'), fmt(P.secondsPendulumLength(P.G0) * 100, 2), 'cm') + kpi(t('kPer'), fmt(r.period, 5), 's') +
+          kpi(t('kRate'), fmtSigned(r.total, 2), t('perDay'), true) + kpi(t('kMeas'), Number.isFinite(meas) ? fmtSigned(meas, 1) : '<small>' + t('waiting') + '</small>', Number.isFinite(meas) ? t('perDay') : '');
+        const hms = (s) => { s = ((Math.floor(s) % 86400) + 86400) % 86400; return [Math.floor(s / 3600), Math.floor(s / 60) % 60, s % 60].map((v) => String(v).padStart(2, '0')).join(':'); };
+        const gap = beats - tt;
+        $('times').innerHTML = kpi(t('tReal'), hms(startReal + tt), '') + kpi(t('tClock'), hms(startReal + beats), '', true) +
+          kpi(t('tGap'), fmtSigned(gap, 1), 's');
+      }
+      function tables() {
+        const r = ph.rate;
+        const row = (k, v) => '<tr><td>' + k + '</td><td class="n ' + (v > 0.005 ? 'pos' : v < -0.005 ? 'neg' : '') + '">' + fmtSigned(v, 2) + '</td><td>' + (Math.abs(v) < 0.005 ? t('exact') : v > 0 ? t('ahead') : t('behind')) + '</td></tr>';
+        $('rateTable').innerHTML = '<thead><tr><th></th><th class="n">' + t('perDay') + '</th><th></th></tr></thead><tbody>' +
+          row(t('rTherm') + ' (' + T[lang].mats[st.material] + ', α = ' + fmt(P.MATERIALS[st.material] * 1e6, 1) + '·10⁻⁶/K)', r.thermal) +
+          row(t('rLen'), r.length) + row(t('rGrav') + ' (g = ' + fmt(ph.g, 4) + ' m/s²)', r.gravity) + row(t('rAmp'), r.amplitude) +
+          '<tr><td><b>' + t('rTotal') + '</b></td><td class="n"><b>' + fmtSigned(r.total, 2) + '</b></td><td></td></tr></tbody>';
+        const tr = P.TRAIN;
+        $('trainTable').innerHTML = '<tbody><tr><td colspan="2">' + t('trEsc') + '</td></tr>' +
+          '<tr><td>' + t('trMin') + ' : ' + tr.toMinute.map(([a, b]) => a + '→' + b).join(', ') + '</td><td class="n">' + t('ratio') + ' ' + P.trainRatio(tr.toMinute) + '</td></tr>' +
+          '<tr><td>' + t('trHour') + ' : ' + tr.toHour.map(([a, b]) => a + '→' + b).join(', ') + '</td><td class="n">' + t('ratio') + ' ' + P.trainRatio(tr.toHour) + '</td></tr></tbody>';
+      }
+      function draw() {
+        const cv = $('sc-clock'), { c, w, h } = setupCanvas(cv);
+        c.fillStyle = '#0a0a0b'; c.fillRect(0, 0, w, h);
+        const cx = w / 2;
+        // ----- cadran -----
+        const R = Math.min(118, w * 0.2), cy = R + 18;
+        c.fillStyle = '#121214'; c.strokeStyle = COLORS.brass; c.lineWidth = 3;
+        c.beginPath(); c.arc(cx, cy, R, 0, Math.PI * 2); c.fill(); c.stroke();
+        for (let i = 0; i < 60; i++) {
+          const a = (i / 60) * Math.PI * 2, big = i % 5 === 0;
+          c.strokeStyle = big ? '#e6e6e6' : '#5a5a5e'; c.lineWidth = big ? 2.2 : 1;
+          c.beginPath(); c.moveTo(cx + Math.sin(a) * (R - (big ? 14 : 8)), cy - Math.cos(a) * (R - (big ? 14 : 8))); c.lineTo(cx + Math.sin(a) * (R - 4), cy - Math.cos(a) * (R - 4)); c.stroke();
+        }
+        c.font = '600 ' + Math.round(R * 0.15) + 'px Inter, sans-serif'; c.fillStyle = '#e6e6e6'; c.textAlign = 'center'; c.textBaseline = 'middle';
+        ['XII', 'I', 'II', 'III', 'IV', 'V', 'VI', 'VII', 'VIII', 'IX', 'X', 'XI'].forEach((s, i) => { const a = (i / 12) * Math.PI * 2; c.fillText(s, cx + Math.sin(a) * (R - 30), cy - Math.cos(a) * (R - 30)); });
+        const sec = startReal + beats;
+        const hand = (frac, len, wid, col) => { const a = frac * Math.PI * 2; c.strokeStyle = col; c.lineWidth = wid; c.lineCap = 'round'; c.beginPath(); c.moveTo(cx - Math.sin(a) * len * 0.15, cy + Math.cos(a) * len * 0.15); c.lineTo(cx + Math.sin(a) * len, cy - Math.cos(a) * len); c.stroke(); };
+        hand(((sec / 3600) % 12) / 12, R * 0.5, 5, '#e6e6e6');
+        hand(((sec / 60) % 60) / 60, R * 0.76, 3.5, '#e6e6e6');
+        hand((sec % 60) / 60, R * 0.84, 1.5, COLORS.accent);
+        c.fillStyle = COLORS.accent; c.beginPath(); c.arc(cx, cy, 4, 0, Math.PI * 2); c.fill();
+        // ----- échappement à ancre -----
+        const er = Math.min(58, w * 0.11), ey = cy + R + er + 34;
+        // roue d'échappement (30 dents en dents de scie)
+        c.save(); c.translate(cx, ey); c.rotate(wheelAngle);
+        c.fillStyle = '#2b2416'; c.strokeStyle = COLORS.brass; c.lineWidth = 1.4;
+        c.beginPath();
+        for (let i = 0; i < 30; i++) {
+          const a0 = (i / 30) * Math.PI * 2, a1 = ((i + 0.75) / 30) * Math.PI * 2, a2 = ((i + 1) / 30) * Math.PI * 2;
+          c.lineTo(Math.cos(a0) * er * 0.82, Math.sin(a0) * er * 0.82);
+          c.lineTo(Math.cos(a1) * er, Math.sin(a1) * er);
+          c.lineTo(Math.cos(a2) * er * 0.82, Math.sin(a2) * er * 0.82);
+        }
+        c.closePath(); c.fill(); c.stroke();
+        c.strokeStyle = COLORS.brass; c.lineWidth = 3;
+        for (let i = 0; i < 4; i++) { const a = (i / 4) * Math.PI * 2; c.beginPath(); c.moveTo(0, 0); c.lineTo(Math.cos(a) * er * 0.78, Math.sin(a) * er * 0.78); c.stroke(); }
+        c.fillStyle = COLORS.brass; c.beginPath(); c.arc(0, 0, 5, 0, Math.PI * 2); c.fill();
+        c.restore();
+        // ancre : pivot au-dessus de la roue, solidaire du balancier
+        const ay = ey - er - 18, theta = y[0];
+        c.save(); c.translate(cx, ay); c.rotate(-theta * 1.6);
+        c.strokeStyle = '#c9c9cc'; c.lineWidth = 4; c.lineCap = 'round';
+        const arm = er * 0.95;
+        c.beginPath(); c.moveTo(-arm, er * 0.55); c.lineTo(-arm * 0.55, 0); c.lineTo(arm * 0.55, 0); c.lineTo(arm, er * 0.55); c.stroke();
+        c.fillStyle = COLORS.accent;
+        [[-arm, er * 0.55], [arm, er * 0.55]].forEach(([x, yy]) => { c.beginPath(); c.moveTo(x - 4, yy - 2); c.lineTo(x + 4, yy - 2); c.lineTo(x, yy + 10); c.closePath(); c.fill(); });
+        c.restore();
+        c.fillStyle = '#c9c9cc'; c.beginPath(); c.arc(cx, ay, 4, 0, Math.PI * 2); c.fill();
+        // ----- balancier -----
+        const pTop = ay, len = h - pTop - 46;
+        const bx = cx + len * Math.sin(theta), by = pTop + len * Math.cos(theta);
+        c.strokeStyle = '#8a8a90'; c.lineWidth = 2.5; c.beginPath(); c.moveTo(cx, pTop); c.lineTo(bx, by); c.stroke();
+        // lentille
+        c.save(); c.translate(bx, by); c.rotate(-theta);
+        const lg = c.createLinearGradient(-26, -26, 26, 26); lg.addColorStop(0, '#e8cf8f'); lg.addColorStop(1, '#8a6c30');
+        c.fillStyle = lg; c.beginPath(); c.ellipse(0, 0, 28, 28, 0, 0, Math.PI * 2); c.fill();
+        c.restore();
+        c.font = '10px "JetBrains Mono", monospace'; c.fillStyle = '#9b9b9f'; c.textAlign = 'left'; c.textBaseline = 'alphabetic';
+        c.fillText((lang === 'fr' ? 'battements : ' : 'beats: ') + beats + '   ×' + st.speed, 12, h - 12);
+      }
+      const PRE = [
+        ['pRef', { material: 'laiton', temp: 20, dL: 0, lat: 45, amp: 4 }], ['pSummer', { material: 'laiton', temp: 35, dL: 0, lat: 45, amp: 4 }],
+        ['pInvar', { material: 'invar', temp: 35, dL: 0, lat: 45, amp: 4 }], ['pPole', { material: 'laiton', temp: 20, dL: 0, lat: 90, amp: 4 }],
+        ['pTurn', { material: 'laiton', temp: 20, dL: 1, lat: 45, amp: 4 }], ['pWide', { material: 'laiton', temp: 20, dL: 0, lat: 45, amp: 10 }],
+      ];
+      function build() {
+        defs = buildControls('ctl-clock', t('tabClock'), [
+          { key: 'material', type: 'select', options: () => T[lang].mats },
+          { key: 'temp', min: -10, max: 45, step: 1, unit: '°C', dec: 0 },
+          { key: 'dL', min: -5, max: 5, step: 0.1, unit: 'mm', dec: 1, show: (v) => fmtSigned(v, 1) },
+          { key: 'lat', min: 0, max: 90, step: 1, unit: '°', dec: 0 },
+          { key: 'amp', min: 1, max: 15, step: 0.5, unit: '°', dec: 1 },
+        ], st, () => reset());
+        presetButtons('pre-clock', PRE, (o) => { Object.assign(st, o); refreshAll(defs, st); reset(); });
+        const sp = $('speeds'); sp.innerHTML = '';
+        [1, 10, 60, 600, 3600].forEach((s) => {
+          const b = document.createElement('button'); b.type = 'button'; b.className = 'btn'; b.textContent = '×' + s; b.setAttribute('aria-pressed', st.speed === s);
+          b.addEventListener('click', () => { st.speed = s; sp.querySelectorAll('button').forEach((x) => x.setAttribute('aria-pressed', x === b)); });
+          sp.appendChild(b);
+        });
+      }
+      return { build, reset, step, draw, get playing() { return playing; }, set playing(v) { playing = v; } };
+    })();
+
+
+    // ======================= Méthodes numériques =======================
+    views.methods = (() => {
+      const st = { mTh: 60, h: 0.05 };
+      const KEYS = ['euler', 'cromer', 'heun', 'verlet', 'rk4'];
+      const MCOL = { euler: '#c8102e', cromer: '#e0a458', heun: '#7fbf7f', verlet: '#c77dba', rk4: '#e6e6e6' };
+      const p = { g: P.G0, L: 1 };
+      let ys, tt, acc, hist, E0, orders, convSeries, lsqData, playing = !reduce, defs;
+      function reset() {
+        const y0 = [st.mTh * DEG, 0];
+        ys = {}; KEYS.forEach((k) => (ys[k] = y0.slice()));
+        tt = 0; acc = 0; hist = []; E0 = P.simpleEnergy(y0, p).E;
+        computeOrders(); quadTable(); legend();
+        if (!lsqData) computeLsq();
+        lsqTable();
+      }
+      function legend() {
+        $('mLegend').innerHTML = KEYS.map((k) => '<span style="font:.74rem var(--mono);color:var(--dim)"><i style="display:inline-block;width:10px;height:10px;border-radius:50%;background:' + MCOL[k] + ';margin-right:5px;vertical-align:-1px"></i>' + T[lang].mNames[k] + '</span>').join('');
+      }
+      // erreur sur θ à t = 2 s pour plusieurs pas, pente en log-log = ordre de la méthode
+      function computeOrders() {
+        const y0 = [st.mTh * DEG, 0], ref = P.integrate('rk4', P.simpleDeriv, y0, p, 1e-4, 2);
+        const hs = [0.01, 0.005, 0.0025, 0.00125];
+        orders = {}; convSeries = [];
+        KEYS.forEach((k) => {
+          const er = hs.map((h) => Math.abs(P.integrate(k, P.simpleDeriv, y0, p, h, 2)[0] - ref[0]));
+          const ok = er.every((e) => e > 0 && Number.isFinite(e));
+          orders[k] = ok ? P.slope(hs.map(Math.log10), er.map(Math.log10)) : NaN;
+          convSeries.push({ pts: hs.map((h, i) => [Math.log10(h), Math.log10(Math.max(er[i], 1e-16))]), color: MCOL[k] });
+        });
+      }
+      function step(dt) {
+        acc += dt;
+        // le pas de calcul h est fixe ; on avance en temps réel
+        let guard = 0;
+        while (acc >= st.h && guard++ < 2000) {
+          KEYS.forEach((k) => (ys[k] = P.METHODS[k].step(P.simpleDeriv, ys[k], tt, st.h, p)));
+          tt += st.h; acc -= st.h;
+          const row = { t: tt };
+          KEYS.forEach((k) => (row[k] = (P.simpleEnergy(ys[k], p).E - E0) / E0));
+          hist.push(row);
+        }
+        while (hist.length && hist[0].t < tt - 30) hist.shift();
+      }
+      function draw() {
+        const cv = $('sc-methods'), { c, w, h } = setupCanvas(cv);
+        c.fillStyle = '#0a0a0b'; c.fillRect(0, 0, w, h);
+        const px = w / 2, py = 26, R = Math.min(h - 50, w / 2 - 30);
+        drawPivot(c, px, py);
+        KEYS.slice().reverse().forEach((k) => {
+          const a = ys[k][0];
+          if (!Number.isFinite(a)) return;
+          c.globalAlpha = 0.9; c.strokeStyle = MCOL[k]; c.lineWidth = 1.5;
+          c.beginPath(); c.moveTo(px, py); c.lineTo(px + R * Math.sin(a), py + R * Math.cos(a)); c.stroke();
+          c.fillStyle = MCOL[k]; c.beginPath(); c.arc(px + R * Math.sin(a), py + R * Math.cos(a), 9, 0, Math.PI * 2); c.fill();
+          c.globalAlpha = 1;
+        });
+        c.font = '10px "JetBrains Mono", monospace'; c.fillStyle = '#9b9b9f'; c.textAlign = 'left';
+        c.fillText('t = ' + fmt(tt, 1) + ' s   h = ' + fmt(st.h * 1000, 0) + ' ms', 12, h - 12);
+        const t0 = Math.max(0, tt - 30);
+        const clamp = (v) => Math.max(-0.2, Math.min(0.2, v));
+        plot($('ch-m-energy'), hist.length > 1 ? KEYS.map((k) => ({ pts: hist.map((r) => [r.t, clamp(r[k]) * 100]), color: MCOL[k], width: 1.3 })) : [], { xmin: t0, xmax: t0 + 30, ymin: -21, ymax: 21, xunit: ' s', yfmt: (v) => fmt(v, 0) + ' %' });
+        plot($('ch-m-conv'), convSeries, { xmin: Math.log10(0.001), xmax: Math.log10(0.012), xfmt: (v) => fmt(Math.pow(10, v) * 1000, 1) + ' ms', yfmt: (v) => '1e' + Math.round(v) });
+        drawLsq();
+        const last = hist[hist.length - 1];
+        const cols = T[lang].mCols;
+        let html = '<thead><tr>' + cols.map((c2, i) => '<th' + (i > 0 && i < 4 ? ' class="n"' : '') + '>' + c2 + '</th>').join('') + '</tr></thead><tbody>';
+        KEYS.forEach((k) => {
+          const e = last ? last[k] : 0;
+          const trend = k === 'cromer' || k === 'verlet' ? t('mSympl') : Math.abs(e) < 1e-6 ? t('mStable') : e > 0 ? t('mGrow') : t('mDecay');
+          html += '<tr><td><i style="display:inline-block;width:9px;height:9px;border-radius:50%;background:' + MCOL[k] + ';margin-right:6px"></i>' + T[lang].mNames[k] + '</td><td class="n">' + P.METHODS[k].order + '</td><td class="n">' + fmt(orders[k], 2) + '</td><td class="n">' + (Number.isFinite(e) ? fmtSigned(e * 100, 4) + ' %' : '—') + '</td><td>' + trend + '</td></tr>';
+        });
+        $('mTable').innerHTML = html + '</tbody>';
+      }
+      function quadTable() {
+        const th = st.mTh * DEG, ref = P.periodExact(1, P.G0, th), cols = T[lang].qCols;
+        const e = (r, n) => { const v = P.periodByQuadrature(1, P.G0, th, r, n) - ref; return Math.abs(v) < 1e-15 ? '< 1e-15' : v.toExponential(2).replace('.', lang === 'fr' ? ',' : '.'); };
+        let html = '<thead><tr>' + cols.map((c2, i) => '<th' + (i ? ' class="n"' : '') + '>' + c2 + '</th>').join('') + '</tr></thead><tbody>';
+        [2, 4, 8, 16, 32].forEach((n) => { html += '<tr><td>' + n + '</td><td class="n">' + e('rect', n) + ' s</td><td class="n">' + e('trap', n) + ' s</td><td class="n">' + e('simpson', n) + ' s</td></tr>'; });
+        $('qTable').innerHTML = html + '<tr><td>' + t('qRef') + '</td><td class="n" colspan="3">T = ' + fmt(ref, 10) + ' s (θ₀ = ' + st.mTh + '°, L = 1 m)</td></tr></tbody>';
+      }
+      // périodes mesurées sur la simulation puis ajustement T/T0 − 1 = a·θ² + b·θ⁴
+      function computeLsq() {
+        const amps = [], ys2 = [], T0 = P.periodSmall(1, P.G0);
+        for (let a = 5; a <= 60; a += 5) { const r = a * DEG; amps.push(r); ys2.push(P.measurePeriod(P.simpleDeriv, [r, 0], { g: P.G0, L: 1 }, 1e-3, 30) / T0 - 1); }
+        const [a, b] = P.leastSquares(amps, ys2, [(x) => x * x, (x) => x ** 4]);
+        lsqData = { amps, ys2, a, b };
+      }
+      function drawLsq() {
+        const { amps, ys2, a, b } = lsqData, fit = [];
+        for (let d = 0; d <= 62; d++) { const r = d * DEG; fit.push([d, (a * r * r + b * r ** 4) * 100]); }
+        const meas = amps.map((r, i) => [r / DEG, ys2[i] * 100]);
+        plot($('ch-m-lsq'), [{ pts: fit, color: COLORS.line }], { xmin: 0, xmax: 62, ymin: 0, ymax: 8, xunit: '°', yfmt: (v) => fmt(v, 0) + ' %', points: { pts: meas, color: COLORS.accent } });
+      }
+      function lsqTable() {
+        const { a, b } = lsqData, cols = T[lang].lCols;
+        $('lsqTable').innerHTML = '<thead><tr>' + cols.map((c2, i) => '<th' + (i ? ' class="n"' : '') + '>' + c2 + '</th>').join('') + '</tr></thead><tbody>' +
+          '<tr><td>a</td><td class="n">' + fmt(a, 5) + '</td><td class="n">1/16 = ' + fmt(0.0625, 4) + '</td></tr>' +
+          '<tr><td>b</td><td class="n">' + fmt(b, 5) + '</td><td class="n">11/3072 ≈ ' + fmt(11 / 3072, 5) + '</td></tr></tbody>';
+      }
+      const PRE = [['pFine', { h: 0.001, mTh: 60 }], ['pCoarse', { h: 0.05, mTh: 60 }], ['pHuge', { h: 0.15, mTh: 60 }], ['pBig', { h: 0.02, mTh: 150 }]];
+      function build() {
+        defs = buildControls('ctl-methods', t('tabMethods'), [
+          { key: 'mTh', min: 5, max: 170, step: 1, unit: '°', dec: 0 },
+          { key: 'h', min: 0.001, max: 0.2, step: 0.001, show: (v) => fmt(v * 1000, 0), unit: 'ms' },
+        ], st, () => reset());
+        presetButtons('pre-methods', PRE, (o) => { Object.assign(st, o); refreshAll(defs, st); reset(); });
+      }
+      return { build, reset, step, draw, get playing() { return playing; }, set playing(v) { playing = v; } };
+    })();
+
+    // ---------- Onglets, lecture, langue ----------
+    function setView(v) {
+      view = v;
+      document.querySelectorAll('.tab').forEach((b) => b.setAttribute('aria-selected', b.dataset.view === v));
+      document.querySelectorAll('.view').forEach((s) => (s.hidden = s.id !== 'view-' + v));
+      try { history.replaceState(null, '', '#' + v); } catch (e) {}
+    }
+    document.querySelectorAll('.tab').forEach((b) => b.addEventListener('click', () => setView(b.dataset.view)));
+    document.querySelectorAll('[data-play]').forEach((b) => b.addEventListener('click', () => {
+      const v = views[b.dataset.play]; v.playing = !v.playing; b.textContent = v.playing ? t('pause') : t('play');
+    }));
+    document.querySelectorAll('[data-reset]').forEach((b) => b.addEventListener('click', () => views[b.dataset.reset].reset()));
+    function setLang(l) {
+      lang = l; document.documentElement.lang = l;
+      document.querySelectorAll('[data-t]').forEach((el) => { const v = T[l][el.dataset.t]; if (typeof v === 'string') el.textContent = v; });
+      document.querySelectorAll('[data-play]').forEach((b) => (b.textContent = views[b.dataset.play].playing ? t('pause') : t('play')));
+      document.querySelectorAll('.lang button').forEach((b) => b.setAttribute('aria-pressed', b.dataset.lang === l));
+      try { localStorage.setItem('lang', l); } catch (e) {}
+      Object.values(views).forEach((v) => { v.build(); v.reset(); });
+    }
+    document.querySelectorAll('.lang button').forEach((b) => b.addEventListener('click', () => setLang(b.dataset.lang)));
+    setLang(lang);
+    const h = (location.hash || '').slice(1);
+    if (views[h]) setView(h);
+    requestAnimationFrame(frame);
+  })();
+  </script>
+</body>
+</html>
