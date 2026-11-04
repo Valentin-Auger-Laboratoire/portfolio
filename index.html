@@ -87,6 +87,7 @@
         <button class="filter" data-filter="data" data-i18n="tag.data">Données</button>
         <button class="filter" data-filter="electronique" data-i18n="tag.electronics">Électronique</button>
         <button class="filter" data-filter="mecanique" data-i18n="tag.mechanics">Mécanique</button>
+        <button class="filter" data-filter="robotique" data-i18n="tag.robotics">Robotique</button>
         <button class="filter" data-filter="ia" data-i18n="tag.ai">IA</button>
         <button class="filter" data-filter="web" data-i18n="tag.web">Web</button>
       </div>
@@ -292,6 +293,23 @@
             <span class="card-links">
               <a class="card-link card-link--secondary" href="https://github.com/Valentin-Auger-Laboratoire/simulateur-pendules" target="_blank" rel="noopener" data-i18n="projects.code">Voir le code ↗</a>
               <a class="card-link" href="outils/pendules/index.html" data-i18n="projects.tool">Essayer l'outil ↗</a>
+            </span>
+          </div>
+        </article>
+        <article class="project-card project-card--wide" data-tags="robotique mecanique web">
+          <div class="card-media"><img src="assets/projets/bras-robotique.jpg" alt="Bras robotique à trois axes qui suit une trajectoire circulaire, avec son espace de travail et l'ellipse de manipulabilité" data-i18n-attr="alt:p26.img" width="960" height="600" loading="lazy" decoding="async"></div>
+          <div class="card-top">
+            <span class="card-type" data-i18n="tag.robotics">Robotique</span>
+            <span class="card-date" data-i18n="p26.date">Nov. 2026</span>
+          </div>
+          <h3 data-i18n="p26.title">Bras robotique à trois axes : cinématique, trajectoires et couples moteurs</h3>
+          <p data-i18n="p26.desc">Simulation d'un bras plan (épaule, coude, poignet). On le pilote axe par axe ou en cliquant la position voulue pour l'outil. La cinématique inverse est calculée de deux façons : formule exacte (coude haut ou coude bas) et méthode numérique sur la jacobienne. Espace de travail, butées, manipulabilité et alerte aux singularités. Trajectoires articulaires ou en ligne droite avec profil de vitesse trapézoïdal (prendre et poser, cercle, suture en zigzag). Couples moteurs selon les masses et la charge, et précision en bout de bras selon la résolution des codeurs. Environ 32 000 vérifications automatiques.</p>
+          <ul class="tags"><li>Cinématique inverse</li><li>Jacobienne</li><li>Planification de trajectoire</li><li>Dimensionnement moteur</li><li>JavaScript</li></ul>
+          <div class="card-foot">
+            <span class="card-context" data-i18n="projects.contextTool">Outil web · projet personnel</span>
+            <span class="card-links">
+              <a class="card-link card-link--secondary" href="https://github.com/Valentin-Auger-Laboratoire/bras-robotique" target="_blank" rel="noopener" data-i18n="projects.code">Voir le code ↗</a>
+              <a class="card-link" href="outils/bras-robotique/index.html" data-i18n="projects.tool">Essayer l'outil ↗</a>
             </span>
           </div>
         </article>

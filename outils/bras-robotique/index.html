@@ -1,0 +1,637 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Bras robotique</title>
+  <meta name="description" content="Bras robotique à trois axes : cinématique directe et inverse (analytique et numérique), espace de travail, manipulabilité, trajectoires articulaires et cartésiennes, couples moteurs et précision.">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --bg: #0c0c0d; --panel: #161618; --border: #262628; --border-hi: #3a3a3d;
+      --text: #f2f2f2; --dim: #9b9b9f; --muted: #6c6c70; --accent: #c8102e; --line: #c9c9cc; --warn: #e0a458; --ok: #8fd18f;
+      --mono: "JetBrains Mono", ui-monospace, monospace; --sans: "Inter", system-ui, sans-serif;
+      color-scheme: dark;
+    }
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    body { background: var(--bg); color: var(--text); font-family: var(--sans); line-height: 1.55; -webkit-font-smoothing: antialiased; }
+    .wrap { max-width: 1280px; margin: 0 auto; padding: 24px max(16px, env(safe-area-inset-right, 0px)) 48px max(16px, env(safe-area-inset-left, 0px)); }
+    .top { display: flex; justify-content: space-between; align-items: center; gap: 12px; flex-wrap: wrap; margin-bottom: 24px; }
+    .back { font-size: 0.9rem; color: var(--dim); text-decoration: none; }
+    .back:hover { color: var(--accent); }
+    .lang { display: flex; border: 1px solid var(--border-hi); }
+    .lang button { font: 500 0.78rem var(--mono); letter-spacing: .05em; background: none; color: var(--dim); border: 0; padding: 5px 10px; cursor: pointer; }
+    .lang button + button { border-left: 1px solid var(--border-hi); }
+    .lang button[aria-pressed="true"] { background: var(--text); color: var(--bg); }
+    .eyebrow { font: 500 0.82rem var(--mono); color: var(--accent); letter-spacing: .04em; }
+    h1 { font-size: clamp(1.6rem, 3.4vw, 2.3rem); line-height: 1.15; margin: 6px 0 10px; text-wrap: balance; }
+    .intro { color: var(--dim); max-width: 82ch; }
+    .tabs { display: flex; gap: 8px; margin: 26px 0 16px; flex-wrap: wrap; }
+    .tab { font: 0.85rem var(--mono); background: none; color: var(--dim); border: 1px solid var(--border); border-radius: 999px; padding: 6px 14px; cursor: pointer; }
+    .tab[aria-selected="true"] { color: var(--accent); border-color: var(--accent); }
+    [hidden] { display: none !important; }
+    .grid { display: grid; grid-template-columns: 340px minmax(0, 1fr); gap: 20px; align-items: start; }
+    .stack { display: grid; gap: 16px; min-width: 0; }
+    .panel { background: var(--panel); border: 1px solid var(--border); border-radius: 8px; padding: 16px; min-width: 0; }
+    h2 { font: 600 0.78rem var(--mono); letter-spacing: .12em; text-transform: uppercase; color: var(--dim); margin-bottom: 12px; }
+    h3 { font: 600 0.72rem var(--mono); letter-spacing: .08em; text-transform: uppercase; color: var(--dim); margin: 14px 0 10px; padding-top: 12px; border-top: 1px solid var(--border); }
+    button:focus-visible, input:focus-visible, select:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+    .btn { font: 500 0.82rem var(--sans); background: none; color: var(--text); border: 1px solid var(--border-hi); border-radius: 6px; padding: 6px 11px; cursor: pointer; white-space: nowrap; }
+    .btn:hover { border-color: var(--accent); color: var(--accent); }
+    .btn[aria-pressed="true"] { border-color: var(--accent); color: var(--accent); }
+    .row { display: flex; gap: 8px; flex-wrap: wrap; align-items: center; }
+    .ctl { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 2px 10px; margin-bottom: 10px; }
+    .ctl label { font: 500 0.76rem var(--mono); color: var(--dim); }
+    .ctl output { font: 0.8rem var(--mono); font-variant-numeric: tabular-nums; text-align: right; }
+    .ctl input[type=range] { grid-column: 1 / -1; width: 100%; accent-color: var(--accent); }
+    .seg { display: flex; border: 1px solid var(--border-hi); border-radius: 6px; overflow: hidden; margin-bottom: 10px; }
+    .seg button { flex: 1; font: 0.76rem var(--mono); background: none; color: var(--dim); border: 0; padding: 6px 4px; cursor: pointer; }
+    .seg button + button { border-left: 1px solid var(--border-hi); }
+    .seg button[aria-pressed="true"] { background: var(--text); color: var(--bg); }
+    label.ck { display: flex; gap: 8px; align-items: center; font-size: 0.86rem; cursor: pointer; margin-bottom: 8px; }
+    label.ck input { accent-color: var(--accent); }
+    .kpis { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 10px; }
+    .kpi { border: 1px solid var(--border); border-radius: 6px; padding: 9px 11px; min-width: 0; }
+    .kpi dt { font: 0.7rem var(--mono); color: var(--dim); }
+    .kpi dd { font: 600 1.1rem var(--sans); font-variant-numeric: tabular-nums; margin-top: 2px; overflow-wrap: anywhere; }
+    .kpi dd small { font: 400 0.74rem var(--mono); color: var(--dim); margin-left: 3px; }
+    .kpi.main dd { color: var(--accent); }
+    .scene { width: 100%; height: 520px; display: block; border: 1px solid var(--border); border-radius: 6px; background: #0a0a0b; touch-action: none; cursor: crosshair; margin-top: 12px; }
+    .charts { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px; }
+    .chart { min-width: 0; }
+    .chart p { font: 0.72rem var(--mono); color: var(--dim); margin-bottom: 4px; display: flex; gap: 10px; flex-wrap: wrap; }
+    .chart p i { display: inline-block; width: 12px; height: 2px; vertical-align: 3px; margin-right: 5px; }
+    .chart canvas { width: 100%; height: 170px; display: block; border: 1px solid var(--border); border-radius: 6px; background: #0a0a0b; }
+    .issues { list-style: none; display: grid; gap: 6px; margin-top: 12px; }
+    .issues li { font-size: 0.85rem; display: grid; grid-template-columns: auto minmax(0, 1fr); gap: 10px; align-items: baseline; padding: 7px 10px; border: 1px solid var(--border); border-radius: 6px; }
+    .issues .lv { font: 600 0.68rem var(--mono); letter-spacing: .06em; text-transform: uppercase; padding: 1px 6px; border-radius: 3px; border: 1px solid var(--warn); color: var(--warn); }
+    .issues .err .lv { background: var(--accent); border-color: var(--accent); color: #fff; }
+    .issues .good { display: block; color: var(--ok); border-color: #2e4a2e; }
+    .hint { font-size: 0.8rem; color: var(--dim); margin-top: 8px; }
+    .note { font-size: 0.82rem; color: var(--dim); }
+    .note p + p { margin-top: 6px; }
+    .presets { display: flex; flex-wrap: wrap; gap: 6px; }
+    table { width: 100%; border-collapse: collapse; font: 0.8rem var(--mono); font-variant-numeric: tabular-nums; }
+    th, td { text-align: left; padding: 6px 8px; border-bottom: 1px solid var(--border); }
+    td.n, th.n { text-align: right; }
+    th { color: var(--dim); font-weight: 500; }
+    .tablewrap { overflow-x: auto; }
+    @media (max-width: 1000px) { .grid { grid-template-columns: minmax(0, 1fr); } .main-col { order: -1; } }
+    @media (max-width: 700px) { .kpis { grid-template-columns: repeat(2, minmax(0, 1fr)); } .charts { grid-template-columns: minmax(0, 1fr); } .scene { height: 380px; } }
+  </style>
+</head>
+<body>
+  <div class="wrap">
+    <div class="top">
+      <a class="back" href="../../index.html#projets" data-t="back">← Retour au portfolio</a>
+      <div class="lang" role="group" aria-label="Langue / Language">
+        <button type="button" data-lang="fr" aria-pressed="true">FR</button>
+        <button type="button" data-lang="en" aria-pressed="false">EN</button>
+      </div>
+    </div>
+    <p class="eyebrow" data-t="eyebrow">Outil robotique · cinématique et commande d'un bras</p>
+    <h1 data-t="title">Bras robotique à trois axes</h1>
+    <p class="intro" data-t="intro">Un bras plan à trois articulations (épaule, coude, poignet), vu de côté. On le pilote axe par axe ou en donnant la position de l'outil : l'outil calcule les angles par cinématique inverse, de deux façons (formule exacte et méthode numérique). Il affiche l'espace de travail, la manipulabilité et les singularités, planifie des trajectoires avec un profil de vitesse trapézoïdal, et donne les couples que doivent fournir les moteurs ainsi que la précision obtenue en bout de bras.</p>
+
+    <div class="tabs" role="tablist">
+      <button type="button" class="tab" role="tab" data-view="drive" aria-selected="true" data-t="tabDrive">Piloter le bras</button>
+      <button type="button" class="tab" role="tab" data-view="traj" aria-selected="false" data-t="tabTraj">Trajectoires</button>
+      <button type="button" class="tab" role="tab" data-view="loads" aria-selected="false" data-t="tabLoads">Couples et précision</button>
+    </div>
+
+    <div class="grid">
+      <div class="stack">
+        <div class="panel" id="armPanel"></div>
+        <div class="panel" id="sidePanel"></div>
+      </div>
+      <div class="stack main-col">
+        <div class="panel">
+          <dl class="kpis" id="kpis"></dl>
+          <canvas class="scene" id="scene" aria-label="Bras robotique"></canvas>
+          <p class="hint" id="sceneHint"></p>
+          <ul class="issues" id="issues"></ul>
+        </div>
+        <div class="panel" id="extra"></div>
+      </div>
+    </div>
+
+    <div class="panel note" style="margin-top:20px">
+      <p data-t="note1">Méthodes : cinématique directe par composition des rotations ; cinématique inverse analytique (on place d'abord le poignet, puis on résout le triangle épaule-coude-poignet avec la loi des cosinus, ce qui donne les solutions coude haut et coude bas) ; cinématique inverse numérique par moindres carrés amortis (Levenberg-Marquardt) sur la jacobienne, avec respect des butées. Manipulabilité de Yoshikawa w = √det(J·Jᵀ) : elle s'annule aux singularités, quand le bras est tendu ou replié.</p>
+      <p data-t="note2">Modèle : bras plan dans un plan vertical, segments rigides, masses réparties uniformément, moteurs aux articulations. Les couples sont statiques (bras immobile ou lent) ; les effets dynamiques de l'accélération ne sont pas comptés. La précision est estimée au premier ordre à partir de la résolution des codeurs.</p>
+    </div>
+  </div>
+
+  <script src="robot.js"></script>
+  <script>
+  (function () {
+    'use strict';
+    const R = window.Robot, DEG = R.DEG;
+    const $ = (id) => document.getElementById(id);
+
+    const T = {
+      fr: {
+        back: '← Retour au portfolio', eyebrow: "Outil robotique · cinématique et commande d'un bras", title: 'Bras robotique à trois axes',
+        intro: "Un bras plan à trois articulations (épaule, coude, poignet), vu de côté. On le pilote axe par axe ou en donnant la position de l'outil : l'outil calcule les angles par cinématique inverse, de deux façons (formule exacte et méthode numérique). Il affiche l'espace de travail, la manipulabilité et les singularités, planifie des trajectoires avec un profil de vitesse trapézoïdal, et donne les couples que doivent fournir les moteurs ainsi que la précision obtenue en bout de bras.",
+        tabDrive: 'Piloter le bras', tabTraj: 'Trajectoires', tabLoads: 'Couples et précision',
+        note1: "Méthodes : cinématique directe par composition des rotations ; cinématique inverse analytique (on place d'abord le poignet, puis on résout le triangle épaule-coude-poignet avec la loi des cosinus, ce qui donne les solutions coude haut et coude bas) ; cinématique inverse numérique par moindres carrés amortis (Levenberg-Marquardt) sur la jacobienne, avec respect des butées. Manipulabilité de Yoshikawa w = √det(J·Jᵀ) : elle s'annule aux singularités, quand le bras est tendu ou replié.",
+        note2: "Modèle : bras plan dans un plan vertical, segments rigides, masses réparties uniformément, moteurs aux articulations. Les couples sont statiques (bras immobile ou lent) ; les effets dynamiques de l'accélération ne sont pas comptés. La précision est estimée au premier ordre à partir de la résolution des codeurs.",
+        armT: 'Géométrie du bras', L1: 'Bras L₁', L2: 'Avant-bras L₂', L3: 'Pince L₃', showWs: "Afficher l'espace de travail", showEll: "Afficher l'ellipse de manipulabilité",
+        modeT: 'Commande', fkMode: 'Axe par axe', ikMode: "Position de l'outil", q1: 'Épaule q₁', q2: 'Coude q₂', q3: 'Poignet q₃', phi: "Orientation de l'outil φ",
+        method: 'Calcul', analytic: 'Formule exacte', numeric: 'Numérique', elbow: 'Coude', up: 'haut', down: 'bas',
+        driveHint: "Cliquer ou glisser dans la zone pour placer l'outil. Les deux solutions (coude haut et coude bas) sont dessinées.",
+        driveHintFk: 'Les curseurs pilotent chaque moteur ; la position de l’outil en découle (cinématique directe).',
+        kX: 'Position x', kY: 'Position y', kPhi: 'Orientation φ', kW: 'Manipulabilité', kIt: 'Itérations', kErr: 'Erreur', kT: 'Durée', kLen: 'Chemin de l’outil', kVmax: 'Vitesse max (axe)', kTorque: 'Couple max', kPrec: 'Précision en bout',
+        out: "Cible hors d'atteinte : le bras ne peut pas aller aussi loin (ou aussi près de sa base) avec cette orientation.",
+        limit: 'Solution hors des butées articulaires : le bras ne peut pas prendre cette position.',
+        sing: 'Proche d’une singularité (bras tendu ou replié) : une petite vitesse de l’outil demande une grande vitesse des moteurs.',
+        okPose: 'Position atteinte, loin des singularités.', numFail: 'La méthode numérique n’a pas convergé (cible trop loin ou butée).',
+        convT: 'Convergence de la méthode numérique (erreur selon l’itération)', ellT: 'Manipulabilité le long d’un balayage du coude',
+        trajT: 'Trajectoire', jointMode: 'Articulaire', cartMode: 'Cartésienne', vJ: 'Vitesse max par axe', aJ: 'Accélération par axe', vC: 'Vitesse de l’outil', aC: 'Accélération de l’outil',
+        play: 'Lancer', stop: 'Arrêter', presets: 'Trajets', pPick: 'Prendre et poser', pLine: 'Ligne droite', pCircle: 'Cercle', pSquare: 'Carré', pSuture: 'Suture (zigzag)',
+        trajHint: 'Articulaire : chaque moteur va au but, l’outil décrit une courbe. Cartésienne : l’outil suit le segment en ligne droite, les angles sont recalculés à chaque instant.',
+        qT: 'Angles des articulations selon le temps', vT: 'Vitesses des articulations (°/s)', profT: 'Profil de vitesse trapézoïdal',
+        blocked: 'Trajectoire impossible : une partie du chemin sort de l’espace atteignable ou des butées.',
+        loadsT: 'Charges', m1: 'Masse du bras', m2: 'Masse de l’avant-bras', m3: 'Masse de la pince', mp: 'Charge portée', mm: 'Masse d’un moteur (coude, poignet)', sf: 'Coefficient de sécurité',
+        enc: 'Résolution des codeurs', bits: 'bits', torqueTab: ['Articulation', 'Couple ici', 'Pire cas (bras horizontal)', 'À prévoir (× sécurité)'],
+        joints: ['Épaule', 'Coude', 'Poignet'], torqueHint: 'Le pire cas est le bras tendu à l’horizontale : c’est lui qui dimensionne les moteurs.',
+        precT: 'Précision', precHint: 'Un codeur de n bits mesure l’angle avec un pas de 360°/2ⁿ. L’erreur sur la position de l’outil vaut au premier ordre |J|·Δq : elle est plus grande quand le bras est tendu.',
+        precTab: ['', 'Valeur'], step: 'Pas angulaire', errTool: 'Erreur de position (pire cas)', errWorst: 'Bras tendu',
+        sweepT: 'Couple à l’épaule selon son angle (coude et poignet fixes)',
+      },
+      en: {
+        back: '← Back to portfolio', eyebrow: 'Robotics tool · arm kinematics and control', title: 'Three-axis robot arm',
+        intro: 'A planar arm with three joints (shoulder, elbow, wrist), seen from the side. Drive it joint by joint or by giving the tool position: the tool computes the angles by inverse kinematics, in two ways (exact formula and numerical method). It shows the workspace, manipulability and singularities, plans trajectories with a trapezoidal velocity profile, and gives the torques the motors must deliver and the resulting accuracy at the tool.',
+        tabDrive: 'Drive the arm', tabTraj: 'Trajectories', tabLoads: 'Torques and accuracy',
+        note1: 'Methods: forward kinematics by composing rotations; analytic inverse kinematics (place the wrist first, then solve the shoulder-elbow-wrist triangle with the law of cosines, which gives the elbow-up and elbow-down solutions); numerical inverse kinematics by damped least squares (Levenberg-Marquardt) on the Jacobian, with joint limits. Yoshikawa manipulability w = √det(J·Jᵀ): it vanishes at singularities, when the arm is stretched or folded.',
+        note2: 'Model: planar arm in a vertical plane, rigid links, uniformly distributed masses, motors at the joints. Torques are static (arm at rest or slow); dynamic effects of acceleration are not included. Accuracy is a first-order estimate from encoder resolution.',
+        armT: 'Arm geometry', L1: 'Upper arm L₁', L2: 'Forearm L₂', L3: 'Gripper L₃', showWs: 'Show the workspace', showEll: 'Show the manipulability ellipse',
+        modeT: 'Control', fkMode: 'Joint by joint', ikMode: 'Tool position', q1: 'Shoulder q₁', q2: 'Elbow q₂', q3: 'Wrist q₃', phi: 'Tool orientation φ',
+        method: 'Solver', analytic: 'Exact formula', numeric: 'Numerical', elbow: 'Elbow', up: 'up', down: 'down',
+        driveHint: 'Click or drag in the area to place the tool. Both solutions (elbow up and elbow down) are drawn.',
+        driveHintFk: 'The sliders drive each motor; the tool position follows (forward kinematics).',
+        kX: 'Position x', kY: 'Position y', kPhi: 'Orientation φ', kW: 'Manipulability', kIt: 'Iterations', kErr: 'Error', kT: 'Duration', kLen: 'Tool path', kVmax: 'Max speed (joint)', kTorque: 'Max torque', kPrec: 'Tool accuracy',
+        out: 'Target out of reach: the arm cannot go that far (or that close to its base) with this orientation.',
+        limit: 'Solution outside the joint limits: the arm cannot take this pose.',
+        sing: 'Close to a singularity (arm stretched or folded): a small tool speed needs a large motor speed.',
+        okPose: 'Pose reached, far from singularities.', numFail: 'The numerical method did not converge (target too far or joint limit).',
+        convT: 'Convergence of the numerical method (error per iteration)', ellT: 'Manipulability along an elbow sweep',
+        trajT: 'Trajectory', jointMode: 'Joint space', cartMode: 'Cartesian', vJ: 'Max speed per joint', aJ: 'Acceleration per joint', vC: 'Tool speed', aC: 'Tool acceleration',
+        play: 'Run', stop: 'Stop', presets: 'Paths', pPick: 'Pick and place', pLine: 'Straight line', pCircle: 'Circle', pSquare: 'Square', pSuture: 'Suture (zigzag)',
+        trajHint: 'Joint space: each motor goes to its goal, the tool draws a curve. Cartesian: the tool follows a straight segment, the angles are recomputed at every instant.',
+        qT: 'Joint angles over time', vT: 'Joint speeds (°/s)', profT: 'Trapezoidal velocity profile',
+        blocked: 'Impossible trajectory: part of the path leaves the reachable space or the joint limits.',
+        loadsT: 'Loads', m1: 'Upper arm mass', m2: 'Forearm mass', m3: 'Gripper mass', mp: 'Payload', mm: 'Motor mass (elbow, wrist)', sf: 'Safety factor',
+        enc: 'Encoder resolution', bits: 'bits', torqueTab: ['Joint', 'Torque here', 'Worst case (arm horizontal)', 'To provide (× safety)'],
+        joints: ['Shoulder', 'Elbow', 'Wrist'], torqueHint: 'The worst case is the arm stretched horizontally: it sizes the motors.',
+        precT: 'Accuracy', precHint: 'An n-bit encoder measures the angle in steps of 360°/2ⁿ. The tool position error is, to first order, |J|·Δq: it is larger when the arm is stretched.',
+        precTab: ['', 'Value'], step: 'Angular step', errTool: 'Position error (worst case)', errWorst: 'Arm stretched',
+        sweepT: 'Shoulder torque versus its angle (elbow and wrist fixed)',
+      },
+    };
+    let lang = 'fr';
+    try { lang = localStorage.getItem('lang') || ((navigator.language || 'fr').toLowerCase().startsWith('fr') ? 'fr' : 'en'); } catch (e) {}
+    if (!T[lang]) lang = 'fr';
+    const t = (k) => T[lang][k];
+    const fmt = (v, d = 3) => (Number.isFinite(v) ? v.toLocaleString(lang === 'fr' ? 'fr-FR' : 'en-GB', { maximumFractionDigits: d, minimumFractionDigits: 0 }) : '—');
+    const kpi = (k, v, u, main) => '<div class="kpi' + (main ? ' main' : '') + '"><dt>' + k + '</dt><dd>' + v + (u ? '<small>' + u + '</small>' : '') + '</dd></div>';
+    const C = { accent: '#c8102e', line: '#c9c9cc', warn: '#e0a458', grey: '#8a8a90', green: '#7fbf7f', violet: '#c77dba' };
+
+    // ---------- État ----------
+    const st = {
+      view: 'drive', L1: 0.40, L2: 0.32, L3: 0.12, showWs: true, showEll: true,
+      mode: 'ik', method: 'analytic', elbow: 'up', q: [40 * DEG, -70 * DEG, 0], phi: -30 * DEG, target: null,
+      trajMode: 'cart', vJ: 90, aJ: 180, vC: 0.25, aC: 0.5,
+      m1: 1.2, m2: 0.9, m3: 0.3, mp: 0.5, mm: 0.4, sf: 2, enc: 12,
+    };
+    const LIM = [[-170 * DEG, 170 * DEG], [-150 * DEG, 150 * DEG], [-160 * DEG, 160 * DEG]];
+    const arm = () => ({ L: [st.L1, st.L2, st.L3], lim: LIM });
+    let ikInfo = { sols: null, num: null, status: 'ok' };
+    let traj = null; // { segs, T, t, path, samples }
+    let wsCache = null, wsKey = '';
+
+    // ---------- Petits composants ----------
+    function slider(box, key, label, min, max, step, show, onInput) {
+      const row = document.createElement('div');
+      row.className = 'ctl';
+      const id = 'c-' + key;
+      row.innerHTML = '<label for="' + id + '">' + label + '</label><output></output><input type="range" id="' + id + '">';
+      const r = row.querySelector('input'), out = row.querySelector('output');
+      Object.assign(r, { min, max, step });
+      const get = () => (key.startsWith('q') && key.length === 2 ? st.q[+key[1] - 1] / DEG : key === 'phi' ? st.phi / DEG : st[key]);
+      const set = (v) => { if (key.startsWith('q') && key.length === 2) st.q[+key[1] - 1] = v * DEG; else if (key === 'phi') st.phi = v * DEG; else st[key] = v; };
+      r.value = get(); out.textContent = show(get());
+      r.addEventListener('input', () => { set(parseFloat(r.value)); out.textContent = show(get()); onInput(); });
+      row.refresh = () => { r.value = get(); out.textContent = show(get()); };
+      box.appendChild(row);
+      return row;
+    }
+    function segmented(box, key, options, onChange) {
+      const s = document.createElement('div');
+      s.className = 'seg'; s.setAttribute('role', 'group');
+      options.forEach(([v, label]) => {
+        const b = document.createElement('button'); b.type = 'button'; b.textContent = label; b.setAttribute('aria-pressed', st[key] === v);
+        b.addEventListener('click', () => { st[key] = v; s.querySelectorAll('button').forEach((x) => x.setAttribute('aria-pressed', x === b)); onChange(); });
+        s.appendChild(b);
+      });
+      box.appendChild(s);
+    }
+    function check(box, key, label, onChange) {
+      const l = document.createElement('label'); l.className = 'ck';
+      l.innerHTML = '<input type="checkbox"> <span>' + label + '</span>';
+      const c = l.querySelector('input'); c.checked = st[key];
+      c.addEventListener('change', () => { st[key] = c.checked; onChange(); });
+      box.appendChild(l);
+    }
+    const mm = (v) => fmt(v * 100, 1) + ' cm';
+    const dg = (v) => fmt(v, 0) + '°';
+
+    // ---------- Graphiques ----------
+    function setupCanvas(cv) {
+      const dpr = window.devicePixelRatio || 1, w = cv.clientWidth, h = cv.clientHeight;
+      if (cv.width !== Math.round(w * dpr) || cv.height !== Math.round(h * dpr)) { cv.width = Math.round(w * dpr); cv.height = Math.round(h * dpr); }
+      const c = cv.getContext('2d'); c.setTransform(dpr, 0, 0, dpr, 0, 0);
+      return { c, w, h };
+    }
+    function niceStep(range, n) { const r = range / n, m = Math.pow(10, Math.floor(Math.log10(r))), q = r / m; return (q < 1.5 ? 1 : q < 3.5 ? 2 : q < 7.5 ? 5 : 10) * m; }
+    function plot(cv, series, opts = {}) {
+      const { c, w, h } = setupCanvas(cv);
+      c.fillStyle = '#0a0a0b'; c.fillRect(0, 0, w, h);
+      const padL = 46, padR = 8, padT = 8, padB = 20;
+      const all = series.flatMap((s) => s.pts).filter((p) => Number.isFinite(p[1]));
+      let xmin = opts.xmin ?? Math.min(...all.map((p) => p[0])), xmax = opts.xmax ?? Math.max(...all.map((p) => p[0]));
+      let ymin = opts.ymin, ymax = opts.ymax;
+      if (ymin === undefined || ymax === undefined) {
+        let lo = Math.min(...all.map((p) => p[1])), hi = Math.max(...all.map((p) => p[1]));
+        if (!Number.isFinite(lo)) { lo = -1; hi = 1; }
+        if (hi - lo < 1e-12) { hi += 1; lo -= 1; }
+        const m = (hi - lo) * 0.08; ymin = ymin ?? lo - m; ymax = ymax ?? hi + m;
+      }
+      if (!(xmax > xmin)) xmax = xmin + 1;
+      const X = (x) => padL + ((x - xmin) / (xmax - xmin)) * (w - padL - padR), Y = (y) => padT + (1 - (y - ymin) / (ymax - ymin)) * (h - padT - padB);
+      c.font = '10px "JetBrains Mono", monospace'; c.fillStyle = '#6c6c70'; c.strokeStyle = '#1e1e21'; c.lineWidth = 1;
+      const sy = niceStep(ymax - ymin, 4); c.textAlign = 'right'; c.textBaseline = 'middle';
+      for (let v = Math.ceil(ymin / sy) * sy; v <= ymax; v += sy) { c.beginPath(); c.moveTo(padL, Y(v)); c.lineTo(w - padR, Y(v)); c.stroke(); c.fillText(opts.yfmt ? opts.yfmt(v) : fmt(Math.abs(v) < sy / 1e6 ? 0 : v, 3), padL - 5, Y(v)); }
+      const sx = niceStep(xmax - xmin, 5); c.textAlign = 'center'; c.textBaseline = 'top';
+      for (let v = Math.ceil(xmin / sx) * sx; v <= xmax; v += sx) { c.beginPath(); c.moveTo(X(v), padT); c.lineTo(X(v), h - padB); c.stroke(); c.fillText((opts.xfmt ? opts.xfmt(v) : fmt(Math.abs(v) < sx / 1e6 ? 0 : v, 2)) + (opts.xunit || ''), X(v), h - padB + 4); }
+      c.save(); c.beginPath(); c.rect(padL, padT, w - padL - padR, h - padT - padB); c.clip();
+      series.forEach((s) => {
+        c.strokeStyle = s.color; c.lineWidth = s.width || 1.6; c.setLineDash(s.dash || []);
+        c.beginPath(); let pen = false;
+        s.pts.forEach(([x, y]) => { if (!Number.isFinite(y)) { pen = false; return; } if (pen) c.lineTo(X(x), Y(y)); else { c.moveTo(X(x), Y(y)); pen = true; } });
+        c.stroke(); c.setLineDash([]);
+      });
+      (opts.markers || []).forEach((m) => { c.strokeStyle = m.color; c.setLineDash([3, 3]); c.beginPath(); c.moveTo(X(m.x), padT); c.lineTo(X(m.x), h - padB); c.stroke(); c.setLineDash([]); });
+      c.restore();
+    }
+
+    // ---------- Scène ----------
+    const cv = $('scene');
+    let view = { cx: 0, cy: 0, s: 1 }; // monde → écran
+    function layout() {
+      const w = cv.clientWidth, h = cv.clientHeight, reach = st.L1 + st.L2 + st.L3;
+      view.s = Math.min(w / (2.2 * reach), (h - 70) / (1.3 * reach));
+      view.cx = w / 2; view.cy = 20 + 1.08 * reach * view.s;
+    }
+    const SX = (x) => view.cx + x * view.s, SY = (y) => view.cy - y * view.s;
+    const WX = (px) => (px - view.cx) / view.s, WY = (py) => (view.cy - py) / view.s;
+    function drawArm(c, q, style) {
+      const f = R.fk(arm(), q), p = f.pts.map(([x, y]) => [SX(x), SY(y)]);
+      const ghost = style === 'ghost';
+      const widths = [16, 12, 8].map((v) => v * Math.min(1.2, view.s / 300));
+      c.lineCap = 'round';
+      for (let i = 0; i < 3; i++) {
+        c.globalAlpha = ghost ? 0.28 : 1;
+        c.strokeStyle = ghost ? '#8a8a90' : '#3a3a3e'; c.lineWidth = widths[i] + (ghost ? 0 : 3);
+        c.beginPath(); c.moveTo(p[i][0], p[i][1]); c.lineTo(p[i + 1][0], p[i + 1][1]); c.stroke();
+        if (!ghost) { c.strokeStyle = '#c9c9cc'; c.lineWidth = widths[i]; c.beginPath(); c.moveTo(p[i][0], p[i][1]); c.lineTo(p[i + 1][0], p[i + 1][1]); c.stroke(); }
+      }
+      c.globalAlpha = 1;
+      if (!ghost) {
+        // pince
+        const a = f.phi, e = p[3], g = 10 * Math.min(1.2, view.s / 300), open = 7 * Math.min(1.2, view.s / 300);
+        c.strokeStyle = '#c9c9cc'; c.lineWidth = 3;
+        [-1, 1].forEach((sgn) => {
+          const bx = e[0] - Math.sin(a) * open * sgn * -1, by = e[1] - Math.cos(a) * open * sgn;
+          c.beginPath(); c.moveTo(bx, by); c.lineTo(bx + Math.cos(a) * g, by - Math.sin(a) * g); c.stroke();
+        });
+        // articulations
+        p.slice(0, 3).forEach(([x, y], i) => {
+          c.fillStyle = '#121214'; c.beginPath(); c.arc(x, y, widths[i] * 0.75 + 3, 0, Math.PI * 2); c.fill();
+          c.strokeStyle = C.accent; c.lineWidth = 2.5; c.stroke();
+        });
+      }
+      return f;
+    }
+    function drawScene() {
+      layout();
+      const { c, w, h } = setupCanvas(cv);
+      c.fillStyle = '#0a0a0b'; c.fillRect(0, 0, w, h);
+      // grille 10 cm
+      c.strokeStyle = '#141416'; c.lineWidth = 1;
+      for (let x = Math.ceil(WX(0) * 10) / 10; x <= WX(w); x += 0.1) { c.beginPath(); c.moveTo(SX(x), 0); c.lineTo(SX(x), h); c.stroke(); }
+      for (let y = Math.ceil(WY(h) * 10) / 10; y <= WY(0); y += 0.1) { c.beginPath(); c.moveTo(0, SY(y)); c.lineTo(w, SY(y)); c.stroke(); }
+      c.font = '10px "JetBrains Mono", monospace'; c.fillStyle = '#4a4a4e'; c.textAlign = 'left';
+      c.fillText('10 cm', 8, 14);
+      // table
+      c.fillStyle = '#151517'; c.fillRect(0, SY(0) + 22, w, h);
+      c.strokeStyle = '#2a2a2e'; c.beginPath(); c.moveTo(0, SY(0) + 22); c.lineTo(w, SY(0) + 22); c.stroke();
+      // espace de travail
+      if (st.showWs) {
+        const key = [st.L1, st.L2, st.L3].join(',');
+        if (key !== wsKey) { wsCache = R.workspace(arm(), 26); wsKey = key; }
+        c.fillStyle = 'rgba(200,16,46,0.09)';
+        wsCache.forEach(([x, y]) => { if (y > -0.03) c.fillRect(SX(x) - 1.5, SY(y) - 1.5, 3, 3); });
+        const [r0, r1] = R.reach(arm());
+        c.strokeStyle = 'rgba(200,16,46,0.35)'; c.setLineDash([4, 5]); c.beginPath(); c.arc(SX(0), SY(0), r1 * view.s, 0, Math.PI * 2); c.stroke();
+        if (r0 > 0) { c.beginPath(); c.arc(SX(0), SY(0), r0 * view.s, 0, Math.PI * 2); c.stroke(); }
+        c.setLineDash([]);
+      }
+      // socle
+      c.fillStyle = '#26262a'; c.beginPath(); c.moveTo(SX(0) - 30, SY(0) + 22); c.lineTo(SX(0) - 16, SY(0)); c.lineTo(SX(0) + 16, SY(0)); c.lineTo(SX(0) + 30, SY(0) + 22); c.closePath(); c.fill();
+      // trajectoire
+      if (st.view === 'traj' && traj) {
+        if (traj.path) { c.strokeStyle = 'rgba(224,164,88,0.5)'; c.setLineDash([5, 5]); c.lineWidth = 1.5; c.beginPath(); traj.path.forEach(([x, y], i) => (i ? c.lineTo(SX(x), SY(y)) : c.moveTo(SX(x), SY(y)))); c.stroke(); c.setLineDash([]); }
+        if (traj.trace.length > 1) { c.strokeStyle = C.warn; c.lineWidth = 2; c.beginPath(); traj.trace.forEach(([x, y], i) => (i ? c.lineTo(SX(x), SY(y)) : c.moveTo(SX(x), SY(y)))); c.stroke(); }
+        (traj.wps || []).forEach(([x, y]) => { c.fillStyle = C.warn; c.beginPath(); c.arc(SX(x), SY(y), 4, 0, Math.PI * 2); c.fill(); });
+      }
+      // solutions fantômes (cinématique inverse)
+      if (st.view === 'drive' && st.mode === 'ik' && ikInfo.sols) ikInfo.sols.forEach((s) => { if (s !== ikInfo.chosen) drawArm(c, s, 'ghost'); });
+      const f = drawArm(c, st.q);
+      // cible
+      if (st.view === 'drive' && st.mode === 'ik' && st.target) {
+        const x = SX(st.target.x), y = SY(st.target.y);
+        c.strokeStyle = ikInfo.status === 'ok' || ikInfo.status === 'sing' ? C.warn : '#ff6b6b'; c.lineWidth = 1.5;
+        c.beginPath(); c.arc(x, y, 9, 0, Math.PI * 2); c.moveTo(x - 14, y); c.lineTo(x + 14, y); c.moveTo(x, y - 14); c.lineTo(x, y + 14); c.stroke();
+      }
+      // ellipse de manipulabilité
+      if (st.showEll) {
+        const m = R.manipulability(arm(), st.q), k = 0.25 * view.s;
+        c.save(); c.translate(SX(f.x), SY(f.y)); c.rotate(-m.angle);
+        c.strokeStyle = C.green; c.lineWidth = 1.5; c.beginPath(); c.ellipse(0, 0, Math.max(1, m.axes[0] * k), Math.max(1, m.axes[1] * k), 0, 0, Math.PI * 2); c.stroke();
+        c.restore();
+      }
+      // repère
+      c.fillStyle = '#6c6c70'; c.textAlign = 'left'; c.fillText('x', SX(0) + 40, SY(0) + 16); c.fillText('y', SX(0) - 12, SY(0) - 40);
+      c.strokeStyle = '#4a4a4e'; c.beginPath(); c.moveTo(SX(0), SY(0)); c.lineTo(SX(0) + 34, SY(0)); c.moveTo(SX(0), SY(0)); c.lineTo(SX(0), SY(0) - 34); c.stroke();
+    }
+
+    // ---------- Piloter : cinématique inverse ----------
+    function solveIK() {
+      if (!st.target) return;
+      const a = arm(), { x, y } = st.target;
+      ikInfo = { sols: null, num: null, status: 'ok', chosen: null };
+      const sols = R.ikAnalytic(a, x, y, st.phi);
+      ikInfo.sols = sols;
+      if (st.method === 'analytic') {
+        if (!sols) { ikInfo.status = 'out'; return; }
+        const ok = sols.filter((s) => R.inLimits(a, s));
+        if (!ok.length) { ikInfo.status = 'limit'; return; }
+        const pick = ok.length === 2 ? R.pickElbow(ok, st.elbow) : ok[0];
+        ikInfo.chosen = pick; st.q = pick.slice();
+      } else {
+        const r = R.ikNumeric(a, x, y, st.phi, st.q, { wOri: 0.3, iters: 100, okTol: 1e-5 });
+        ikInfo.num = r; st.q = r.q.slice();
+        ikInfo.chosen = null;
+        if (!r.ok) ikInfo.status = sols ? 'numfail' : 'out';
+      }
+      const m = R.manipulability(a, st.q);
+      if ((ikInfo.status === 'ok') && m.w < 0.02 * (st.L1 + st.L2) ** 2) ikInfo.status = 'sing';
+    }
+    function pointer(e) {
+      const r = cv.getBoundingClientRect();
+      st.target = { x: WX(e.clientX - r.left), y: WY(e.clientY - r.top) };
+      if (st.mode !== 'ik') { st.mode = 'ik'; renderSide(); }
+      solveIK(); renderDrive();
+    }
+    let dragging = false;
+    cv.addEventListener('pointerdown', (e) => { if (st.view !== 'drive') return; dragging = true; cv.setPointerCapture(e.pointerId); pointer(e); });
+    cv.addEventListener('pointermove', (e) => { if (dragging) pointer(e); });
+    cv.addEventListener('pointerup', () => { dragging = false; });
+
+    // ---------- Rendus par onglet ----------
+    let sideRows = [];
+    function renderArmPanel() {
+      const box = $('armPanel'); box.innerHTML = '<h2>' + t('armT') + '</h2>';
+      const onGeom = () => { if (st.target) solveIK(); refresh(); };
+      slider(box, 'L1', t('L1'), 0.15, 0.7, 0.01, mm, onGeom);
+      slider(box, 'L2', t('L2'), 0.1, 0.6, 0.01, mm, onGeom);
+      slider(box, 'L3', t('L3'), 0.04, 0.25, 0.01, mm, onGeom);
+      check(box, 'showWs', t('showWs'), refresh);
+      check(box, 'showEll', t('showEll'), refresh);
+    }
+    function renderSide() {
+      const box = $('sidePanel'); box.innerHTML = ''; sideRows = [];
+      if (st.view === 'drive') {
+        box.innerHTML = '<h2>' + t('modeT') + '</h2>';
+        segmented(box, 'mode', [['fk', t('fkMode')], ['ik', t('ikMode')]], () => { if (st.mode === 'ik' && !st.target) { const f = R.fk(arm(), st.q); st.target = { x: f.x, y: f.y }; st.phi = f.phi; } renderSide(); if (st.mode === 'ik') solveIK(); renderDrive(); });
+        if (st.mode === 'fk') {
+          ['q1', 'q2', 'q3'].forEach((k, i) => sideRows.push(slider(box, k, t(k), LIM[i][0] / DEG, LIM[i][1] / DEG, 1, dg, renderDrive)));
+        } else {
+          const h = document.createElement('p'); h.className = 'hint'; h.style.margin = '0 0 6px'; h.textContent = t('method'); box.appendChild(h);
+          segmented(box, 'method', [['analytic', t('analytic')], ['numeric', t('numeric')]], () => { solveIK(); renderDrive(); });
+          if (st.method === 'analytic') {
+            const h2 = document.createElement('p'); h2.className = 'hint'; h2.style.margin = '0 0 6px'; h2.textContent = t('elbow'); box.appendChild(h2);
+            segmented(box, 'elbow', [['up', t('up')], ['down', t('down')]], () => { solveIK(); renderDrive(); });
+          }
+          sideRows.push(slider(box, 'phi', t('phi'), -180, 180, 1, dg, () => { solveIK(); renderDrive(); }));
+        }
+      } else if (st.view === 'traj') {
+        box.innerHTML = '<h2>' + t('trajT') + '</h2>';
+        segmented(box, 'trajMode', [['joint', t('jointMode')], ['cart', t('cartMode')]], () => { if (traj) startTraj(traj.key); renderSide(); });
+        if (st.trajMode === 'joint') { slider(box, 'vJ', t('vJ'), 10, 360, 5, (v) => fmt(v, 0) + ' °/s', () => {}); slider(box, 'aJ', t('aJ'), 20, 1000, 10, (v) => fmt(v, 0) + ' °/s²', () => {}); }
+        else { slider(box, 'vC', t('vC'), 0.02, 1, 0.01, (v) => fmt(v, 2) + ' m/s', () => {}); slider(box, 'aC', t('aC'), 0.05, 3, 0.05, (v) => fmt(v, 2) + ' m/s²', () => {}); }
+        const h = document.createElement('h3'); h.textContent = t('presets'); box.appendChild(h);
+        const pr = document.createElement('div'); pr.className = 'presets';
+        ['pPick', 'pLine', 'pCircle', 'pSquare', 'pSuture'].forEach((k) => { const b = document.createElement('button'); b.type = 'button'; b.className = 'btn'; b.textContent = t(k); b.addEventListener('click', () => startTraj(k)); pr.appendChild(b); });
+        box.appendChild(pr);
+        const hint = document.createElement('p'); hint.className = 'hint'; hint.textContent = t('trajHint'); box.appendChild(hint);
+      } else {
+        box.innerHTML = '<h2>' + t('loadsT') + '</h2>';
+        const kg = (v) => fmt(v, 2) + ' kg';
+        slider(box, 'm1', t('m1'), 0, 5, 0.05, kg, renderLoads); slider(box, 'm2', t('m2'), 0, 5, 0.05, kg, renderLoads); slider(box, 'm3', t('m3'), 0, 2, 0.05, kg, renderLoads);
+        slider(box, 'mp', t('mp'), 0, 5, 0.05, kg, renderLoads); slider(box, 'mm', t('mm'), 0, 2, 0.05, kg, renderLoads);
+        slider(box, 'sf', t('sf'), 1, 4, 0.1, (v) => '× ' + fmt(v, 1), renderLoads);
+        slider(box, 'enc', t('enc'), 8, 20, 1, (v) => v + ' ' + t('bits'), renderLoads);
+        const h = document.createElement('h3'); h.textContent = t('q1').split(' ')[0] + ' / ' + t('q2').split(' ')[0] + ' / ' + t('q3').split(' ')[0]; box.appendChild(h);
+        ['q1', 'q2', 'q3'].forEach((k, i) => sideRows.push(slider(box, k, t(k), LIM[i][0] / DEG, LIM[i][1] / DEG, 1, dg, renderLoads)));
+      }
+    }
+    function issues(list) {
+      $('issues').innerHTML = list.map(([lv, msg]) => lv === 'good' ? '<li class="good">' + msg + '</li>' : '<li class="' + lv + '"><span class="lv">' + (lv === 'err' ? '!' : '~') + '</span><span>' + msg + '</span></li>').join('');
+    }
+    function renderDrive() {
+      sideRows.forEach((r) => r.refresh && r.refresh());
+      const f = R.fk(arm(), st.q), m = R.manipulability(arm(), st.q);
+      let h = kpi(t('kX'), mm(f.x), '') + kpi(t('kY'), mm(f.y), '') + kpi(t('kPhi'), dg(R.wrap(f.phi) / DEG), '');
+      if (st.mode === 'ik' && st.method === 'numeric' && ikInfo.num) h += kpi(t('kIt'), ikInfo.num.iters + ' · ' + (ikInfo.num.err < 1e-12 ? '< 1e-12' : ikInfo.num.err.toExponential(1)) + ' m', '', true);
+      else h += kpi(t('kW'), fmt(m.w * 100, 2), '·10⁻² m²', true);
+      $('kpis').innerHTML = h;
+      $('sceneHint').textContent = st.mode === 'ik' ? t('driveHint') : t('driveHintFk');
+      const list = [];
+      if (st.mode === 'ik') {
+        if (ikInfo.status === 'out') list.push(['err', t('out')]);
+        else if (ikInfo.status === 'limit') list.push(['err', t('limit')]);
+        else if (ikInfo.status === 'numfail') list.push(['err', t('numFail')]);
+        else if (ikInfo.status === 'sing') list.push(['warn', t('sing')]);
+        else list.push(['good', t('okPose')]);
+      } else if (m.w < 0.02 * (st.L1 + st.L2) ** 2) list.push(['warn', t('sing')]);
+      issues(list);
+      // graphiques : convergence et manipulabilité selon le coude
+      const ex = $('extra');
+      if (!ex.dataset.v || ex.dataset.v !== 'drive' + lang) {
+        ex.dataset.v = 'drive' + lang;
+        ex.innerHTML = '<div class="charts"><div class="chart"><p>' + t('convT') + '</p><canvas id="ch1"></canvas></div><div class="chart"><p>' + t('ellT') + '</p><canvas id="ch2"></canvas></div></div>';
+      }
+      let hist = ikInfo.num ? ikInfo.num.history : null;
+      if (!hist && st.target) hist = R.ikNumeric(arm(), st.target.x, st.target.y, st.phi, [0.2, 0.2, 0.2], { wOri: 0.3, iters: 60 }).history;
+      plot($('ch1'), hist ? [{ pts: hist.map((e, i) => [i, Math.log10(Math.max(e, 1e-16))]), color: C.accent }] : [], { xmin: 0, ymin: -16, ymax: 0.5, yfmt: (v) => '1e' + Math.round(v) });
+      const sweep = [];
+      for (let d = -150; d <= 150; d += 2) sweep.push([d, R.manipulability(arm(), [st.q[0], d * DEG, st.q[2]]).w * 100]);
+      plot($('ch2'), [{ pts: sweep, color: C.green }], { xmin: -150, xmax: 150, ymin: 0, xunit: '°', markers: [{ x: st.q[1] / DEG, color: C.warn }] });
+      drawScene();
+    }
+
+    // ---------- Trajectoires ----------
+    let anim = null;
+    function waypoints(key) {
+      const a = arm(), R0 = st.L1 + st.L2;
+      const cx = 0.55 * R0, cy = 0.05 * R0, r = 0.18 * R0;
+      // prendre un objet sur la table à droite, le poser plus près de la base
+      const px = 0.85 * R0, dx = 0.35 * R0, ty = -0.02, hy = 0.22 * R0;
+      if (key === 'pPick') return { pts: [[px, ty], [px, hy], [dx, hy], [dx, ty], [dx, hy], [px, hy], [px, ty]], phi: -90 * DEG, line: false };
+      if (key === 'pLine') return { pts: [[0.25 * R0, 0.55 * R0], [0.85 * R0, -0.05 * R0], [0.25 * R0, 0.55 * R0]], phi: -45 * DEG, line: false };
+      if (key === 'pCircle') { const pts = []; for (let k = 0; k <= 72; k++) { const u = (k / 72) * Math.PI * 2; pts.push([cx + r * Math.cos(u), cy + 0.25 * R0 + r * Math.sin(u)]); } return { pts, phi: -60 * DEG, line: true }; }
+      if (key === 'pSquare') { const s = 0.17 * R0, x0 = cx, y0 = 0.3 * R0; return { pts: [[x0 - s, y0 - s], [x0 + s, y0 - s], [x0 + s, y0 + s], [x0 - s, y0 + s], [x0 - s, y0 - s]], phi: -60 * DEG, line: false }; }
+      const pts = []; const x0 = 0.35 * R0, y0 = 0.1 * R0;
+      for (let k = 0; k <= 10; k++) pts.push([x0 + k * 0.045 * R0, y0 + (k % 2 ? 0.07 * R0 : -0.0 * R0)]);
+      return { pts, phi: -90 * DEG, line: false };
+    }
+    function startTraj(key) {
+      if (anim) cancelAnimationFrame(anim);
+      const a = arm(), W = waypoints(key);
+      // pose de départ : solution coude haut au premier point
+      const s0 = R.ikAnalytic(a, W.pts[0][0], W.pts[0][1], W.phi);
+      const s0ok = s0 ? s0.filter((s) => R.inLimits(a, s)) : [];
+      const q0 = s0ok.length ? R.pickElbow(s0ok, 'up') : st.q;
+      const segs = []; let q = q0.slice(), blocked = false;
+      if (W.line && st.trajMode === 'cart') {
+        // suivi d'un chemin courbe à vitesse d'outil constante (profil trapézoïdal sur l'abscisse curviligne)
+        const cum = [0]; for (let i = 1; i < W.pts.length; i++) cum.push(cum[i - 1] + Math.hypot(W.pts[i][0] - W.pts[i - 1][0], W.pts[i][1] - W.pts[i - 1][1]));
+        const D = cum[cum.length - 1], prof = R.trapezoid(D, st.vC, st.aC);
+        const branch = q0[1] >= 0 ? 0 : 1;
+        const at = (tt) => { const s = prof.s(tt); let i = 1; while (i < cum.length - 1 && cum[i] < s) i++; const u = (s - cum[i - 1]) / (cum[i] - cum[i - 1] || 1); const x = W.pts[i - 1][0] + (W.pts[i][0] - W.pts[i - 1][0]) * u, y = W.pts[i - 1][1] + (W.pts[i][1] - W.pts[i - 1][1]) * u; const so = R.ikAnalytic(a, x, y, W.phi); return so ? so[branch] : null; };
+        for (let k = 0; k <= 60; k++) { const qq = at((prof.T * k) / 60); if (!qq || !R.inLimits(a, qq)) blocked = true; }
+        segs.push({ T: prof.T, at });
+      } else {
+        for (let i = 1; i < W.pts.length && !blocked; i++) {
+          const target = { x: W.pts[i][0], y: W.pts[i][1], phi: W.phi };
+          const plan = R.planMove(a, q, target, { mode: st.trajMode, vJ: st.vJ * DEG, aJ: st.aJ * DEG, vC: st.vC, aC: st.aC, elbow: 'up' });
+          if (!plan || plan.blocked !== undefined) { blocked = true; break; }
+          segs.push(plan); q = plan.at(plan.T);
+        }
+      }
+      const Ttot = segs.reduce((s, g) => s + g.T, 0);
+      // échantillons pour les graphiques
+      const samples = []; let len = 0, prev = null, vmax = 0, prevQ = null;
+      const qAt = (tt) => { let acc = 0; for (const g of segs) { if (tt <= acc + g.T) return g.at(tt - acc); acc += g.T; } return segs.length ? segs[segs.length - 1].at(segs[segs.length - 1].T) : q0; };
+      const N = 400;
+      for (let k = 0; k <= N; k++) {
+        const tt = (Ttot * k) / N, qq = qAt(tt); if (!qq) continue;
+        const f = R.fk(a, qq);
+        if (prev) len += Math.hypot(f.x - prev[0], f.y - prev[1]);
+        let v = [0, 0, 0];
+        if (prevQ && Ttot > 0) { v = qq.map((x, i) => R.wrap(x - prevQ[i]) / (Ttot / N) / DEG); vmax = Math.max(vmax, ...v.map(Math.abs)); }
+        samples.push({ t: tt, q: qq.map((x) => x / DEG), v, x: f.x, y: f.y });
+        prev = [f.x, f.y]; prevQ = qq;
+      }
+      traj = { key, segs, T: Ttot, t: 0, wps: W.pts.length < 20 ? W.pts : [W.pts[0]], path: W.pts, trace: [], samples, len, vmax, blocked, qAt };
+      st.q = q0.slice();
+      if (blocked) { renderTraj(); return; }
+      let last = 0;
+      const tick = (ts) => {
+        const dt = last ? Math.min(0.05, (ts - last) / 1000) : 0; last = ts;
+        traj.t = Math.min(traj.T, traj.t + dt);
+        const qq = traj.qAt(traj.t); if (qq) { st.q = qq; const f = R.fk(arm(), qq); traj.trace.push([f.x, f.y]); }
+        renderTraj();
+        if (traj.t < traj.T && st.view === 'traj') anim = requestAnimationFrame(tick); else anim = null;
+      };
+      anim = requestAnimationFrame(tick);
+    }
+    function renderTraj() {
+      const ex = $('extra');
+      if (ex.dataset.v !== 'traj' + lang) {
+        ex.dataset.v = 'traj' + lang;
+        ex.innerHTML = '<div class="charts"><div class="chart"><p><span><i style="background:' + C.accent + '"></i>q₁</span><span><i style="background:' + C.line + '"></i>q₂</span><span><i style="background:' + C.warn + '"></i>q₃</span> · ' + t('qT') + '</p><canvas id="ch1"></canvas></div><div class="chart"><p>' + t('vT') + '</p><canvas id="ch2"></canvas></div></div>';
+      }
+      $('sceneHint').textContent = t('trajHint');
+      if (!traj) { $('kpis').innerHTML = ''; issues([]); drawScene(); return; }
+      $('kpis').innerHTML = kpi(t('kT'), fmt(traj.T, 2), 's', true) + kpi(t('kLen'), mm(traj.len), '') + kpi(t('kVmax'), fmt(traj.vmax, 0), '°/s') + kpi('t', fmt(traj.t, 2), 's');
+      issues(traj.blocked ? [['err', t('blocked')]] : []);
+      const S = traj.samples, cols = [C.accent, C.line, C.warn];
+      plot($('ch1'), [0, 1, 2].map((i) => ({ pts: S.map((s) => [s.t, s.q[i]]), color: cols[i] })), { xmin: 0, xmax: Math.max(traj.T, 0.1), xunit: ' s', yfmt: (v) => fmt(v, 0) + '°', markers: [{ x: traj.t, color: '#6c6c70' }] });
+      plot($('ch2'), [0, 1, 2].map((i) => ({ pts: S.slice(1).map((s) => [s.t, s.v[i]]), color: cols[i], width: 1.3 })), { xmin: 0, xmax: Math.max(traj.T, 0.1), xunit: ' s', markers: [{ x: traj.t, color: '#6c6c70' }] });
+      drawScene();
+    }
+
+    // ---------- Couples et précision ----------
+    function renderLoads() {
+      sideRows.forEach((r) => r.refresh && r.refresh());
+      const a = arm(), masses = [st.m1, st.m2, st.m3], motors = [0, st.mm, st.mm];
+      const tq = R.gravityTorques(a, st.q, masses, st.mp, motors);
+      const worst = R.gravityTorques(a, [0, 0, 0], masses, st.mp, motors);
+      const dq = (2 * Math.PI) / Math.pow(2, st.enc);
+      // erreur de position : Σ |∂p/∂qj|·Δq (pire cas, toutes les erreurs dans le même sens)
+      const errAt = (q) => { const J = R.jacobian(a, q); let s = 0; for (let j = 0; j < 3; j++) s += Math.hypot(J[0][j], J[1][j]) * dq; return s; };
+      const e = errAt(st.q), eW = errAt([0, 0, 0]);
+      $('kpis').innerHTML = kpi(t('kTorque'), fmt(Math.max(...worst.map(Math.abs)) * st.sf, 2), 'N·m', true) + kpi(t('kTorque') + ' (' + (lang === 'fr' ? 'ici' : 'here') + ')', fmt(Math.max(...tq.map(Math.abs)), 2), 'N·m') +
+        kpi(t('step'), fmt((360 / Math.pow(2, st.enc)), 4), '°') + kpi(t('kPrec'), fmt(e * 1000, 2), 'mm');
+      $('sceneHint').textContent = t('torqueHint');
+      issues([]);
+      const ex = $('extra');
+      ex.dataset.v = 'loads';
+      let h = '<div class="tablewrap"><table><thead><tr>' + t('torqueTab').map((c2, i) => '<th' + (i ? ' class="n"' : '') + '>' + c2 + '</th>').join('') + '</tr></thead><tbody>';
+      for (let j = 0; j < 3; j++) h += '<tr><td>' + t('joints')[j] + '</td><td class="n">' + fmt(tq[j], 2) + ' N·m</td><td class="n">' + fmt(worst[j], 2) + ' N·m</td><td class="n"><b>' + fmt(Math.abs(worst[j]) * st.sf, 2) + ' N·m</b></td></tr>';
+      h += '</tbody></table></div>';
+      h += '<h3>' + t('precT') + '</h3><p class="hint" style="margin:0 0 8px">' + t('precHint') + '</p><div class="tablewrap"><table><tbody>' +
+        '<tr><td>' + t('step') + '</td><td class="n">' + fmt(360 / Math.pow(2, st.enc), 4) + '°</td></tr>' +
+        '<tr><td>' + t('errTool') + '</td><td class="n">' + fmt(e * 1000, 3) + ' mm</td></tr>' +
+        '<tr><td>' + t('errWorst') + '</td><td class="n">' + fmt(eW * 1000, 3) + ' mm</td></tr></tbody></table></div>';
+      h += '<div class="chart" style="margin-top:12px"><p>' + t('sweepT') + '</p><canvas id="ch1"></canvas></div>';
+      ex.innerHTML = h;
+      const sw = [];
+      for (let d = -170; d <= 170; d += 2) sw.push([d, R.gravityTorques(a, [d * DEG, st.q[1], st.q[2]], masses, st.mp, motors)[0]]);
+      plot($('ch1'), [{ pts: sw, color: C.accent }], { xmin: -170, xmax: 170, xunit: '°', markers: [{ x: st.q[0] / DEG, color: C.warn }], yfmt: (v) => fmt(v, 1) });
+      drawScene();
+    }
+
+    // ---------- Onglets et langue ----------
+    function refresh() { if (st.view === 'drive') renderDrive(); else if (st.view === 'traj') renderTraj(); else renderLoads(); }
+    function setView(v) {
+      st.view = v; $('extra').dataset.v = '';
+      document.querySelectorAll('.tab').forEach((b) => b.setAttribute('aria-selected', b.dataset.view === v));
+      if (anim) { cancelAnimationFrame(anim); anim = null; }
+      renderSide();
+      if (v === 'traj' && !traj) startTraj('pPick'); else refresh();
+      try { history.replaceState(null, '', '#' + v); } catch (e) {}
+    }
+    document.querySelectorAll('.tab').forEach((b) => b.addEventListener('click', () => setView(b.dataset.view)));
+    function setLang(l) {
+      lang = l; document.documentElement.lang = l;
+      document.querySelectorAll('[data-t]').forEach((el) => { const v = T[l][el.dataset.t]; if (typeof v === 'string') el.textContent = v; });
+      document.querySelectorAll('.lang button').forEach((b) => b.setAttribute('aria-pressed', b.dataset.lang === l));
+      try { localStorage.setItem('lang', l); } catch (e) {}
+      $('extra').dataset.v = '';
+      renderArmPanel(); renderSide(); refresh();
+    }
+    document.querySelectorAll('.lang button').forEach((b) => b.addEventListener('click', () => setLang(b.dataset.lang)));
+    const f0 = R.fk(arm(), st.q); st.target = { x: f0.x, y: f0.y }; st.phi = f0.phi; solveIK();
+    setLang(lang);
+    const h0 = (location.hash || '').slice(1);
+    if (['drive', 'traj', 'loads'].includes(h0)) setView(h0);
+    new ResizeObserver(() => refresh()).observe(cv);
+  })();
+  </script>
+</body>
+</html>
