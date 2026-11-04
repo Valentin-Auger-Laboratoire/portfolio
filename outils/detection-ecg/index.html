@@ -1,0 +1,442 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Détection des battements sur un ECG</title>
+  <meta name="description" content="Détection des battements cardiaques sur de vrais ECG (base MIT-BIH, PhysioNet) avec l'algorithme de Pan et Tompkins, comparée aux annotations des cardiologues ; fréquence cardiaque, variabilité, extrasystoles.">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --bg: #0c0c0d; --panel: #161618; --border: #262628; --border-hi: #3a3a3d;
+      --text: #f2f2f2; --dim: #9b9b9f; --muted: #6c6c70; --accent: #c8102e; --line: #c9c9cc; --warn: #e0a458; --ok: #8fd18f;
+      --mono: "JetBrains Mono", ui-monospace, monospace; --sans: "Inter", system-ui, sans-serif;
+      color-scheme: dark;
+    }
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    body { background: var(--bg); color: var(--text); font-family: var(--sans); line-height: 1.55; -webkit-font-smoothing: antialiased; }
+    .wrap { max-width: 1280px; margin: 0 auto; padding: 24px max(16px, env(safe-area-inset-right, 0px)) 48px max(16px, env(safe-area-inset-left, 0px)); }
+    .top { display: flex; justify-content: space-between; align-items: center; gap: 12px; flex-wrap: wrap; margin-bottom: 24px; }
+    .back { font-size: 0.9rem; color: var(--dim); text-decoration: none; }
+    .back:hover { color: var(--accent); }
+    .lang { display: flex; border: 1px solid var(--border-hi); }
+    .lang button { font: 500 0.78rem var(--mono); letter-spacing: .05em; background: none; color: var(--dim); border: 0; padding: 5px 10px; cursor: pointer; }
+    .lang button + button { border-left: 1px solid var(--border-hi); }
+    .lang button[aria-pressed="true"] { background: var(--text); color: var(--bg); }
+    .eyebrow { font: 500 0.82rem var(--mono); color: var(--accent); letter-spacing: .04em; }
+    h1 { font-size: clamp(1.6rem, 3.4vw, 2.3rem); line-height: 1.15; margin: 6px 0 10px; text-wrap: balance; }
+    .intro { color: var(--dim); max-width: 82ch; }
+    .tabs { display: flex; gap: 8px; margin: 26px 0 16px; flex-wrap: wrap; }
+    .tab { font: 0.85rem var(--mono); background: none; color: var(--dim); border: 1px solid var(--border); border-radius: 999px; padding: 6px 14px; cursor: pointer; }
+    .tab[aria-selected="true"] { color: var(--accent); border-color: var(--accent); }
+    [hidden] { display: none !important; }
+    .panel { background: var(--panel); border: 1px solid var(--border); border-radius: 8px; padding: 16px; min-width: 0; }
+    .stack { display: grid; gap: 16px; min-width: 0; }
+    h2 { font: 600 0.78rem var(--mono); letter-spacing: .12em; text-transform: uppercase; color: var(--dim); margin-bottom: 12px; display: flex; justify-content: space-between; align-items: center; gap: 8px; flex-wrap: wrap; }
+    button:focus-visible, input:focus-visible, select:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+    .btn { font: 500 0.82rem var(--sans); background: none; color: var(--text); border: 1px solid var(--border-hi); border-radius: 6px; padding: 6px 11px; cursor: pointer; white-space: nowrap; }
+    .btn:hover { border-color: var(--accent); color: var(--accent); }
+    .btn[aria-pressed="true"] { border-color: var(--accent); color: var(--accent); }
+    .row { display: flex; gap: 8px; flex-wrap: wrap; align-items: center; }
+    .kpis { display: grid; grid-template-columns: repeat(8, minmax(0, 1fr)); gap: 10px; }
+    .kpi { border: 1px solid var(--border); border-radius: 6px; padding: 9px 11px; min-width: 0; }
+    .kpi dt { font: 0.68rem var(--mono); color: var(--dim); }
+    .kpi dd { font: 600 1.05rem var(--sans); font-variant-numeric: tabular-nums; margin-top: 2px; overflow-wrap: anywhere; }
+    .kpi dd small { font: 400 0.72rem var(--mono); color: var(--dim); margin-left: 3px; }
+    .kpi.main dd { color: var(--accent); } .kpi.good dd { color: var(--ok); }
+    canvas.strip { width: 100%; height: 260px; display: block; border: 1px solid var(--border); border-radius: 6px; background: #0b0a0a; touch-action: pan-y; }
+    canvas.pipe { width: 100%; height: 330px; display: block; border: 1px solid var(--border); border-radius: 6px; background: #0a0a0b; }
+    .chart canvas { width: 100%; height: 200px; display: block; border: 1px solid var(--border); border-radius: 6px; background: #0a0a0b; }
+    .chart p { font: 0.72rem var(--mono); color: var(--dim); margin-bottom: 4px; display: flex; gap: 10px; flex-wrap: wrap; }
+    .chart p i { display: inline-block; width: 10px; height: 10px; border-radius: 50%; vertical-align: -1px; margin-right: 5px; }
+    .charts { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px; }
+    .nav { display: grid; grid-template-columns: auto minmax(0, 1fr) auto; gap: 10px; align-items: center; margin-top: 10px; font: 0.78rem var(--mono); color: var(--dim); }
+    .nav input[type=range] { width: 100%; accent-color: var(--accent); }
+    .legend { display: flex; gap: 14px; flex-wrap: wrap; font: 0.72rem var(--mono); color: var(--dim); margin-top: 8px; }
+    .legend b { font-weight: 600; }
+    .gen { display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); gap: 10px; margin-top: 12px; }
+    .gen label { display: grid; gap: 2px; font: 500 0.72rem var(--mono); color: var(--dim); }
+    .gen input { width: 100%; accent-color: var(--accent); }
+    .events { list-style: none; display: grid; gap: 4px; max-height: 260px; overflow-y: auto; }
+    .events li { font-size: 0.82rem; display: grid; grid-template-columns: 70px minmax(0, 1fr); gap: 8px; padding: 5px 8px; border: 1px solid var(--border); border-radius: 5px; cursor: pointer; }
+    .events li:hover { border-color: var(--accent); }
+    .events li span:first-child { font: 0.76rem var(--mono); color: var(--dim); }
+    table { width: 100%; border-collapse: collapse; font: 0.8rem var(--mono); font-variant-numeric: tabular-nums; }
+    th, td { text-align: left; padding: 5px 8px; border-bottom: 1px solid var(--border); }
+    td.n, th.n { text-align: right; }
+    th { color: var(--dim); font-weight: 500; }
+    .hint { font-size: 0.8rem; color: var(--dim); margin-top: 8px; }
+    .note { font-size: 0.82rem; color: var(--dim); }
+    .note p + p { margin-top: 6px; }
+    .warnbox { border: 1px solid #4a3a20; background: #1a160f; color: var(--warn); border-radius: 6px; padding: 8px 12px; font-size: 0.84rem; margin-top: 12px; }
+    @media (max-width: 1100px) { .kpis { grid-template-columns: repeat(4, minmax(0, 1fr)); } }
+    @media (max-width: 800px) { .charts { grid-template-columns: minmax(0, 1fr); } .gen { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+    @media (max-width: 520px) { .kpis { grid-template-columns: repeat(2, minmax(0, 1fr)); } canvas.strip { height: 220px; } }
+  </style>
+</head>
+<body>
+  <div class="wrap">
+    <div class="top">
+      <a class="back" href="../../index.html#projets" data-t="back">← Retour au portfolio</a>
+      <div class="lang" role="group" aria-label="Langue / Language">
+        <button type="button" data-lang="fr" aria-pressed="true">FR</button>
+        <button type="button" data-lang="en" aria-pressed="false">EN</button>
+      </div>
+    </div>
+    <p class="eyebrow" data-t="eyebrow">Outil de traitement du signal · électrocardiogramme</p>
+    <h1 data-t="title">Détection des battements cardiaques sur un ECG</h1>
+    <p class="intro" data-t="intro">De vrais électrocardiogrammes de la base MIT-BIH (PhysioNet), analysés par l'algorithme de Pan et Tompkins écrit à la main : filtrage, dérivée, mise au carré, intégration, seuils adaptatifs. Chaque battement trouvé est comparé aux annotations des cardiologues qui accompagnent l'enregistrement. L'outil donne la fréquence cardiaque, sa variabilité et repère les extrasystoles. Un générateur d'ECG synthétique permet de tester la robustesse au bruit.</p>
+    <div class="warnbox" data-t="notMedical">Outil pédagogique, pas un dispositif médical : il ne sert pas à poser un diagnostic.</div>
+
+    <div class="tabs" role="tablist">
+      <button type="button" class="tab" role="tab" data-rec="100" aria-selected="true" data-t="r100">MIT-BIH 100 · 30 min, annoté</button>
+      <button type="button" class="tab" role="tab" data-rec="208" aria-selected="false" data-t="r208">MIT-BIH 208 · extrait de 5 min</button>
+      <button type="button" class="tab" role="tab" data-rec="synth" aria-selected="false" data-t="rSynth">ECG synthétique</button>
+    </div>
+
+    <div class="stack">
+      <div class="panel">
+        <dl class="kpis" id="kpis"></dl>
+        <div class="gen" id="gen" hidden></div>
+        <p class="hint" id="recInfo"></p>
+      </div>
+      <div class="panel">
+        <h2><span data-t="stripT">Tracé</span><span class="row"><span class="hint" style="margin:0" data-t="width">Largeur :</span><span class="row" id="widths"></span><button type="button" class="btn" id="play" data-t="play">Défiler en temps réel</button></span></h2>
+        <canvas class="strip" id="strip" aria-label="ECG"></canvas>
+        <div class="nav"><button type="button" class="btn" id="prev">◀</button><input type="range" id="pos" min="0" max="100" value="0" aria-label="Position"><button type="button" class="btn" id="next">▶</button></div>
+        <div class="legend" id="legend"></div>
+      </div>
+      <div class="panel">
+        <h2 data-t="pipeT">À l'intérieur de Pan-Tompkins, sur la fenêtre affichée</h2>
+        <canvas class="pipe" id="pipe" aria-label="Étapes de l'algorithme"></canvas>
+        <p class="hint" data-t="pipeHint">1. Signal brut. 2. Filtre passe-bande 5 à 15 Hz : il garde l'énergie du QRS et retire la ligne de base, l'onde T et le secteur à 50 Hz. 3. Dérivée au carré : les pentes raides du QRS ressortent. 4. Intégration sur 150 ms : un « bosse » par battement, comparée à un seuil adaptatif (en rouge) qui suit le niveau du signal et du bruit. Les pics sous le seuil sont classés comme bruit ; si aucun battement n'est trouvé pendant 1,66 intervalle moyen, une recherche arrière reprend le meilleur pic au-dessus du demi-seuil.</p>
+      </div>
+      <div class="charts">
+        <div class="panel chart"><p data-t="tachoT">Fréquence cardiaque battement par battement (tachogramme)</p><canvas id="tacho"></canvas></div>
+        <div class="panel chart"><p><span data-t="poinT">Diagramme de Poincaré : intervalle RR suivant selon l'intervalle RR</span><span><i style="background:#c9c9cc"></i>N</span><span><i style="background:#e0a458"></i>S</span><span><i style="background:#c8102e"></i>V</span></p><canvas id="poin"></canvas></div>
+      </div>
+      <div class="charts">
+        <div class="panel"><h2 data-t="evT">Événements repérés</h2><ul class="events" id="events"></ul></div>
+        <div class="panel"><h2 data-t="cmpT">Comparaison avec les cardiologues</h2><div id="cmp"></div></div>
+      </div>
+      <div class="panel note">
+        <p data-t="note1">Données : enregistrements 100 et 208 de la MIT-BIH Arrhythmia Database (Moody et Mark, 2001), diffusée par PhysioNet (Goldberger et al., 2000) sous licence Open Data Commons Attribution. Échantillonnage 360 Hz, dérivation MLII. L'extrait du 208 vient du module de données de la bibliothèque SciPy et n'a pas d'annotations : les comptes y sont indicatifs.</p>
+        <p data-t="note2">Méthode : Pan et Tompkins, « A real-time QRS detection algorithm », IEEE Trans. Biomed. Eng., 1985, adapté pour un traitement hors ligne (filtres de Butterworth appliqués aller-retour, donc sans retard). Un battement est compté comme bien détecté s'il tombe à moins de 150 ms de l'annotation, comme dans la norme ANSI/AAMI EC57. Sensibilité = battements trouvés / battements réels ; valeur prédictive positive = détections justes / détections. La classification (N, S, V) est volontairement simple : rythme (battement précoce, repos compensateur) et forme du QRS comparée à un gabarit médian.</p>
+      </div>
+    </div>
+  </div>
+
+  <script src="ecg.js"></script>
+  <script>
+  (function () {
+    'use strict';
+    const E = window.ECG, FS = 360;
+    const $ = (id) => document.getElementById(id);
+    const T = {
+      fr: {
+        back: '← Retour au portfolio', eyebrow: 'Outil de traitement du signal · électrocardiogramme', title: 'Détection des battements cardiaques sur un ECG',
+        intro: "De vrais électrocardiogrammes de la base MIT-BIH (PhysioNet), analysés par l'algorithme de Pan et Tompkins écrit à la main : filtrage, dérivée, mise au carré, intégration, seuils adaptatifs. Chaque battement trouvé est comparé aux annotations des cardiologues qui accompagnent l'enregistrement. L'outil donne la fréquence cardiaque, sa variabilité et repère les extrasystoles. Un générateur d'ECG synthétique permet de tester la robustesse au bruit.",
+        notMedical: 'Outil pédagogique, pas un dispositif médical : il ne sert pas à poser un diagnostic.',
+        r100: 'MIT-BIH 100 · 30 min, annoté', r208: 'MIT-BIH 208 · extrait de 5 min', rSynth: 'ECG synthétique',
+        stripT: 'Tracé', width: 'Largeur :', play: 'Défiler en temps réel', stop: 'Arrêter',
+        pipeT: "À l'intérieur de Pan-Tompkins, sur la fenêtre affichée",
+        pipeHint: "1. Signal brut. 2. Filtre passe-bande 5 à 15 Hz : il garde l'énergie du QRS et retire la ligne de base, l'onde T et le secteur à 50 Hz. 3. Dérivée au carré : les pentes raides du QRS ressortent. 4. Intégration sur 150 ms : un « bosse » par battement, comparée à un seuil adaptatif (en rouge) qui suit le niveau du signal et du bruit. Les pics sous le seuil sont classés comme bruit ; si aucun battement n'est trouvé pendant 1,66 intervalle moyen, une recherche arrière reprend le meilleur pic au-dessus du demi-seuil.",
+        tachoT: 'Fréquence cardiaque battement par battement (tachogramme)', poinT: "Diagramme de Poincaré : intervalle RR suivant selon l'intervalle RR",
+        evT: 'Événements repérés', cmpT: 'Comparaison avec les cardiologues',
+        note1: "Données : enregistrements 100 et 208 de la MIT-BIH Arrhythmia Database (Moody et Mark, 2001), diffusée par PhysioNet (Goldberger et al., 2000) sous licence Open Data Commons Attribution. Échantillonnage 360 Hz, dérivation MLII. L'extrait du 208 vient du module de données de la bibliothèque SciPy et n'a pas d'annotations : les comptes y sont indicatifs.",
+        note2: "Méthode : Pan et Tompkins, « A real-time QRS detection algorithm », IEEE Trans. Biomed. Eng., 1985, adapté pour un traitement hors ligne (filtres de Butterworth appliqués aller-retour, donc sans retard). Un battement est compté comme bien détecté s'il tombe à moins de 150 ms de l'annotation, comme dans la norme ANSI/AAMI EC57. Sensibilité = battements trouvés / battements réels ; valeur prédictive positive = détections justes / détections. La classification (N, S, V) est volontairement simple : rythme (battement précoce, repos compensateur) et forme du QRS comparée à un gabarit médian.",
+        kBeats: 'Battements trouvés', kSe: 'Sensibilité', kPpv: 'Valeur prédictive +', kErr: 'Écart moyen au pic', kHr: 'Fréquence moyenne', kSdnn: 'SDNN', kRmssd: 'RMSSD', kPnn: 'pNN50',
+        noRef: 'pas d’annotations', loading: 'Chargement…', loadErr: 'Impossible de charger les données (ouvrir la page depuis un serveur web, pas en fichier local).',
+        info100: 'Homme de 69 ans, rythme sinusal avec quelques extrasystoles auriculaires (33) et une ventriculaire, selon les annotations de la base. 2 273 battements annotés.',
+        info208: "Patient de la base avec de nombreuses extrasystoles ventriculaires. Extrait de 5 minutes sans annotations : on peut seulement voir ce que l'algorithme trouve.",
+        infoSynth: 'ECG fabriqué à partir d’ondes P, Q, R, S, T gaussiennes, avec bruit réglable. La position exacte de chaque battement est connue, donc la détection peut être notée.',
+        gHr: 'Fréquence', gNoise: 'Bruit musculaire', gWander: 'Ligne de base', gHum: 'Secteur 50 Hz', gPvc: 'Extrasystoles V',
+        lgDet: 'détection (N normal, S précoce, V ventriculaire probable)', lgRef: 'annotation des cardiologues', lgFn: 'battement manqué', lgFp: 'fausse détection',
+        ev: { pause: 'Pause de', tachy: 'Tachycardie, jusqu’à', brady: 'Bradycardie, jusqu’à', irregular: 'Rythme irrégulier (variation des RR', pvc: 'Extrasystole ventriculaire probable', pac: 'Battement précoce à QRS fin (supraventriculaire probable)' },
+        noEvents: 'Aucun événement repéré.', more: 'autres',
+        cmpHead: ['Annotation ↓ / détection →', 'N', 'S', 'V', 'manqué'], cmpNoRef: 'Cet enregistrement n’a pas d’annotations : pas de comparaison possible.',
+        cmpFp: 'Fausses détections', stages: ['brut (mV)', 'passe-bande 5–15 Hz', 'dérivée²', 'intégré 150 ms + seuil'],
+      },
+      en: {
+        back: '← Back to portfolio', eyebrow: 'Signal processing tool · electrocardiogram', title: 'Heartbeat detection on an ECG',
+        intro: "Real electrocardiograms from the MIT-BIH database (PhysioNet), analysed with a hand-written Pan-Tompkins algorithm: filtering, derivative, squaring, integration, adaptive thresholds. Each detected beat is compared with the cardiologists' annotations that come with the recording. The tool gives heart rate and its variability and flags premature beats. A synthetic ECG generator tests robustness to noise.",
+        notMedical: 'Teaching tool, not a medical device: it must not be used for diagnosis.',
+        r100: 'MIT-BIH 100 · 30 min, annotated', r208: 'MIT-BIH 208 · 5 min excerpt', rSynth: 'Synthetic ECG',
+        stripT: 'Trace', width: 'Width:', play: 'Scroll in real time', stop: 'Stop',
+        pipeT: 'Inside Pan-Tompkins, on the displayed window',
+        pipeHint: '1. Raw signal. 2. 5–15 Hz band-pass filter: keeps QRS energy and removes baseline, T wave and 50 Hz mains. 3. Squared derivative: steep QRS slopes stand out. 4. 150 ms integration: one bump per beat, compared with an adaptive threshold (red) that follows signal and noise levels. Peaks under the threshold are noise; if no beat is found for 1.66 average intervals, a search-back takes the best peak above half the threshold.',
+        tachoT: 'Beat-to-beat heart rate (tachogram)', poinT: 'Poincaré plot: next RR interval versus RR interval',
+        evT: 'Events found', cmpT: 'Comparison with the cardiologists',
+        note1: 'Data: records 100 and 208 of the MIT-BIH Arrhythmia Database (Moody and Mark, 2001), distributed by PhysioNet (Goldberger et al., 2000) under the Open Data Commons Attribution licence. 360 Hz sampling, MLII lead. The 208 excerpt comes from the SciPy data module and has no annotations: counts there are indicative.',
+        note2: 'Method: Pan and Tompkins, "A real-time QRS detection algorithm", IEEE Trans. Biomed. Eng., 1985, adapted for offline processing (Butterworth filters applied forward and backward, so with no delay). A beat counts as detected if within 150 ms of the annotation, as in ANSI/AAMI EC57. Sensitivity = beats found / real beats; positive predictive value = correct detections / detections. Classification (N, S, V) is deliberately simple: rhythm (premature beat, compensatory pause) and QRS shape compared with a median template.',
+        kBeats: 'Beats found', kSe: 'Sensitivity', kPpv: 'Positive pred. value', kErr: 'Mean peak offset', kHr: 'Mean rate', kSdnn: 'SDNN', kRmssd: 'RMSSD', kPnn: 'pNN50',
+        noRef: 'no annotations', loading: 'Loading…', loadErr: 'Unable to load the data (open the page from a web server, not as a local file).',
+        info100: '69-year-old man, sinus rhythm with a few atrial premature beats (33) and one ventricular, according to the database annotations. 2,273 annotated beats.',
+        info208: 'Patient from the database with many ventricular premature beats. 5-minute excerpt without annotations: you can only see what the algorithm finds.',
+        infoSynth: 'ECG built from Gaussian P, Q, R, S, T waves, with adjustable noise. The exact position of each beat is known, so detection can be scored.',
+        gHr: 'Heart rate', gNoise: 'Muscle noise', gWander: 'Baseline wander', gHum: '50 Hz mains', gPvc: 'Ventricular beats',
+        lgDet: 'detection (N normal, S premature, V probably ventricular)', lgRef: "cardiologists' annotation", lgFn: 'missed beat', lgFp: 'false detection',
+        ev: { pause: 'Pause of', tachy: 'Tachycardia, up to', brady: 'Bradycardia, down to', irregular: 'Irregular rhythm (RR variation', pvc: 'Probable ventricular premature beat', pac: 'Premature narrow-QRS beat (probably supraventricular)' },
+        noEvents: 'No event found.', more: 'more',
+        cmpHead: ['Annotation ↓ / detection →', 'N', 'S', 'V', 'missed'], cmpNoRef: 'This recording has no annotations: no comparison possible.',
+        cmpFp: 'False detections', stages: ['raw (mV)', 'band-pass 5–15 Hz', 'derivative²', 'integrated 150 ms + threshold'],
+      },
+    };
+    let lang = 'fr';
+    try { lang = localStorage.getItem('lang') || ((navigator.language || 'fr').toLowerCase().startsWith('fr') ? 'fr' : 'en'); } catch (e) {}
+    if (!T[lang]) lang = 'fr';
+    const t = (k) => T[lang][k];
+    const fmt = (v, d = 2) => (Number.isFinite(v) ? v.toLocaleString(lang === 'fr' ? 'fr-FR' : 'en-GB', { maximumFractionDigits: d }) : '—');
+    const kpi = (k, v, u, cls) => '<div class="kpi' + (cls ? ' ' + cls : '') + '"><dt>' + k + '</dt><dd>' + v + (u ? '<small>' + u + '</small>' : '') + '</dd></div>';
+    const clock = (s) => { const m = Math.floor(s / 60); return m + ':' + String(Math.floor(s % 60)).padStart(2, '0'); };
+    const COL = { N: '#c9c9cc', S: '#e0a458', V: '#c8102e' };
+
+    // ---------- Données ----------
+    const cache = {};
+    async function loadBin(url) { const r = await fetch(url); if (!r.ok) throw new Error(url); const b = await r.arrayBuffer(); const i16 = new Int16Array(b), x = new Float64Array(i16.length); for (let k = 0; k < i16.length; k++) x[k] = i16[k] / 200; return x; }
+    const gen = { hr: 72, noise: 0.05, wander: 0.2, hum: 0.05, pvc: 0.05 };
+    let rec = '100', D = null; // { x, ref (positions), refLab, pt, cls, labels, ev, hrv, evalr }
+    let view = { start: 0, width: 10 };
+    async function load(id) {
+      rec = id;
+      document.querySelectorAll('.tab').forEach((b) => b.setAttribute('aria-selected', b.dataset.rec === id));
+      $('gen').hidden = id !== 'synth';
+      $('kpis').innerHTML = kpi(t('kBeats'), t('loading'), '');
+      try {
+        let x, ref = null, refLab = null;
+        if (id === '100') {
+          if (!cache.x100) { cache.x100 = await loadBin('data/mitdb100.bin'); cache.ann100 = await (await fetch('data/mitdb100-ann.json')).json(); }
+          x = cache.x100; ref = cache.ann100.beats.map((b) => b[0]); refLab = cache.ann100.beats.map((b) => b[1]);
+        } else if (id === '208') {
+          if (!cache.x208) cache.x208 = await loadBin('data/mitdb208-extrait.bin');
+          x = cache.x208;
+        } else {
+          const s = E.synth({ dur: 120, hr: gen.hr, noise: gen.noise, wander: gen.wander, hum: gen.hum, pvcRate: gen.pvc, seed: 7 });
+          x = s.x; ref = s.truth.map((b) => b[0]); refLab = s.truth.map((b) => b[1]);
+        }
+        analyse(x, ref, refLab);
+      } catch (e) { $('kpis').innerHTML = ''; $('recInfo').textContent = t('loadErr'); }
+    }
+    function analyse(x, ref, refLab) {
+      const pt = E.panTompkins(x, FS), cls = E.classify(x, FS, pt.R), labels = cls.beats.map((b) => b.label);
+      const hv = E.hrv(pt.R, FS, labels), ev = E.rhythmEvents(pt.R, FS, labels);
+      const evalr = ref ? E.evaluate(pt.R, ref, FS) : null;
+      D = { x, ref, refLab, pt, cls, labels, ev, hv, evalr };
+      view.start = Math.min(view.start, Math.max(0, x.length / FS - view.width));
+      $('pos').max = Math.max(0, Math.floor((x.length / FS - view.width) * 10));
+      renderAll();
+    }
+
+    // ---------- Rendu ----------
+    function renderAll() {
+      const { pt, hv, evalr } = D;
+      const good = (v) => (v >= 0.995 ? 'good' : '');
+      $('kpis').innerHTML = kpi(t('kBeats'), fmt(pt.R.length, 0), '', 'main') +
+        kpi(t('kSe'), evalr ? fmt(evalr.se * 100, 2) : t('noRef'), evalr ? '%' : '', evalr ? good(evalr.se) : '') +
+        kpi(t('kPpv'), evalr ? fmt(evalr.ppv * 100, 2) : t('noRef'), evalr ? '%' : '', evalr ? good(evalr.ppv) : '') +
+        kpi(t('kErr'), evalr ? fmt(evalr.meanAbsErrMs, 1) : '—', evalr ? 'ms' : '') +
+        kpi(t('kHr'), hv ? fmt(hv.hr, 0) : '—', 'bpm') + kpi(t('kSdnn'), hv ? fmt(hv.sdnn, 0) : '—', 'ms') + kpi(t('kRmssd'), hv ? fmt(hv.rmssd, 0) : '—', 'ms') + kpi(t('kPnn'), hv ? fmt(hv.pnn50, 1) : '—', '%');
+      $('recInfo').textContent = rec === '100' ? t('info100') : rec === '208' ? t('info208') : t('infoSynth');
+      $('legend').innerHTML = '<span><b style="color:#c8102e">▼</b> ' + t('lgDet') + '</span>' + (D.ref ? '<span><b style="color:#6c6c70">|</b> ' + t('lgRef') + '</span><span><b style="color:#e0a458">○</b> ' + t('lgFn') + '</span><span><b style="color:#ff6b6b">✕</b> ' + t('lgFp') + '</span>' : '');
+      drawStrip(); drawPipe(); drawTacho(); drawPoincare(); renderEvents(); renderCmp();
+    }
+    function setupCanvas(cv) {
+      const dpr = window.devicePixelRatio || 1, w = cv.clientWidth, h = cv.clientHeight;
+      if (cv.width !== Math.round(w * dpr) || cv.height !== Math.round(h * dpr)) { cv.width = Math.round(w * dpr); cv.height = Math.round(h * dpr); }
+      const c = cv.getContext('2d'); c.setTransform(dpr, 0, 0, dpr, 0, 0);
+      return { c, w, h };
+    }
+    function drawStrip() {
+      const cv = $('strip'), { c, w, h } = setupCanvas(cv), { x, pt, labels, ref, refLab, evalr } = D;
+      const i0 = Math.floor(view.start * FS), i1 = Math.min(x.length, Math.ceil((view.start + view.width) * FS));
+      const pxs = w / (i1 - i0);
+      // papier millimétré : 1 mm = 40 ms et 0,1 mV ; grands carreaux de 200 ms et 0,5 mV
+      const mvPx = h / 4.2, mid = h * 0.55;
+      c.fillStyle = '#0b0a0a'; c.fillRect(0, 0, w, h);
+      for (let s = Math.ceil(view.start / 0.04) * 0.04; s < view.start + view.width; s += 0.04) {
+        const X = (s - view.start) * FS * pxs, big = Math.abs(s / 0.2 - Math.round(s / 0.2)) < 1e-6;
+        c.strokeStyle = big ? 'rgba(200,16,46,0.28)' : 'rgba(200,16,46,0.09)'; c.lineWidth = 1; c.beginPath(); c.moveTo(X, 0); c.lineTo(X, h); c.stroke();
+      }
+      for (let v = -2.5; v <= 2.5; v += 0.1) {
+        const Y = mid - v * mvPx, big = Math.abs(v / 0.5 - Math.round(v / 0.5)) < 1e-6;
+        c.strokeStyle = big ? 'rgba(200,16,46,0.28)' : 'rgba(200,16,46,0.09)'; c.beginPath(); c.moveTo(0, Y); c.lineTo(w, Y); c.stroke();
+      }
+      // signal (ligne de base retirée pour la lisibilité)
+      const b = pt.base;
+      c.strokeStyle = '#f2f2f2'; c.lineWidth = 1.4; c.lineJoin = 'round'; c.beginPath();
+      const step = Math.max(1, Math.floor((i1 - i0) / (w * 2)));
+      for (let i = i0; i < i1; i += step) { const X = (i - i0) * pxs, Y = mid - b[i] * mvPx; if (i === i0) c.moveTo(X, Y); else c.lineTo(X, Y); }
+      c.stroke();
+      c.font = '10px "JetBrains Mono", monospace'; c.textAlign = 'center';
+      // annotations
+      if (ref) {
+        const fnSet = new Set(evalr.fnList);
+        ref.forEach((r, k) => {
+          if (r < i0 || r >= i1) return;
+          const X = (r - i0) * pxs;
+          c.strokeStyle = '#6c6c70'; c.lineWidth = 1; c.beginPath(); c.moveTo(X, h - 22); c.lineTo(X, h - 12); c.stroke();
+          c.fillStyle = '#9b9b9f'; c.fillText(refLab[k], X, h - 2);
+          if (fnSet.has(r)) { c.strokeStyle = '#e0a458'; c.lineWidth = 2; c.beginPath(); c.arc(X, mid - b[r] * mvPx, 12, 0, Math.PI * 2); c.stroke(); }
+        });
+      }
+      const fpSet = evalr ? new Set(evalr.fpList) : new Set();
+      pt.R.forEach((r, k) => {
+        if (r < i0 || r >= i1) return;
+        const X = (r - i0) * pxs, lab = labels[k];
+        c.fillStyle = COL[lab]; c.beginPath(); c.moveTo(X - 5, 8); c.lineTo(X + 5, 8); c.lineTo(X, 16); c.closePath(); c.fill();
+        c.fillText(lab, X, 28);
+        if (k > 0) { const rr = (r - pt.R[k - 1]) / FS; c.fillStyle = '#6c6c70'; c.fillText(fmt(rr * 1000, 0), X - ((r - pt.R[k - 1]) * pxs) / 2, 40); }
+        if (fpSet.has(r)) { c.strokeStyle = '#ff6b6b'; c.lineWidth = 2; c.beginPath(); c.moveTo(X - 7, 44); c.lineTo(X + 7, 58); c.moveTo(X + 7, 44); c.lineTo(X - 7, 58); c.stroke(); }
+      });
+      c.fillStyle = '#9b9b9f'; c.textAlign = 'left'; c.fillText(clock(view.start) + ' – ' + clock(view.start + view.width) + '   25 mm/s · 10 mm/mV', 8, h - 26 > 60 ? h - 30 : 52);
+    }
+    function drawPipe() {
+      const cv = $('pipe'), { c, w, h } = setupCanvas(cv), { x, pt } = D;
+      const i0 = Math.floor(view.start * FS), i1 = Math.min(x.length, Math.ceil((view.start + view.width) * FS)), n = i1 - i0;
+      c.fillStyle = '#0a0a0b'; c.fillRect(0, 0, w, h);
+      const lanes = [x, pt.bp, pt.sq, pt.mwi], H = h / 4, stages = t('stages');
+      lanes.forEach((s, li) => {
+        let lo = Infinity, hi = -Infinity;
+        for (let i = i0; i < i1; i++) { if (s[i] < lo) lo = s[i]; if (s[i] > hi) hi = s[i]; }
+        if (li >= 2) lo = 0;
+        if (hi - lo < 1e-12) hi = lo + 1;
+        const y0 = li * H, Y = (v) => y0 + H - 6 - ((v - lo) / (hi - lo)) * (H - 18);
+        c.strokeStyle = '#1e1e21'; c.beginPath(); c.moveTo(0, y0 + H); c.lineTo(w, y0 + H); c.stroke();
+        c.strokeStyle = li === 3 ? '#e0a458' : '#c9c9cc'; c.lineWidth = 1.2; c.beginPath();
+        const step = Math.max(1, Math.floor(n / (w * 2)));
+        for (let i = i0; i < i1; i += step) { const X = ((i - i0) / n) * w; if (i === i0) c.moveTo(X, Y(s[i])); else c.lineTo(X, Y(s[i])); }
+        c.stroke();
+        if (li === 3) {
+          // seuil THR1 (en escalier, mis à jour à chaque pic candidat)
+          c.strokeStyle = '#c8102e'; c.setLineDash([4, 3]); c.beginPath(); let started = false, lastY = null;
+          const th = pt.thrHist;
+          for (let k = 0; k < th.length; k++) {
+            const [i, thr] = th[k], nextI = k + 1 < th.length ? th[k + 1][0] : x.length;
+            if (nextI < i0 || i > i1) continue;
+            const a = ((Math.max(i, i0) - i0) / n) * w, bx = ((Math.min(nextI, i1) - i0) / n) * w, yy = Math.max(y0 + 2, Y(thr));
+            if (!started) { c.moveTo(a, yy); started = true; } else c.lineTo(a, yy);
+            c.lineTo(bx, yy); lastY = yy;
+          }
+          c.stroke(); c.setLineDash([]);
+          pt.qrsMwi.forEach((i) => { if (i >= i0 && i < i1) { c.fillStyle = '#c8102e'; c.beginPath(); c.arc(((i - i0) / n) * w, Y(s[i]), 3.5, 0, Math.PI * 2); c.fill(); } });
+          pt.noise.forEach((i) => { if (i >= i0 && i < i1) { c.strokeStyle = '#6c6c70'; c.beginPath(); c.arc(((i - i0) / n) * w, Y(s[i]), 3, 0, Math.PI * 2); c.stroke(); } });
+        }
+        c.font = '10px "JetBrains Mono", monospace'; c.fillStyle = '#9b9b9f'; c.textAlign = 'left'; c.fillText((li + 1) + '. ' + stages[li], 8, y0 + 12);
+      });
+    }
+    function plotBase(cv, xmin, xmax, ymin, ymax, xfmt, yfmt) {
+      const { c, w, h } = setupCanvas(cv), pl = 44, pr = 8, ptp = 8, pb = 20;
+      c.fillStyle = '#0a0a0b'; c.fillRect(0, 0, w, h);
+      const X = (v) => pl + ((v - xmin) / (xmax - xmin)) * (w - pl - pr), Y = (v) => ptp + (1 - (v - ymin) / (ymax - ymin)) * (h - ptp - pb);
+      c.font = '10px "JetBrains Mono", monospace'; c.fillStyle = '#6c6c70'; c.strokeStyle = '#1e1e21';
+      const ns = (r, k) => { const s = r / k, m = Math.pow(10, Math.floor(Math.log10(s))), q = s / m; return (q < 1.5 ? 1 : q < 3.5 ? 2 : q < 7.5 ? 5 : 10) * m; };
+      const sy = ns(ymax - ymin, 4); c.textAlign = 'right'; c.textBaseline = 'middle';
+      for (let v = Math.ceil(ymin / sy) * sy; v <= ymax; v += sy) { c.beginPath(); c.moveTo(pl, Y(v)); c.lineTo(w - pr, Y(v)); c.stroke(); c.fillText(yfmt(v), pl - 4, Y(v)); }
+      const sx = ns(xmax - xmin, 5); c.textAlign = 'center'; c.textBaseline = 'top';
+      for (let v = Math.ceil(xmin / sx) * sx; v <= xmax; v += sx) { c.beginPath(); c.moveTo(X(v), ptp); c.lineTo(X(v), h - pb); c.stroke(); c.fillText(xfmt(v), X(v), h - pb + 4); }
+      return { c, X, Y, w, h };
+    }
+    function drawTacho() {
+      const { pt, labels, x } = D, dur = x.length / FS;
+      const pts = []; for (let k = 1; k < pt.R.length; k++) pts.push([pt.R[k] / FS, (60 * FS) / (pt.R[k] - pt.R[k - 1]), labels[k]]);
+      const hrs = pts.map((p) => p[1]).sort((a, b) => a - b), lo = Math.max(20, hrs[Math.floor(hrs.length * 0.01)] - 15), hi = Math.min(220, hrs[Math.floor(hrs.length * 0.99)] + 15);
+      const { c, X, Y } = plotBase($('tacho'), 0, dur, lo, hi, (v) => clock(v), (v) => fmt(v, 0));
+      c.fillStyle = 'rgba(200,16,46,0.12)'; c.fillRect(X(view.start), 8, X(view.start + view.width) - X(view.start), $('tacho').clientHeight - 28);
+      c.strokeStyle = '#c9c9cc'; c.lineWidth = 1; c.beginPath(); pts.forEach(([tt, v], i) => (i ? c.lineTo(X(tt), Y(v)) : c.moveTo(X(tt), Y(v)))); c.stroke();
+      pts.forEach(([tt, v, l]) => { if (l !== 'N') { c.fillStyle = COL[l]; c.fillRect(X(tt) - 2, Y(Math.min(hi, v)) - 2, 4, 4); } });
+    }
+    function drawPoincare() {
+      const { pt, labels } = D, P = [];
+      for (let k = 2; k < pt.R.length; k++) P.push([(pt.R[k - 1] - pt.R[k - 2]) / FS * 1000, (pt.R[k] - pt.R[k - 1]) / FS * 1000, labels[k - 1]]);
+      const all = P.flatMap((p) => [p[0], p[1]]).sort((a, b) => a - b), lo = Math.max(200, all[Math.floor(all.length * 0.005)] - 50), hi = Math.min(2500, all[Math.floor(all.length * 0.995)] + 50);
+      const { c, X, Y } = plotBase($('poin'), lo, hi, lo, hi, (v) => fmt(v, 0), (v) => fmt(v, 0));
+      c.strokeStyle = '#3a3a3d'; c.setLineDash([4, 4]); c.beginPath(); c.moveTo(X(lo), Y(lo)); c.lineTo(X(hi), Y(hi)); c.stroke(); c.setLineDash([]);
+      ['N', 'S', 'V'].forEach((l) => { c.fillStyle = COL[l]; c.globalAlpha = l === 'N' ? 0.35 : 0.9; P.forEach((p) => { if (p[2] === l) c.fillRect(X(p[0]) - 1.5, Y(p[1]) - 1.5, 3, 3); }); });
+      c.globalAlpha = 1;
+    }
+    function renderEvents() {
+      const box = $('events'), evs = D.ev, L = T[lang].ev;
+      if (!evs.length) { box.innerHTML = '<li style="cursor:default"><span></span><span>' + t('noEvents') + '</span></li>'; return; }
+      const label = (e) => e.type === 'pause' ? L.pause + ' ' + fmt(e.value, 2) + ' s' : e.type === 'tachy' ? L.tachy + ' ' + fmt(e.value, 0) + ' bpm' : e.type === 'brady' ? L.brady + ' ' + fmt(e.value, 0) + ' bpm' : e.type === 'irregular' ? L.irregular + ' ' + fmt(e.value * 100, 0) + ' %)' : L[e.type];
+      const list = evs.slice(0, 200);
+      box.innerHTML = list.map((e, i) => '<li data-i="' + i + '"><span>' + clock(e.at / FS) + '</span><span>' + label(e) + '</span></li>').join('') + (evs.length > 200 ? '<li style="cursor:default"><span></span><span>+ ' + (evs.length - 200) + ' ' + t('more') + '</span></li>' : '');
+      box.querySelectorAll('li[data-i]').forEach((li) => li.addEventListener('click', () => { const e = list[+li.dataset.i]; jump(e.at / FS - view.width / 3); }));
+    }
+    function renderCmp() {
+      const box = $('cmp'), { evalr, ref, refLab, labels, pt } = D;
+      if (!ref) { box.innerHTML = '<p class="hint" style="margin:0">' + t('cmpNoRef') + '</p>'; return; }
+      // regroupement des annotations : N (et L, R…), S (A, a, J, S), V (V, E), autres
+      const grp = (s) => ('AaJSj'.includes(s) ? 'S' : 'VE'.includes(s) ? 'V' : 'N');
+      const det = new Map(pt.R.map((r, k) => [r, labels[k]]));
+      const m = { N: { N: 0, S: 0, V: 0, miss: 0 }, S: { N: 0, S: 0, V: 0, miss: 0 }, V: { N: 0, S: 0, V: 0, miss: 0 } };
+      const matched = new Map(evalr.pairs.map(([r, d]) => [r, d]));
+      ref.forEach((r, k) => { const g = grp(refLab[k]); if (matched.has(r)) m[g][det.get(matched.get(r))]++; else m[g].miss++; });
+      const H = t('cmpHead');
+      let h = '<table><thead><tr>' + H.map((c, i) => '<th' + (i ? ' class="n"' : '') + '>' + c + '</th>').join('') + '</tr></thead><tbody>';
+      ['N', 'S', 'V'].forEach((g) => { const r = m[g]; if (r.N + r.S + r.V + r.miss === 0) return; h += '<tr><td>' + g + '</td>' + ['N', 'S', 'V'].map((k) => '<td class="n"' + (k === g ? ' style="color:var(--ok)"' : '') + '>' + r[k] + '</td>').join('') + '<td class="n">' + r.miss + '</td></tr>'; });
+      h += '<tr><td>' + t('cmpFp') + '</td><td class="n" colspan="4">' + evalr.fp + '</td></tr></tbody></table>';
+      box.innerHTML = h;
+    }
+
+    // ---------- Navigation ----------
+    function jump(s) {
+      const dur = D.x.length / FS;
+      view.start = Math.max(0, Math.min(dur - view.width, s));
+      $('pos').value = Math.round(view.start * 10);
+      drawStrip(); drawPipe(); drawTacho();
+    }
+    $('pos').addEventListener('input', () => jump(+$('pos').value / 10));
+    $('prev').addEventListener('click', () => jump(view.start - view.width * 0.8));
+    $('next').addEventListener('click', () => jump(view.start + view.width * 0.8));
+    function renderWidths() {
+      const box = $('widths'); box.innerHTML = '';
+      [5, 10, 20].forEach((s) => { const b = document.createElement('button'); b.type = 'button'; b.className = 'btn'; b.textContent = s + ' s'; b.setAttribute('aria-pressed', view.width === s); b.addEventListener('click', () => { view.width = s; renderWidths(); $('pos').max = Math.max(0, Math.floor((D.x.length / FS - s) * 10)); jump(view.start); }); box.appendChild(b); });
+    }
+    let raf = null;
+    $('play').addEventListener('click', () => {
+      if (raf) { cancelAnimationFrame(raf); raf = null; $('play').textContent = t('play'); return; }
+      $('play').textContent = t('stop');
+      let last = 0;
+      const tick = (ts) => { const dt = last ? Math.min(0.1, (ts - last) / 1000) : 0; last = ts; jump(view.start + dt); if (view.start + view.width < D.x.length / FS - 0.01) raf = requestAnimationFrame(tick); else { raf = null; $('play').textContent = t('play'); } };
+      raf = requestAnimationFrame(tick);
+    });
+    // glisser sur le tracé
+    let drag = null;
+    $('strip').addEventListener('pointerdown', (e) => { drag = { x: e.clientX, s: view.start }; $('strip').setPointerCapture(e.pointerId); });
+    $('strip').addEventListener('pointermove', (e) => { if (!drag) return; jump(drag.s - ((e.clientX - drag.x) / $('strip').clientWidth) * view.width); });
+    $('strip').addEventListener('pointerup', () => (drag = null));
+
+    // ---------- Générateur ----------
+    function renderGen() {
+      const box = $('gen'); box.innerHTML = '';
+      const defs = [['hr', 'gHr', 40, 160, 1, (v) => v + ' bpm'], ['noise', 'gNoise', 0, 0.3, 0.01, (v) => fmt(v, 2) + ' mV'], ['wander', 'gWander', 0, 1, 0.05, (v) => fmt(v, 2) + ' mV'], ['hum', 'gHum', 0, 0.5, 0.01, (v) => fmt(v, 2) + ' mV'], ['pvc', 'gPvc', 0, 0.3, 0.01, (v) => fmt(v * 100, 0) + ' %']];
+      defs.forEach(([k, lab, mn, mx, st, show]) => {
+        const l = document.createElement('label'); l.innerHTML = '<span>' + t(lab) + ' : <b></b></span><input type="range">';
+        const r = l.querySelector('input'); Object.assign(r, { min: mn, max: mx, step: st }); r.value = gen[k]; l.querySelector('b').textContent = show(gen[k]);
+        r.addEventListener('input', () => { gen[k] = parseFloat(r.value); l.querySelector('b').textContent = show(gen[k]); });
+        r.addEventListener('change', () => load('synth'));
+        box.appendChild(l);
+      });
+    }
+
+    // ---------- Langue ----------
+    document.querySelectorAll('.tab').forEach((b) => b.addEventListener('click', () => { view.start = 0; $('pos').value = 0; load(b.dataset.rec); }));
+    function setLang(l) {
+      lang = l; document.documentElement.lang = l;
+      document.querySelectorAll('[data-t]').forEach((el) => { const v = T[l][el.dataset.t]; if (typeof v === 'string') el.textContent = v; });
+      document.querySelectorAll('.lang button').forEach((b) => b.setAttribute('aria-pressed', b.dataset.lang === l));
+      try { localStorage.setItem('lang', l); } catch (e) {}
+      $('play').textContent = raf ? t('stop') : t('play');
+      renderWidths(); renderGen();
+      if (D) renderAll();
+    }
+    document.querySelectorAll('.lang button').forEach((b) => b.addEventListener('click', () => setLang(b.dataset.lang)));
+    setLang(lang);
+    load('100');
+    new ResizeObserver(() => { if (D) { drawStrip(); drawPipe(); drawTacho(); drawPoincare(); } }).observe($('strip'));
+  })();
+  </script>
+</body>
+</html>

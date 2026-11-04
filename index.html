@@ -87,6 +87,7 @@
         <button class="filter" data-filter="sante" data-i18n="tag.health">Application santé</button>
         <button class="filter" data-filter="data" data-i18n="tag.data">Données</button>
         <button class="filter" data-filter="electronique" data-i18n="tag.electronics">Électronique</button>
+        <button class="filter" data-filter="signal" data-i18n="tag.signal">Traitement du signal</button>
         <button class="filter" data-filter="mecanique" data-i18n="tag.mechanics">Mécanique</button>
         <button class="filter" data-filter="robotique" data-i18n="tag.robotics">Robotique</button>
         <button class="filter" data-filter="automatique" data-i18n="tag.control">Automatique</button>
@@ -346,6 +347,23 @@
             <span class="card-links">
               <a class="card-link card-link--secondary" href="https://github.com/Valentin-Auger-Laboratoire/laboratoire-crypto" target="_blank" rel="noopener" data-i18n="projects.code">Voir le code ↗</a>
               <a class="card-link" href="outils/laboratoire-crypto/index.html" data-i18n="projects.tool">Essayer l'outil ↗</a>
+            </span>
+          </div>
+        </article>
+        <article class="project-card project-card--wide" data-tags="signal sante web">
+          <div class="card-media"><img src="assets/projets/detection-ecg.jpg" alt="Électrocardiogramme réel de la base MIT-BIH sur papier millimétré, battements détectés et annotations des cardiologues" data-i18n-attr="alt:p29.img" width="960" height="600" loading="lazy" decoding="async"></div>
+          <div class="card-top">
+            <span class="card-type" data-i18n="tag.signal">Traitement du signal</span>
+            <span class="card-date" data-i18n="p29.date">Nov. 2026</span>
+          </div>
+          <h3 data-i18n="p29.title">Détection des battements cardiaques sur de vrais ECG (Pan-Tompkins)</h3>
+          <p data-i18n="p29.desc">Analyse d'électrocardiogrammes réels de la base MIT-BIH (PhysioNet) avec l'algorithme de Pan et Tompkins, écrit à la main : filtre passe-bande, dérivée, mise au carré, intégration et seuils adaptatifs, chaque étape affichée. Les battements trouvés sont comparés aux annotations des cardiologues : sur l'enregistrement 100 (30 minutes, 2 273 battements), sensibilité et valeur prédictive de 100 %, pic R placé à 1,6 ms près, et toutes les extrasystoles repérées. Fréquence cardiaque, variabilité (SDNN, RMSSD), tachogramme, diagramme de Poincaré et générateur d'ECG synthétique pour tester le bruit. Outil pédagogique, pas un dispositif médical.</p>
+          <ul class="tags"><li>ECG</li><li>Pan-Tompkins</li><li>Filtrage numérique</li><li>PhysioNet / MIT-BIH</li><li>JavaScript</li></ul>
+          <div class="card-foot">
+            <span class="card-context" data-i18n="projects.contextTool">Outil web · projet personnel</span>
+            <span class="card-links">
+              <a class="card-link card-link--secondary" href="https://github.com/Valentin-Auger-Laboratoire/detection-ecg" target="_blank" rel="noopener" data-i18n="projects.code">Voir le code ↗</a>
+              <a class="card-link" href="outils/detection-ecg/index.html" data-i18n="projects.tool">Essayer l'outil ↗</a>
             </span>
           </div>
         </article>
