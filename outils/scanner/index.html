@@ -1,0 +1,407 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Simulateur de scanner</title>
+  <meta name="description" content="Simulateur de scanner (tomodensitométrie) : acquisition des projections, sinogramme, rétroprojection simple et filtrée, reconstruction itérative, bruit selon la dose, artefacts métalliques et fenêtres en unités Hounsfield.">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --bg: #0c0c0d; --panel: #161618; --border: #262628; --border-hi: #3a3a3d;
+      --text: #f2f2f2; --dim: #9b9b9f; --muted: #6c6c70; --accent: #c8102e; --line: #c9c9cc; --warn: #e0a458; --ok: #8fd18f;
+      --mono: "JetBrains Mono", ui-monospace, monospace; --sans: "Inter", system-ui, sans-serif;
+      color-scheme: dark;
+    }
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    body { background: var(--bg); color: var(--text); font-family: var(--sans); line-height: 1.55; -webkit-font-smoothing: antialiased; }
+    .wrap { max-width: 1280px; margin: 0 auto; padding: 24px max(16px, env(safe-area-inset-right, 0px)) 48px max(16px, env(safe-area-inset-left, 0px)); }
+    .top { display: flex; justify-content: space-between; align-items: center; gap: 12px; flex-wrap: wrap; margin-bottom: 24px; }
+    .back { font-size: 0.9rem; color: var(--dim); text-decoration: none; }
+    .back:hover { color: var(--accent); }
+    .lang { display: flex; border: 1px solid var(--border-hi); }
+    .lang button { font: 500 0.78rem var(--mono); letter-spacing: .05em; background: none; color: var(--dim); border: 0; padding: 5px 10px; cursor: pointer; }
+    .lang button + button { border-left: 1px solid var(--border-hi); }
+    .lang button[aria-pressed="true"] { background: var(--text); color: var(--bg); }
+    .eyebrow { font: 500 0.82rem var(--mono); color: var(--accent); letter-spacing: .04em; }
+    h1 { font-size: clamp(1.6rem, 3.4vw, 2.3rem); line-height: 1.15; margin: 6px 0 10px; text-wrap: balance; }
+    .intro { color: var(--dim); max-width: 82ch; }
+    .warnbox { border: 1px solid #4a3a20; background: #1a160f; color: var(--warn); border-radius: 6px; padding: 8px 12px; font-size: 0.84rem; margin-top: 12px; }
+    .grid { display: grid; grid-template-columns: 330px minmax(0, 1fr); gap: 20px; align-items: start; margin-top: 20px; }
+    .stack { display: grid; gap: 16px; min-width: 0; }
+    .panel { background: var(--panel); border: 1px solid var(--border); border-radius: 8px; padding: 16px; min-width: 0; }
+    h2 { font: 600 0.78rem var(--mono); letter-spacing: .12em; text-transform: uppercase; color: var(--dim); margin-bottom: 12px; display: flex; justify-content: space-between; align-items: center; gap: 8px; flex-wrap: wrap; }
+    h3 { font: 600 0.72rem var(--mono); letter-spacing: .08em; text-transform: uppercase; color: var(--dim); margin: 14px 0 10px; padding-top: 12px; border-top: 1px solid var(--border); }
+    button:focus-visible, input:focus-visible, select:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+    .btn { font: 500 0.82rem var(--sans); background: none; color: var(--text); border: 1px solid var(--border-hi); border-radius: 6px; padding: 6px 11px; cursor: pointer; white-space: nowrap; }
+    .btn:hover { border-color: var(--accent); color: var(--accent); }
+    .btn[aria-pressed="true"] { border-color: var(--accent); color: var(--accent); }
+    .seg { display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 10px; }
+    .ctl { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 2px 10px; margin-bottom: 10px; }
+    .ctl label { font: 500 0.76rem var(--mono); color: var(--dim); }
+    .ctl output { font: 0.8rem var(--mono); font-variant-numeric: tabular-nums; text-align: right; }
+    .ctl input[type=range] { grid-column: 1 / -1; width: 100%; accent-color: var(--accent); }
+    .kpis { display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); gap: 10px; }
+    .kpi { border: 1px solid var(--border); border-radius: 6px; padding: 9px 11px; min-width: 0; }
+    .kpi dt { font: 0.68rem var(--mono); color: var(--dim); }
+    .kpi dd { font: 600 1.05rem var(--sans); font-variant-numeric: tabular-nums; margin-top: 2px; overflow-wrap: anywhere; }
+    .kpi dd small { font: 400 0.72rem var(--mono); color: var(--dim); margin-left: 3px; }
+    .kpi.main dd { color: var(--accent); }
+    .imgs { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 10px; margin-top: 12px; }
+    figure { min-width: 0; }
+    figure figcaption { font: 0.72rem var(--mono); color: var(--dim); margin-bottom: 4px; }
+    figure canvas { width: 100%; aspect-ratio: 1; display: block; border: 1px solid var(--border); border-radius: 6px; background: #000; image-rendering: auto; }
+    figure canvas.sino { aspect-ratio: auto; height: auto; }
+    .readout { font: 0.74rem var(--mono); color: var(--dim); margin-top: 6px; min-height: 1.2em; }
+    .anim { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr) minmax(0, 1fr); gap: 10px; }
+    .anim canvas { width: 100%; aspect-ratio: 1; display: block; border: 1px solid var(--border); border-radius: 6px; background: #0a0a0b; }
+    .chart canvas { width: 100%; height: 200px; display: block; border: 1px solid var(--border); border-radius: 6px; background: #0a0a0b; }
+    .chart p { font: 0.72rem var(--mono); color: var(--dim); margin-bottom: 4px; display: flex; gap: 10px; flex-wrap: wrap; }
+    .chart p i { display: inline-block; width: 12px; height: 2px; vertical-align: 3px; margin-right: 5px; }
+    .controls { display: flex; gap: 8px; flex-wrap: wrap; align-items: center; margin-top: 10px; font: 0.78rem var(--mono); color: var(--dim); }
+    .hint { font-size: 0.8rem; color: var(--dim); margin-top: 8px; }
+    .note { font-size: 0.82rem; color: var(--dim); }
+    .note p + p { margin-top: 6px; }
+    @media (max-width: 1100px) { .imgs { grid-template-columns: repeat(2, minmax(0, 1fr)); } .kpis { grid-template-columns: repeat(3, minmax(0, 1fr)); } }
+    @media (max-width: 1000px) { .grid { grid-template-columns: minmax(0, 1fr); } .main-col { order: -1; } }
+    @media (max-width: 600px) { .anim { grid-template-columns: minmax(0, 1fr); } .kpis { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+  </style>
+</head>
+<body>
+  <div class="wrap">
+    <div class="top">
+      <a class="back" href="../../index.html#projets" data-t="back">← Retour au portfolio</a>
+      <div class="lang" role="group" aria-label="Langue / Language">
+        <button type="button" data-lang="fr" aria-pressed="true">FR</button>
+        <button type="button" data-lang="en" aria-pressed="false">EN</button>
+      </div>
+    </div>
+    <p class="eyebrow" data-t="eyebrow">Outil d'imagerie médicale · tomodensitométrie</p>
+    <h1 data-t="title">Simulateur de scanner : du sinogramme à l'image</h1>
+    <p class="intro" data-t="intro">Un scanner tourne autour du patient et mesure, pour chaque angle, combien de rayons X traversent le corps. On n'obtient pas une image mais un « sinogramme » ; l'image est calculée ensuite. Ce simulateur fait les deux : il acquiert les projections d'un patient virtuel (avec le bruit des photons selon la dose) puis reconstruit la coupe par rétroprojection simple, rétroprojection filtrée — la méthode des scanners cliniques — ou reconstruction itérative. Les images s'affichent en unités Hounsfield avec les fenêtres utilisées en radiologie.</p>
+    <div class="warnbox" data-t="notMedical">Outil pédagogique : géométrie simplifiée (rayons parallèles, faisceau monoénergétique), pas un logiciel d'imagerie médicale.</div>
+
+    <div class="grid">
+      <div class="stack">
+        <div class="panel" id="ctl"></div>
+      </div>
+      <div class="stack main-col">
+        <div class="panel">
+          <dl class="kpis" id="kpis"></dl>
+          <div class="imgs">
+            <figure><figcaption data-t="cTruth">Patient virtuel (vérité)</figcaption><canvas id="cvTruth" width="256" height="256"></canvas></figure>
+            <figure><figcaption data-t="cSino">Sinogramme (mesures)</figcaption><canvas id="cvSino" width="256" height="256"></canvas></figure>
+            <figure><figcaption data-t="cRec">Image reconstruite</figcaption><canvas id="cvRec" width="256" height="256"></canvas></figure>
+            <figure><figcaption data-t="cDiff">Écart avec la vérité</figcaption><canvas id="cvDiff" width="256" height="256"></canvas></figure>
+          </div>
+          <p class="readout" id="readout"></p>
+          <p class="hint" data-t="imgHint">Survoler une image affiche la valeur du pixel. Sinogramme : un angle par ligne, une cellule du détecteur par colonne ; un point du patient y dessine une sinusoïde, d'où le nom. Écart : rouge = reconstruit trop dense, gris clair = pas assez.</p>
+        </div>
+        <div class="panel">
+          <h2><span data-t="animT">Le scanner en action</span><span class="row"><button type="button" class="btn" id="play" data-t="play">Lancer l'acquisition</button></span></h2>
+          <div class="anim">
+            <canvas id="cvGantry" aria-label="Anneau du scanner"></canvas>
+            <canvas id="cvSinoAnim" aria-label="Sinogramme en cours"></canvas>
+            <canvas id="cvBuild" aria-label="Reconstruction en cours"></canvas>
+          </div>
+          <p class="hint" data-t="animHint">À gauche, le tube et le détecteur tournent autour du patient. Au milieu, chaque angle ajoute une ligne au sinogramme. À droite, chaque projection filtrée est « étalée » sur l'image dans sa direction : l'image apparaît à mesure que les angles s'accumulent.</p>
+        </div>
+        <div class="panel chart">
+          <p><span><i style="background:var(--line)"></i><span data-t="lgTruth">vérité</span></span><span><i style="background:var(--accent)"></i><span data-t="lgRec">reconstruction</span></span> · <span data-t="profT">profil horizontal au centre de l'image</span></p>
+          <canvas id="cvProf"></canvas>
+        </div>
+        <div class="panel note">
+          <p data-t="note1">Physique : le nombre de photons qui traversent le patient suit la loi de Beer-Lambert, N = N₀·e^(−∫μ dl). On mesure donc l'intégrale de l'atténuation μ le long de chaque rayon. Le bruit vient du comptage des photons (loi de Poisson) : moins de dose, plus de bruit. Les unités Hounsfield comparent μ à celui de l'eau : HU = 1 000·(μ − μ_eau)/μ_eau (air −1 000, eau 0, os +1 000 environ).</p>
+          <p data-t="note2">Calcul : les projections des ellipses du patient virtuel sont exactes (formule analytique). La rétroprojection filtrée applique à chaque projection le filtre rampe |f| (noyau discret de Ram-Lak), éventuellement adouci par une fenêtre de Shepp-Logan ou de Hann, par transformée de Fourier rapide, puis rétroprojette. La rétroprojection simple, sans filtre, donne une image floue (elle revient à convoluer par 1/r). SART corrige l'image angle par angle pour que ses projections collent aux mesures, avec la contrainte μ ≥ 0 : utile quand il y a peu d'angles. Fantôme de Shepp-Logan modifié (Toft) pour la tête de référence.</p>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script src="scanner.js"></script>
+  <script>
+  (function () {
+    'use strict';
+    const S = window.Scanner;
+    const $ = (id) => document.getElementById(id);
+    const T = {
+      fr: {
+        back: '← Retour au portfolio', eyebrow: "Outil d'imagerie médicale · tomodensitométrie", title: "Simulateur de scanner : du sinogramme à l'image",
+        intro: "Un scanner tourne autour du patient et mesure, pour chaque angle, combien de rayons X traversent le corps. On n'obtient pas une image mais un « sinogramme » ; l'image est calculée ensuite. Ce simulateur fait les deux : il acquiert les projections d'un patient virtuel (avec le bruit des photons selon la dose) puis reconstruit la coupe par rétroprojection simple, rétroprojection filtrée — la méthode des scanners cliniques — ou reconstruction itérative. Les images s'affichent en unités Hounsfield avec les fenêtres utilisées en radiologie.",
+        notMedical: "Outil pédagogique : géométrie simplifiée (rayons parallèles, faisceau monoénergétique), pas un logiciel d'imagerie médicale.",
+        cTruth: 'Patient virtuel (vérité)', cSino: 'Sinogramme (mesures)', cRec: 'Image reconstruite', cDiff: 'Écart avec la vérité',
+        imgHint: "Survoler une image affiche la valeur du pixel. Sinogramme : un angle par ligne, une cellule du détecteur par colonne ; un point du patient y dessine une sinusoïde, d'où le nom. Écart : rouge = reconstruit trop dense, gris clair = pas assez.",
+        animT: 'Le scanner en action', play: "Lancer l'acquisition", stop: 'Arrêter',
+        animHint: "À gauche, le tube et le détecteur tournent autour du patient. Au milieu, chaque angle ajoute une ligne au sinogramme. À droite, chaque projection filtrée est « étalée » sur l'image dans sa direction : l'image apparaît à mesure que les angles s'accumulent.",
+        lgTruth: 'vérité', lgRec: 'reconstruction', profT: "profil horizontal au centre de l'image",
+        note1: "Physique : le nombre de photons qui traversent le patient suit la loi de Beer-Lambert, N = N₀·e^(−∫μ dl). On mesure donc l'intégrale de l'atténuation μ le long de chaque rayon. Le bruit vient du comptage des photons (loi de Poisson) : moins de dose, plus de bruit. Les unités Hounsfield comparent μ à celui de l'eau : HU = 1 000·(μ − μ_eau)/μ_eau (air −1 000, eau 0, os +1 000 environ).",
+        note2: "Calcul : les projections des ellipses du patient virtuel sont exactes (formule analytique). La rétroprojection filtrée applique à chaque projection le filtre rampe |f| (noyau discret de Ram-Lak), éventuellement adouci par une fenêtre de Shepp-Logan ou de Hann, par transformée de Fourier rapide, puis rétroprojette. La rétroprojection simple, sans filtre, donne une image floue (elle revient à convoluer par 1/r). SART corrige l'image angle par angle pour que ses projections collent aux mesures, avec la contrainte μ ≥ 0 : utile quand il y a peu d'angles. Fantôme de Shepp-Logan modifié (Toft) pour la tête de référence.",
+        patT: 'Patient', ph: { shepp: 'Tête de référence (Shepp-Logan)', head: 'Crâne avec hématome', thorax: 'Thorax', metal: 'Thorax avec implants métalliques' },
+        acqT: 'Acquisition', nA: 'Nombre d’angles', nD: 'Cellules du détecteur', range: 'Rotation', dose: 'Dose (photons par rayon)', noNoise: 'sans bruit',
+        recT: 'Reconstruction', method: { fbp: 'Rétroprojection filtrée', bp: 'Rétroprojection simple', sart: 'Itérative (SART)' }, filt: 'Filtre', filters: { ramlak: 'Rampe (Ram-Lak)', shepp: 'Shepp-Logan', hann: 'Hann (plus doux)' }, iters: 'Itérations SART', size: 'Image',
+        winT: 'Fenêtre d’affichage', win: { soft: 'Tissus mous', brain: 'Cerveau', lung: 'Poumon', bone: 'Os', auto: 'Automatique' },
+        presetsT: 'Cas à essayer', pClin: 'Examen standard', pFew: 'Peu d’angles (30)', pLow: 'Faible dose', pBp: 'Sans filtre', pLimited: 'Rotation de 120°', pBrain: 'Hématome en fenêtre cerveau',
+        kTime: 'Calcul', kMeas: 'Mesures', kRmse: 'Écart moyen (RMSE)', kPsnr: 'PSNR', kDose: 'Dose relative',
+        bpWarn: 'valeurs non quantitatives',
+        readT: 'Pixel', readSino: 'angle', readDet: 'cellule', readP: 'intégrale de μ',
+      },
+      en: {
+        back: '← Back to portfolio', eyebrow: 'Medical imaging tool · computed tomography', title: 'CT scanner simulator: from sinogram to image',
+        intro: 'A CT scanner rotates around the patient and measures, at each angle, how many X-rays go through the body. What you get is not an image but a "sinogram"; the image is computed afterwards. This simulator does both: it acquires the projections of a virtual patient (with photon noise depending on dose) and reconstructs the slice by simple backprojection, filtered backprojection — the method used by clinical scanners — or iterative reconstruction. Images are shown in Hounsfield units with the windows used in radiology.',
+        notMedical: 'Teaching tool: simplified geometry (parallel rays, monoenergetic beam), not medical imaging software.',
+        cTruth: 'Virtual patient (ground truth)', cSino: 'Sinogram (measurements)', cRec: 'Reconstructed image', cDiff: 'Difference from truth',
+        imgHint: 'Hover an image to read the pixel value. Sinogram: one angle per row, one detector cell per column; a point of the patient draws a sinusoid, hence the name. Difference: red = reconstructed too dense, light grey = not dense enough.',
+        animT: 'The scanner at work', play: 'Start acquisition', stop: 'Stop',
+        animHint: 'Left: the tube and detector rotate around the patient. Middle: each angle adds a row to the sinogram. Right: each filtered projection is "smeared" across the image along its direction: the image appears as angles add up.',
+        lgTruth: 'truth', lgRec: 'reconstruction', profT: 'horizontal profile through the image centre',
+        note1: 'Physics: the number of photons crossing the patient follows the Beer-Lambert law, N = N₀·e^(−∫μ dl). So the scanner measures the integral of attenuation μ along each ray. Noise comes from photon counting (Poisson law): less dose, more noise. Hounsfield units compare μ with water: HU = 1,000·(μ − μ_water)/μ_water (air −1,000, water 0, bone about +1,000).',
+        note2: 'Computation: projections of the virtual patient ellipses are exact (analytic formula). Filtered backprojection applies the ramp filter |f| (discrete Ram-Lak kernel) to each projection, optionally smoothed by a Shepp-Logan or Hann window, using the fast Fourier transform, then backprojects. Simple backprojection, without filter, gives a blurred image (it amounts to convolving by 1/r). SART corrects the image angle by angle so that its projections match the measurements, with μ ≥ 0: useful when there are few angles. Modified Shepp-Logan phantom (Toft) for the reference head.',
+        patT: 'Patient', ph: { shepp: 'Reference head (Shepp-Logan)', head: 'Skull with haematoma', thorax: 'Chest', metal: 'Chest with metal implants' },
+        acqT: 'Acquisition', nA: 'Number of angles', nD: 'Detector cells', range: 'Rotation', dose: 'Dose (photons per ray)', noNoise: 'no noise',
+        recT: 'Reconstruction', method: { fbp: 'Filtered backprojection', bp: 'Simple backprojection', sart: 'Iterative (SART)' }, filt: 'Filter', filters: { ramlak: 'Ramp (Ram-Lak)', shepp: 'Shepp-Logan', hann: 'Hann (smoother)' }, iters: 'SART iterations', size: 'Image',
+        winT: 'Display window', win: { soft: 'Soft tissue', brain: 'Brain', lung: 'Lung', bone: 'Bone', auto: 'Automatic' },
+        presetsT: 'Cases to try', pClin: 'Standard scan', pFew: 'Few angles (30)', pLow: 'Low dose', pBp: 'No filter', pLimited: '120° rotation', pBrain: 'Haematoma in brain window',
+        kTime: 'Compute', kMeas: 'Measurements', kRmse: 'Mean error (RMSE)', kPsnr: 'PSNR', kDose: 'Relative dose',
+        bpWarn: 'non-quantitative values',
+        readT: 'Pixel', readSino: 'angle', readDet: 'cell', readP: 'integral of μ',
+      },
+    };
+    let lang = 'fr';
+    try { lang = localStorage.getItem('lang') || ((navigator.language || 'fr').toLowerCase().startsWith('fr') ? 'fr' : 'en'); } catch (e) {}
+    if (!T[lang]) lang = 'fr';
+    const t = (k) => T[lang][k];
+    const fmt = (v, d = 1) => (Number.isFinite(v) ? v.toLocaleString(lang === 'fr' ? 'fr-FR' : 'en-GB', { maximumFractionDigits: d }) : '—');
+    const kpi = (k, v, u, main) => '<div class="kpi' + (main ? ' main' : '') + '"><dt>' + k + '</dt><dd>' + v + (u ? '<small>' + u + '</small>' : '') + '</dd></div>';
+
+    // fenêtres (largeur, niveau) en HU
+    const WINDOWS = { soft: [400, 40], brain: [80, 40], lung: [1500, -600], bone: [2000, 500], auto: null };
+    const st = { ph: 'head', nA: 360, nD: 256, range: 180, doseExp: 6, method: 'fbp', filt: 'hann', iters: 4, N: 192, win: 'brain' };
+    const PRESETS = {
+      pClin: { nA: 360, nD: 256, range: 180, doseExp: 6, method: 'fbp', filt: 'shepp' },
+      pFew: { nA: 30, nD: 256, range: 180, doseExp: 6, method: 'fbp', filt: 'shepp' },
+      pLow: { nA: 180, nD: 256, range: 180, doseExp: 3.5, method: 'fbp', filt: 'ramlak' },
+      pBp: { nA: 180, nD: 256, range: 180, doseExp: 6, method: 'bp' },
+      pLimited: { nA: 120, nD: 256, range: 120, doseExp: 6, method: 'fbp', filt: 'shepp' },
+      pBrain: { ph: 'head', nA: 360, nD: 256, range: 180, doseExp: 6, method: 'fbp', filt: 'hann', win: 'brain' },
+    };
+    let R = null; // résultats
+
+    // ---------- Panneau ----------
+    function buttons(box, key, opts, onChange) {
+      const s = document.createElement('div'); s.className = 'seg';
+      opts.forEach(([v, label]) => { const b = document.createElement('button'); b.type = 'button'; b.className = 'btn'; b.textContent = label; b.setAttribute('aria-pressed', st[key] === v); b.addEventListener('click', () => { st[key] = v; s.querySelectorAll('button').forEach((x) => x.setAttribute('aria-pressed', x === b)); onChange(); }); s.appendChild(b); });
+      box.appendChild(s);
+    }
+    function slider(box, key, label, min, max, step, show, onChange) {
+      const row = document.createElement('div'); row.className = 'ctl';
+      row.innerHTML = '<label for="s-' + key + '">' + label + '</label><output></output><input type="range" id="s-' + key + '">';
+      const r = row.querySelector('input'), o = row.querySelector('output');
+      Object.assign(r, { min, max, step }); r.value = st[key]; o.textContent = show(st[key]);
+      r.addEventListener('input', () => { st[key] = parseFloat(r.value); o.textContent = show(st[key]); });
+      r.addEventListener('change', onChange);
+      box.appendChild(row);
+    }
+    function renderCtl() {
+      const box = $('ctl'); box.innerHTML = '<h2>' + t('patT') + '</h2>';
+      const ph = T[lang].ph;
+      buttons(box, 'ph', Object.keys(ph).map((k) => [k, ph[k]]), () => { if (st.ph === 'thorax' || st.ph === 'metal') { if (st.win === 'brain') st.win = 'soft'; } else if (st.ph === 'head' && st.win === 'soft') st.win = 'brain'; renderCtl(); run(); });
+      let h = document.createElement('h3'); h.textContent = t('acqT'); box.appendChild(h);
+      slider(box, 'nA', t('nA'), 10, 720, 10, (v) => v, run);
+      slider(box, 'nD', t('nD'), 64, 512, 32, (v) => v, run);
+      slider(box, 'range', t('range'), 60, 180, 10, (v) => v + '°', run);
+      slider(box, 'doseExp', t('dose'), 2, 7, 0.25, (v) => (v >= 7 ? t('noNoise') : '10^' + fmt(v, 2)), run);
+      h = document.createElement('h3'); h.textContent = t('recT'); box.appendChild(h);
+      buttons(box, 'method', Object.entries(T[lang].method), () => { renderCtl(); run(); });
+      if (st.method === 'fbp') { const p = document.createElement('p'); p.className = 'hint'; p.style.margin = '0 0 6px'; p.textContent = t('filt'); box.appendChild(p); buttons(box, 'filt', Object.entries(T[lang].filters), run); }
+      if (st.method === 'sart') slider(box, 'iters', t('iters'), 1, 20, 1, (v) => v, run);
+      slider(box, 'N', t('size'), 96, 256, 32, (v) => v + ' × ' + v, run);
+      h = document.createElement('h3'); h.textContent = t('winT'); box.appendChild(h);
+      buttons(box, 'win', Object.entries(T[lang].win), drawAll);
+      h = document.createElement('h3'); h.textContent = t('presetsT'); box.appendChild(h);
+      const pr = document.createElement('div'); pr.className = 'seg';
+      Object.keys(PRESETS).forEach((k) => { const b = document.createElement('button'); b.type = 'button'; b.className = 'btn'; b.textContent = t(k); b.addEventListener('click', () => { Object.assign(st, PRESETS[k]); renderCtl(); run(); }); pr.appendChild(b); });
+      box.appendChild(pr);
+    }
+
+    // ---------- Calcul ----------
+    function run() {
+      stopAnim();
+      if (st.method === 'sart') { $('kpis').innerHTML = kpi(t('kTime'), lang === 'fr' ? 'calcul…' : 'computing…', ''); setTimeout(compute, 30); return; }
+      compute();
+    }
+    function compute() {
+      const ph = S.PHANTOMS[st.ph], N = st.N;
+      const t0 = performance.now();
+      const truth = S.phantomImage(ph, N);
+      const I0 = st.doseExp >= 7 ? 0 : Math.pow(10, st.doseExp);
+      const acq = S.acquire(ph, { nA: st.nA, nD: st.nD, range: st.range, I0, seed: 3 });
+      const t1 = performance.now();
+      let rec;
+      if (st.method === 'fbp') rec = S.fbp(acq, N, st.filt);
+      else if (st.method === 'bp') rec = S.simpleBP(acq, N);
+      else rec = S.sart(acq, N, st.iters).img;
+      // la rétroprojection filtrée suppose 180° ; avec une rotation partielle, la normalisation reste celle-ci
+      const t2 = performance.now();
+      const cmp = st.method === 'bp' ? null : S.compare(rec, truth, N, ph.units);
+      R = { ph, N, truth, acq, rec, cmp, tAcq: t1 - t0, tRec: t2 - t1, I0 };
+      drawAll();
+      prepAnim();
+    }
+    const toDisp = (mu) => (R.ph.units === 'hu' ? S.mu2hu(mu) : mu);
+    function windowFor() {
+      if (R.ph.units !== 'hu' || st.win === 'auto' || st.method === 'bp') {
+        let lo = Infinity, hi = -Infinity; const img = st.method === 'bp' ? R.rec : R.truth;
+        for (const v of img) { const d = toDisp(v); if (d < lo) lo = d; if (d > hi) hi = d; }
+        if (R.ph.units !== 'hu' && st.method !== 'bp') { lo = 0.95 * 0.19 * 2 * 0.2; hi = 0.19 * 2 * 0.32; } // Shepp-Logan : contraste des structures internes
+        return [lo, hi];
+      }
+      const [w, l] = WINDOWS[st.win];
+      return [l - w / 2, l + w / 2];
+    }
+    function paint(cv, img, N, lo, hi, mapFn) {
+      cv.width = N; cv.height = N;
+      const c = cv.getContext('2d'), id = c.createImageData(N, N);
+      for (let k = 0; k < N * N; k++) {
+        const v = mapFn ? mapFn(img[k]) : img[k], g = Math.max(0, Math.min(255, Math.round(((v - lo) / (hi - lo)) * 255)));
+        id.data[4 * k] = g; id.data[4 * k + 1] = g; id.data[4 * k + 2] = g; id.data[4 * k + 3] = 255;
+      }
+      c.putImageData(id, 0, 0);
+    }
+    function paintSino(cv, sino, nA, nD) {
+      cv.width = nD; cv.height = nA; cv.style.aspectRatio = nD + ' / ' + Math.max(nA, nD * 0.5);
+      let hi = 0; for (const v of sino) hi = Math.max(hi, v);
+      const c = cv.getContext('2d'), id = c.createImageData(nD, nA);
+      for (let k = 0; k < nA * nD; k++) { const g = Math.round(Math.min(1, sino[k] / hi) * 255); id.data[4 * k] = g; id.data[4 * k + 1] = Math.round(g * 0.85); id.data[4 * k + 2] = Math.round(g * 0.8); id.data[4 * k + 3] = 255; }
+      c.putImageData(id, 0, 0);
+    }
+    function drawAll() {
+      if (!R) return;
+      const { N, truth, rec, acq } = R;
+      const [lo, hi] = windowFor();
+      const [tlo, thi] = st.method === 'bp' ? (() => { const w = WINDOWS[st.win] || [400, 40]; return R.ph.units === 'hu' ? [w[1] - w[0] / 2, w[1] + w[0] / 2] : [0.95 * 0.19 * 2 * 0.2, 0.19 * 2 * 0.32]; })() : [lo, hi];
+      paint($('cvTruth'), truth, N, tlo, thi, toDisp);
+      paintSino($('cvSino'), acq.sino, acq.nA, acq.nD);
+      paint($('cvRec'), rec, N, lo, hi, toDisp);
+      // écart : rouge si trop dense, clair si pas assez
+      const cv = $('cvDiff'); cv.width = N; cv.height = N;
+      const c = cv.getContext('2d'), id = c.createImageData(N, N), scale = R.ph.units === 'hu' ? 200 : 0.05;
+      for (let k = 0; k < N * N; k++) {
+        if (st.method === 'bp') { id.data[4 * k + 3] = 255; continue; }
+        const d = (toDisp(rec[k]) - toDisp(truth[k])) / scale, a = Math.min(1, Math.abs(d));
+        if (d > 0) { id.data[4 * k] = 200 * a; id.data[4 * k + 1] = 16 * a; id.data[4 * k + 2] = 46 * a; }
+        else { id.data[4 * k] = 201 * a; id.data[4 * k + 1] = 201 * a; id.data[4 * k + 2] = 204 * a; }
+        id.data[4 * k + 3] = 255;
+      }
+      c.putImageData(id, 0, 0);
+      const u = R.ph.units === 'hu' ? 'HU' : '';
+      $('kpis').innerHTML = kpi(t('kTime'), fmt(R.tAcq + R.tRec, 0), 'ms') + kpi(t('kMeas'), fmt(acq.nA * acq.nD, 0), '') +
+        kpi(t('kRmse'), R.cmp ? fmt(R.cmp.rmse, R.ph.units === 'hu' ? 0 : 4) : t('bpWarn'), R.cmp ? u : '', true) + kpi(t('kPsnr'), R.cmp ? fmt(R.cmp.psnr, 1) : '—', R.cmp ? 'dB' : '') +
+        kpi(t('kDose'), R.I0 ? fmt((acq.nA * R.I0) / (360 * 1e6) * 100, 1) : '∞', R.I0 ? '%' : '');
+      drawProfile();
+    }
+    function drawProfile() {
+      const cv = $('cvProf'), dpr = window.devicePixelRatio || 1, w = cv.clientWidth, h = cv.clientHeight;
+      cv.width = w * dpr; cv.height = h * dpr; const c = cv.getContext('2d'); c.setTransform(dpr, 0, 0, dpr, 0, 0);
+      c.fillStyle = '#0a0a0b'; c.fillRect(0, 0, w, h);
+      const { N, truth, rec, ph } = R, row = N >> 1;
+      const a = S.profile(truth, N, row).map(toDisp), b = S.profile(rec, N, row).map(toDisp);
+      let lo = Math.min(...a), hi = Math.max(...a); const m = (hi - lo) * 0.15 || 1; lo -= m; hi += m;
+      if (st.method === 'bp') { lo = Math.min(lo, ...b); hi = Math.max(hi, ...b); }
+      const pl = 50, X = (i) => pl + (i / (N - 1)) * (w - pl - 8), Y = (v) => 8 + (1 - (v - lo) / (hi - lo)) * (h - 28);
+      c.font = '10px "JetBrains Mono", monospace'; c.fillStyle = '#6c6c70'; c.textAlign = 'right'; c.strokeStyle = '#1e1e21';
+      for (let k = 0; k <= 4; k++) { const v = lo + ((hi - lo) * k) / 4; c.beginPath(); c.moveTo(pl, Y(v)); c.lineTo(w - 8, Y(v)); c.stroke(); c.fillText(fmt(v, ph.units === 'hu' ? 0 : 3), pl - 4, Y(v) + 3); }
+      c.textAlign = 'center'; c.fillText('0', X(0), h - 6); c.fillText(fmt(ph.fov, 0) + ' cm', X(N - 1) - 16, h - 6);
+      [[a, '#c9c9cc', 1.2], [b, '#c8102e', 1.5]].forEach(([arr, col, lw]) => { c.strokeStyle = col; c.lineWidth = lw; c.beginPath(); arr.forEach((v, i) => (i ? c.lineTo(X(i), Y(Math.max(lo, Math.min(hi, v)))) : c.moveTo(X(i), Y(v)))); c.stroke(); });
+    }
+    // lecture de la valeur au survol
+    function hover(cv, kind) {
+      cv.addEventListener('pointermove', (e) => {
+        if (!R) return;
+        const r = cv.getBoundingClientRect(), fx = (e.clientX - r.left) / r.width, fy = (e.clientY - r.top) / r.height;
+        if (kind === 'sino') {
+          const a = Math.min(R.acq.nA - 1, Math.floor(fy * R.acq.nA)), d = Math.min(R.acq.nD - 1, Math.floor(fx * R.acq.nD));
+          $('readout').textContent = t('readSino') + ' ' + fmt((R.acq.thetas[a] * 180) / Math.PI, 1) + '° · ' + t('readDet') + ' ' + d + ' · ' + t('readP') + ' = ' + fmt(R.acq.sino[a * R.acq.nD + d], 3);
+          return;
+        }
+        const N = R.N, i = Math.min(N - 1, Math.floor(fx * N)), j = Math.min(N - 1, Math.floor(fy * N)), k = j * N + i;
+        const u = R.ph.units === 'hu' ? ' HU' : '';
+        const x = (-R.ph.fov / 2 + ((i + 0.5) / N) * R.ph.fov).toFixed(1), y = (R.ph.fov / 2 - ((j + 0.5) / N) * R.ph.fov).toFixed(1);
+        $('readout').textContent = t('readT') + ' (' + x + ' ; ' + y + ' cm) · ' + t('lgTruth') + ' ' + fmt(toDisp(R.truth[k]), R.ph.units === 'hu' ? 0 : 3) + u + (st.method !== 'bp' ? ' · ' + t('lgRec') + ' ' + fmt(toDisp(R.rec[k]), R.ph.units === 'hu' ? 0 : 3) + u : '');
+      });
+    }
+    hover($('cvTruth'), 'img'); hover($('cvRec'), 'img'); hover($('cvDiff'), 'img'); hover($('cvSino'), 'sino');
+
+    // ---------- Animation de l'acquisition ----------
+    let anim = null, q = null, build = null, step = 0;
+    function prepAnim() {
+      q = st.method === 'bp' ? R.acq.sino : S.filterSinogram(R.acq, st.method === 'fbp' ? st.filt : 'shepp');
+      build = new Float64Array(R.N * R.N); step = 0;
+      drawAnim();
+    }
+    function stopAnim() { if (anim) cancelAnimationFrame(anim); anim = null; $('play').textContent = t('play'); }
+    function setup(cv) { const dpr = window.devicePixelRatio || 1, w = cv.clientWidth, h = cv.clientHeight; if (cv.width !== Math.round(w * dpr)) { cv.width = Math.round(w * dpr); cv.height = Math.round(h * dpr); } const c = cv.getContext('2d'); c.setTransform(dpr, 0, 0, dpr, 0, 0); return { c, w, h }; }
+    function drawAnim() {
+      if (!R) return;
+      const { acq, N, ph } = R, k = Math.min(step, acq.nA);
+      // anneau
+      const g = setup($('cvGantry')), c = g.c, w = g.w, h = g.h, cx = w / 2, cy = h / 2, rad = Math.min(w, h) * 0.42, sc = (rad * 0.92) / (ph.fov / 2);
+      c.fillStyle = '#0a0a0b'; c.fillRect(0, 0, w, h);
+      c.strokeStyle = '#26262a'; c.lineWidth = 10; c.beginPath(); c.arc(cx, cy, rad + 8, 0, Math.PI * 2); c.stroke();
+      // patient (vérité en petit)
+      const img = $('cvTruth'); c.globalAlpha = 0.9; c.drawImage(img, cx - (ph.fov / 2) * sc, cy - (ph.fov / 2) * sc, ph.fov * sc, ph.fov * sc); c.globalAlpha = 1;
+      const th = acq.thetas[Math.max(0, k - 1)] || 0, dx = Math.cos(th), dy = -Math.sin(th);
+      // rayons parallèles (direction perpendiculaire au détecteur)
+      c.strokeStyle = 'rgba(224,164,88,0.28)'; c.lineWidth = 1;
+      for (let i = -6; i <= 6; i++) { const s = (i / 6) * (ph.fov / 2) * sc; const ox = cx + dx * s, oy = cy + dy * s; c.beginPath(); c.moveTo(ox - dy * rad, oy + dx * rad); c.lineTo(ox + dy * rad, oy - dx * rad); c.stroke(); }
+      // tube et détecteur
+      const tx = cx - dy * rad, ty = cy + dx * rad, ddx = cx + dy * rad, ddy = cy - dx * rad;
+      c.fillStyle = '#c8102e'; c.beginPath(); c.arc(tx, ty, 8, 0, Math.PI * 2); c.fill();
+      c.strokeStyle = '#c9c9cc'; c.lineWidth = 6; c.beginPath(); c.moveTo(ddx - dx * (ph.fov / 2) * sc, ddy - dy * (ph.fov / 2) * sc); c.lineTo(ddx + dx * (ph.fov / 2) * sc, ddy + dy * (ph.fov / 2) * sc); c.stroke();
+      c.font = '10px "JetBrains Mono", monospace'; c.fillStyle = '#9b9b9f'; c.textAlign = 'left'; c.fillText(fmt((th * 180) / Math.PI, 0) + '°  ' + k + ' / ' + acq.nA, 8, 14);
+      // sinogramme en cours
+      const s2 = setup($('cvSinoAnim')), c2 = s2.c;
+      c2.fillStyle = '#000'; c2.fillRect(0, 0, s2.w, s2.h);
+      const sv = $('cvSino'); if (k > 0) c2.drawImage(sv, 0, 0, acq.nD, k, 0, 0, s2.w, (s2.h * k) / acq.nA);
+      c2.strokeStyle = '#c8102e'; c2.beginPath(); c2.moveTo(0, (s2.h * k) / acq.nA); c2.lineTo(s2.w, (s2.h * k) / acq.nA); c2.stroke();
+      // image en construction
+      const s3 = setup($('cvBuild')), off = document.createElement('canvas');
+      const [lo, hi] = st.method === 'bp' ? (() => { let a = Infinity, b = -Infinity; for (const v of build) { if (v < a) a = v; if (v > b) b = v; } return [a, b || 1]; })() : windowFor();
+      // image partielle ramenée à l'échelle finale : × (nombre total d'angles / angles déjà acquis)
+      const norm = k > 0 ? acq.nA / k : 1;
+      paint(off, build, N, lo, hi, st.method === 'bp' ? null : (v) => toDisp(v * norm));
+      s3.c.imageSmoothingEnabled = true; s3.c.drawImage(off, 0, 0, s3.w, s3.h);
+    }
+    $('play').addEventListener('click', () => {
+      if (anim) { stopAnim(); return; }
+      if (!R) return;
+      build = new Float64Array(R.N * R.N); step = 0;
+      $('play').textContent = t('stop');
+      const span = R.acq.thetas.length > 1 ? R.acq.thetas[1] - R.acq.thetas[0] : Math.PI;
+      const per = Math.max(1, Math.round(R.acq.nA / 150));
+      const tick = () => {
+        const k1 = Math.min(R.acq.nA, step + per);
+        S.backprojectAdd(R.acq, q, R.N, step, k1, build, st.method === 'bp' ? 1 : span);
+        step = k1; drawAnim();
+        if (step < R.acq.nA) anim = requestAnimationFrame(tick); else stopAnim();
+      };
+      anim = requestAnimationFrame(tick);
+    });
+
+    // ---------- Langue ----------
+    function setLang(l) {
+      lang = l; document.documentElement.lang = l;
+      document.querySelectorAll('[data-t]').forEach((el) => { const v = T[l][el.dataset.t]; if (typeof v === 'string') el.textContent = v; });
+      document.querySelectorAll('.lang button').forEach((b) => b.setAttribute('aria-pressed', b.dataset.lang === l));
+      try { localStorage.setItem('lang', l); } catch (e) {}
+      $('play').textContent = anim ? t('stop') : t('play');
+      renderCtl(); if (R) drawAll(); else run();
+    }
+    document.querySelectorAll('.lang button').forEach((b) => b.addEventListener('click', () => setLang(b.dataset.lang)));
+    setLang(lang);
+    new ResizeObserver(() => { if (R) { drawProfile(); drawAnim(); } }).observe($('cvProf'));
+  })();
+  </script>
+</body>
+</html>
