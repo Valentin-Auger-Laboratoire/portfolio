@@ -83,6 +83,7 @@
       <div class="filters" role="group" data-i18n-attr="aria-label:projects.filterLabel" aria-label="Filtrer les projets">
         <button class="filter active" data-filter="all" data-i18n="projects.all">Tous</button>
         <button class="filter" data-filter="reseau" data-i18n="tag.network">Réseaux</button>
+        <button class="filter" data-filter="securite" data-i18n="tag.security">Cybersécurité</button>
         <button class="filter" data-filter="sante" data-i18n="tag.health">Application santé</button>
         <button class="filter" data-filter="data" data-i18n="tag.data">Données</button>
         <button class="filter" data-filter="electronique" data-i18n="tag.electronics">Électronique</button>
@@ -328,6 +329,23 @@
             <span class="card-links">
               <a class="card-link card-link--secondary" href="https://github.com/Valentin-Auger-Laboratoire/regulateur-pid" target="_blank" rel="noopener" data-i18n="projects.code">Voir le code ↗</a>
               <a class="card-link" href="outils/regulateur-pid/index.html" data-i18n="projects.tool">Essayer l'outil ↗</a>
+            </span>
+          </div>
+        </article>
+        <article class="project-card project-card--wide" data-tags="securite reseau web">
+          <div class="card-media"><img src="assets/projets/laboratoire-crypto.jpg" alt="Laboratoire de cryptographie : chiffrement AES d'un message, vérifié par le navigateur, et état du bloc tour par tour" data-i18n-attr="alt:p28.img" width="960" height="600" loading="lazy" decoding="async"></div>
+          <div class="card-top">
+            <span class="card-type" data-i18n="tag.security">Cybersécurité</span>
+            <span class="card-date" data-i18n="p28.date">Nov. 2026</span>
+          </div>
+          <h3 data-i18n="p28.title">Laboratoire de cryptographie : SHA-256, AES et RSA écrits à la main</h3>
+          <p data-i18n="p28.desc">SHA-256, AES-128 (modes CBC et CTR) et RSA programmés sans bibliothèque, pour voir l'intérieur : les 64 tours du hachage et l'effet avalanche, l'état d'AES après chaque étape, la génération d'une clé RSA, la signature et sa vérification. Chaque résultat est comparé en direct au chiffrement du navigateur (Web Crypto). Une clé RSA trop courte est cassée en quelques millisecondes par la méthode rho de Pollard. Un onglet mots de passe estime la force d'un mot de passe et le temps de cassage selon son stockage, avec sel et PBKDF2. Plus de 1 200 tests comparés à OpenSSL.</p>
+          <ul class="tags"><li>SHA-256</li><li>AES</li><li>RSA</li><li>PBKDF2</li><li>JavaScript</li></ul>
+          <div class="card-foot">
+            <span class="card-context" data-i18n="projects.contextTool">Outil web · projet personnel</span>
+            <span class="card-links">
+              <a class="card-link card-link--secondary" href="https://github.com/Valentin-Auger-Laboratoire/laboratoire-crypto" target="_blank" rel="noopener" data-i18n="projects.code">Voir le code ↗</a>
+              <a class="card-link" href="outils/laboratoire-crypto/index.html" data-i18n="projects.tool">Essayer l'outil ↗</a>
             </span>
           </div>
         </article>
