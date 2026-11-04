@@ -1,0 +1,542 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Laboratoire de cryptographie</title>
+  <meta name="description" content="Laboratoire de cryptographie : SHA-256, AES-128 et RSA écrits à la main, étape par étape, vérifiés contre le chiffrement du navigateur ; effet avalanche, cassage d'une petite clé RSA, force des mots de passe et hachage lent avec sel.">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --bg: #0c0c0d; --panel: #161618; --border: #262628; --border-hi: #3a3a3d;
+      --text: #f2f2f2; --dim: #9b9b9f; --muted: #6c6c70; --accent: #c8102e; --line: #c9c9cc; --warn: #e0a458; --ok: #8fd18f;
+      --mono: "JetBrains Mono", ui-monospace, monospace; --sans: "Inter", system-ui, sans-serif;
+      color-scheme: dark;
+    }
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    body { background: var(--bg); color: var(--text); font-family: var(--sans); line-height: 1.55; -webkit-font-smoothing: antialiased; }
+    .wrap { max-width: 1240px; margin: 0 auto; padding: 24px max(16px, env(safe-area-inset-right, 0px)) 48px max(16px, env(safe-area-inset-left, 0px)); }
+    .top { display: flex; justify-content: space-between; align-items: center; gap: 12px; flex-wrap: wrap; margin-bottom: 24px; }
+    .back { font-size: 0.9rem; color: var(--dim); text-decoration: none; }
+    .back:hover { color: var(--accent); }
+    .lang { display: flex; border: 1px solid var(--border-hi); }
+    .lang button { font: 500 0.78rem var(--mono); letter-spacing: .05em; background: none; color: var(--dim); border: 0; padding: 5px 10px; cursor: pointer; }
+    .lang button + button { border-left: 1px solid var(--border-hi); }
+    .lang button[aria-pressed="true"] { background: var(--text); color: var(--bg); }
+    .eyebrow { font: 500 0.82rem var(--mono); color: var(--accent); letter-spacing: .04em; }
+    h1 { font-size: clamp(1.6rem, 3.4vw, 2.3rem); line-height: 1.15; margin: 6px 0 10px; text-wrap: balance; }
+    .intro { color: var(--dim); max-width: 82ch; }
+    .tabs { display: flex; gap: 8px; margin: 26px 0 16px; flex-wrap: wrap; }
+    .tab { font: 0.85rem var(--mono); background: none; color: var(--dim); border: 1px solid var(--border); border-radius: 999px; padding: 6px 14px; cursor: pointer; }
+    .tab[aria-selected="true"] { color: var(--accent); border-color: var(--accent); }
+    [hidden] { display: none !important; }
+    .grid { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 16px; align-items: start; }
+    .panel { background: var(--panel); border: 1px solid var(--border); border-radius: 8px; padding: 16px; min-width: 0; }
+    .full { grid-column: 1 / -1; }
+    h2 { font: 600 0.78rem var(--mono); letter-spacing: .12em; text-transform: uppercase; color: var(--dim); margin-bottom: 12px; display: flex; justify-content: space-between; gap: 8px; align-items: center; flex-wrap: wrap; }
+    h3 { font: 600 0.72rem var(--mono); letter-spacing: .08em; text-transform: uppercase; color: var(--dim); margin: 14px 0 8px; }
+    button:focus-visible, input:focus-visible, select:focus-visible, textarea:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+    .btn { font: 500 0.82rem var(--sans); background: none; color: var(--text); border: 1px solid var(--border-hi); border-radius: 6px; padding: 6px 11px; cursor: pointer; white-space: nowrap; }
+    .btn:hover { border-color: var(--accent); color: var(--accent); }
+    .btn:disabled { opacity: .4; cursor: not-allowed; }
+    .btn[aria-pressed="true"] { border-color: var(--accent); color: var(--accent); }
+    .row { display: flex; gap: 8px; flex-wrap: wrap; align-items: center; }
+    label.f { display: grid; gap: 5px; font: 500 0.74rem var(--mono); color: var(--dim); margin-bottom: 10px; min-width: 0; }
+    textarea, input.t, select.t { width: 100%; min-width: 0; font: 0.86rem var(--mono); background: var(--bg); color: var(--text); border: 1px solid var(--border-hi); border-radius: 6px; padding: 8px 9px; resize: vertical; }
+    textarea { min-height: 70px; }
+    .out { font: 0.82rem var(--mono); background: var(--bg); border: 1px solid var(--border); border-radius: 6px; padding: 8px 10px; overflow-wrap: anywhere; word-break: break-all; color: var(--text); min-height: 36px; }
+    .out.small { font-size: 0.74rem; color: var(--dim); }
+    .badge { font: 600 0.68rem var(--mono); letter-spacing: .04em; padding: 2px 7px; border-radius: 3px; border: 1px solid var(--border-hi); color: var(--dim); white-space: nowrap; }
+    .badge.ok { border-color: #2e4a2e; color: var(--ok); }
+    .badge.ko { border-color: var(--accent); color: #ff8a8a; }
+    .bits { display: grid; grid-template-columns: repeat(32, minmax(0, 1fr)); gap: 2px; margin-top: 8px; }
+    .bits i { aspect-ratio: 1; border-radius: 2px; background: #1e1e21; }
+    .bits i.d { background: var(--accent); }
+    .kpis { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 10px; }
+    .kpi { border: 1px solid var(--border); border-radius: 6px; padding: 9px 11px; min-width: 0; }
+    .kpi dt { font: 0.7rem var(--mono); color: var(--dim); }
+    .kpi dd { font: 600 1.1rem var(--sans); font-variant-numeric: tabular-nums; margin-top: 2px; overflow-wrap: anywhere; }
+    .kpi dd small { font: 400 0.74rem var(--mono); color: var(--dim); margin-left: 3px; }
+    .kpi.main dd { color: var(--accent); }
+    table { width: 100%; border-collapse: collapse; font: 0.78rem var(--mono); font-variant-numeric: tabular-nums; }
+    th, td { text-align: left; padding: 5px 7px; border-bottom: 1px solid var(--border); }
+    td.n, th.n { text-align: right; }
+    th { color: var(--dim); font-weight: 500; }
+    .tablewrap { overflow-x: auto; }
+    .state { display: grid; grid-template-columns: repeat(4, 42px); gap: 4px; }
+    .state span { font: 0.8rem var(--mono); text-align: center; padding: 6px 0; background: var(--bg); border: 1px solid var(--border); border-radius: 3px; }
+    .state span.ch { border-color: var(--accent); color: var(--accent); }
+    .states { display: flex; gap: 18px; flex-wrap: wrap; align-items: flex-start; }
+    .states figure figcaption { font: 0.72rem var(--mono); color: var(--dim); margin-bottom: 4px; }
+    .meter { height: 8px; border-radius: 4px; background: #1e1e21; overflow: hidden; margin: 8px 0 4px; }
+    .meter b { display: block; height: 100%; background: var(--accent); }
+    .issues { list-style: none; display: grid; gap: 6px; margin-top: 10px; }
+    .issues li { font-size: 0.84rem; padding: 6px 10px; border: 1px solid var(--border); border-radius: 6px; color: var(--warn); }
+    .issues li.good { color: var(--ok); border-color: #2e4a2e; }
+    .hint { font-size: 0.8rem; color: var(--dim); margin-top: 8px; }
+    .note { font-size: 0.82rem; color: var(--dim); }
+    .note p + p { margin-top: 6px; }
+    input[type=range] { width: 100%; accent-color: var(--accent); }
+    @media (max-width: 900px) { .grid { grid-template-columns: minmax(0, 1fr); } .kpis { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+    @media (max-width: 520px) { .bits { grid-template-columns: repeat(16, minmax(0, 1fr)); } }
+  </style>
+</head>
+<body>
+  <div class="wrap">
+    <div class="top">
+      <a class="back" href="../../index.html#projets" data-t="back">← Retour au portfolio</a>
+      <div class="lang" role="group" aria-label="Langue / Language">
+        <button type="button" data-lang="fr" aria-pressed="true">FR</button>
+        <button type="button" data-lang="en" aria-pressed="false">EN</button>
+      </div>
+    </div>
+    <p class="eyebrow" data-t="eyebrow">Outil de cybersécurité · cryptographie expliquée</p>
+    <h1 data-t="title">Laboratoire de cryptographie</h1>
+    <p class="intro" data-t="intro">SHA-256, AES et RSA écrits à la main, sans bibliothèque, pour voir ce qui se passe à l'intérieur : les tours de calcul, l'état d'AES après chaque étape, la génération d'une clé RSA. Chaque résultat est comparé en direct à celui du module de chiffrement du navigateur (Web Crypto). On voit aussi pourquoi une petite clé RSA se casse en une fraction de seconde, et combien de temps tiendrait un mot de passe face à une attaque. Implémentations pédagogiques : elles ne doivent pas servir à protéger de vraies données.</p>
+
+    <div class="tabs" role="tablist">
+      <button type="button" class="tab" role="tab" data-view="hash" aria-selected="true" data-t="tHash">Hachage SHA-256</button>
+      <button type="button" class="tab" role="tab" data-view="aes" aria-selected="false" data-t="tAes">Chiffrement AES</button>
+      <button type="button" class="tab" role="tab" data-view="rsa" aria-selected="false" data-t="tRsa">RSA</button>
+      <button type="button" class="tab" role="tab" data-view="pw" aria-selected="false" data-t="tPw">Mots de passe</button>
+    </div>
+
+    <!-- ===== SHA-256 ===== -->
+    <section class="view grid" id="view-hash">
+      <div class="panel">
+        <h2 data-t="hInT">Message</h2>
+        <label class="f"><span data-t="hIn">Texte à hacher</span><textarea id="hIn" spellcheck="false">Compte rendu de consultation : tension 12/8, fréquence cardiaque 72.</textarea></label>
+        <h3>SHA-256 <span class="badge" id="hBadge">…</span></h3>
+        <div class="out" id="hOut"></div>
+        <p class="hint" data-t="hHint">Une empreinte de 256 bits (64 caractères hexadécimaux), quelle que soit la taille du message. Impossible de revenir au message à partir de l'empreinte, et impossible en pratique de trouver deux messages qui ont la même.</p>
+      </div>
+      <div class="panel">
+        <h2 data-t="avT">Effet avalanche</h2>
+        <p class="hint" style="margin:0 0 8px" data-t="avHint">On change un seul bit du message (le dernier caractère) : environ la moitié des 256 bits de l'empreinte changent.</p>
+        <div class="out small" id="avMsg"></div>
+        <div class="out" id="avOut" style="margin-top:6px"></div>
+        <dl class="kpis" style="margin-top:10px" id="avKpi"></dl>
+        <div class="bits" id="avBits" aria-hidden="true"></div>
+      </div>
+      <div class="panel full">
+        <h2 data-t="rT">À l'intérieur : les 64 tours sur le premier bloc de 512 bits</h2>
+        <p class="hint" style="margin:0 0 8px" data-t="rHint">À chaque tour, les huit registres a à h sont mélangés avec un mot W du message et une constante K (issue des racines cubiques des premiers nombres premiers). Les registres en rouge viennent d'être recalculés (a et e) ; les autres sont décalés d'un cran.</p>
+        <div class="tablewrap"><table id="rTable"></table></div>
+      </div>
+    </section>
+
+    <!-- ===== AES ===== -->
+    <section class="view grid" id="view-aes" hidden>
+      <div class="panel">
+        <h2 data-t="aesT">AES-128</h2>
+        <label class="f"><span data-t="aKey">Clé (16 octets, hexadécimal)</span><input class="t" id="aKey" spellcheck="false"></label>
+        <label class="f"><span data-t="aIv">Vecteur d'initialisation / compteur (16 octets)</span><input class="t" id="aIv" spellcheck="false"></label>
+        <div class="row" style="margin-bottom:10px"><button type="button" class="btn" id="aGen" data-t="aGen">Nouvelle clé et nouveau vecteur au hasard</button></div>
+        <label class="f"><span data-t="aMode">Mode</span><select class="t" id="aMode"><option value="cbc">CBC (blocs chaînés, rembourrage PKCS#7)</option><option value="ctr">CTR (compteur, sans rembourrage)</option></select></label>
+        <label class="f"><span data-t="aPt">Message en clair</span><textarea id="aPt" spellcheck="false">Patient fictif : Jean Démo, allergie à la pénicilline.</textarea></label>
+        <h3><span data-t="aCt">Message chiffré</span> <span class="badge" id="aBadge">…</span></h3>
+        <div class="out" id="aCt"></div>
+        <h3 data-t="aDec">Déchiffrement</h3>
+        <div class="out" id="aDec"></div>
+        <div class="row" style="margin-top:8px"><button type="button" class="btn" id="aTamper" data-t="aTamper">Modifier un octet du message chiffré</button></div>
+        <div class="out small" id="aTamperOut" style="margin-top:6px" hidden></div>
+        <p class="hint" data-t="aHint">AES seul ne protège pas contre la modification : un octet changé donne un message abîmé, parfois sans erreur. En pratique on ajoute une authentification (AES-GCM ou un HMAC), non montrée ici.</p>
+      </div>
+      <div class="panel">
+        <h2 data-t="aRoundT">Le premier bloc, tour par tour</h2>
+        <label class="f"><span><span data-t="aStep">Étape</span> : <b id="aStepName"></b></span><input type="range" id="aStep" min="0" max="40" value="0"></label>
+        <div class="states" id="aStates"></div>
+        <p class="hint" data-t="aRoundHint">L'état est une matrice de 4 × 4 octets. Chaque tour applique SubBytes (substitution par la boîte S, calculée ici à partir de l'inverse dans le corps GF(2⁸)), ShiftRows (décalage des lignes), MixColumns (mélange des colonnes) et AddRoundKey (XOR avec la clé du tour). Les octets modifiés par l'étape sont en rouge. Dix tours pour une clé de 128 bits.</p>
+        <h3 data-t="aKeysT">Clés des tours (expansion de la clé)</h3>
+        <div class="tablewrap"><table id="aKeys"></table></div>
+      </div>
+    </section>
+
+    <!-- ===== RSA ===== -->
+    <section class="view grid" id="view-rsa" hidden>
+      <div class="panel">
+        <h2 data-t="rsaT">Génération d'une clé RSA</h2>
+        <div class="row" id="rBits"></div>
+        <dl class="kpis" style="margin-top:12px" id="rKpi"></dl>
+        <div class="tablewrap" style="margin-top:10px"><table id="rKeys"></table></div>
+        <p class="hint" data-t="rsaHint">On tire deux grands nombres premiers p et q (test de Miller-Rabin), puis n = p·q et φ = (p−1)(q−1). La clé publique est (n, e) avec e = 65 537 ; la clé privée d est l'inverse de e modulo φ (algorithme d'Euclide étendu). Tout repose sur un fait : connaître n ne permet pas de retrouver p et q quand n est assez grand.</p>
+      </div>
+      <div class="panel">
+        <h2 data-t="rsaUseT">Chiffrer et signer</h2>
+        <label class="f"><span data-t="rMsg">Message court</span><input class="t" id="rMsg" value="RDV 14h" spellcheck="false"></label>
+        <div class="tablewrap"><table id="rUse"></table></div>
+        <h3><span data-t="rSig">Signature du message</span> <span class="badge" id="rSigBadge">…</span></h3>
+        <div class="out small" id="rSigOut"></div>
+        <label class="f" style="margin-top:10px"><span data-t="rVer">Message reçu (à vérifier avec la signature)</span><input class="t" id="rRecv" value="RDV 14h" spellcheck="false"></label>
+        <p class="hint" data-t="rUseHint">Chiffrer : c = mᵉ mod n (avec la clé publique). Déchiffrer : m = cᵈ mod n. Signer : s = H(m)ᵈ mod n avec la clé privée ; tout le monde peut vérifier avec la clé publique que sᵉ = H(m). Ici sans rembourrage (« RSA manuel ») : en vrai on utilise OAEP pour chiffrer et PSS pour signer.</p>
+      </div>
+      <div class="panel full">
+        <h2 data-t="rAtkT">Casser une clé trop courte</h2>
+        <div class="row"><button type="button" class="btn" id="rAtk" data-t="rAtk">Factoriser n (méthode rho de Pollard)</button><span class="hint" id="rAtkInfo" style="margin:0"></span></div>
+        <div class="out small" id="rAtkOut" style="margin-top:8px"></div>
+        <div class="tablewrap" style="margin-top:10px"><table id="rAtkTable"></table></div>
+        <p class="hint" data-t="rAtkHint">La méthode rho de Pollard trouve un facteur p en environ √p essais : le temps double quand la clé gagne 4 bits. Le tableau extrapole depuis la vitesse mesurée sur ce navigateur. Pour les grandes clés, il existe une méthode bien plus rapide (le crible algébrique), mais elle reste hors de portée pour 2 048 bits : c'est la taille recommandée aujourd'hui.</p>
+      </div>
+    </section>
+
+    <!-- ===== Mots de passe ===== -->
+    <section class="view grid" id="view-pw" hidden>
+      <div class="panel">
+        <h2 data-t="pwT">Force d'un mot de passe</h2>
+        <label class="f"><span data-t="pwIn">Mot de passe à tester (rien n'est envoyé)</span><input class="t" id="pwIn" value="Camille2024!" spellcheck="false" autocomplete="off"></label>
+        <div class="meter"><b id="pwMeter"></b></div>
+        <dl class="kpis" id="pwKpi"></dl>
+        <ul class="issues" id="pwIssues"></ul>
+        <h3 data-t="pwTimeT">Temps moyen pour le trouver par force brute</h3>
+        <div class="tablewrap"><table id="pwTable"></table></div>
+        <p class="hint" data-t="pwHint">Estimation simple : taille de l'alphabet utilisé puissance la longueur, réduite pour les mots de passe courants, les prénoms, les suites (azerty, 1234), les répétitions et le motif « Mot + année + ! ». Vitesses : ordres de grandeur pour une carte graphique récente. Le stockage compte autant que le mot de passe.</p>
+      </div>
+      <div class="panel">
+        <h2 data-t="kdfT">Stocker un mot de passe : sel et hachage lent</h2>
+        <label class="f"><span data-t="kdfSalt">Sel (16 octets au hasard, différent pour chaque utilisateur)</span><input class="t" id="kdfSalt" spellcheck="false"></label>
+        <label class="f"><span><span data-t="kdfIter">Itérations de PBKDF2-HMAC-SHA256</span> : <b id="kdfIterV"></b></span><input type="range" id="kdfIter" min="0" max="5" step="1" value="2"></label>
+        <div class="row"><button type="button" class="btn" id="kdfRun" data-t="kdfRun">Calculer</button><span class="badge" id="kdfBadge">…</span></div>
+        <div class="out" id="kdfOut" style="margin-top:8px"></div>
+        <dl class="kpis" style="margin-top:10px" id="kdfKpi"></dl>
+        <p class="hint" data-t="kdfHint">Un simple SHA-256 du mot de passe se calcule des milliards de fois par seconde sur une carte graphique. PBKDF2 répète le calcul des milliers de fois : la connexion d'un utilisateur prend quelques millisecondes de plus, mais chaque essai de l'attaquant devient des milliers de fois plus cher. Le sel empêche de casser tous les comptes d'un coup avec des tables précalculées. Pour des données de santé, c'est le minimum attendu (avec bcrypt, scrypt ou Argon2).</p>
+      </div>
+    </section>
+
+    <div class="panel note" style="margin-top:20px">
+      <p data-t="note1">Toutes les fonctions sont écrites à la main dans crypto.js : SHA-256 (FIPS 180-4), HMAC, PBKDF2 (RFC 8018), AES-128 (FIPS 197) en modes CBC et CTR, RSA avec les grands entiers du langage (BigInt), test de primalité de Miller-Rabin, Euclide étendu et rho de Pollard. Les résultats sont vérifiés en direct contre Web Crypto, le module de chiffrement du navigateur, et dans les tests contre le module crypto de Node.</p>
+      <p data-t="note2">Ces implémentations ne sont pas protégées contre les attaques par canaux auxiliaires (temps de calcul, cache) et le RSA est sans rembourrage : c'est un outil pour comprendre, pas pour protéger. Rien de ce qui est tapé ne quitte la page.</p>
+    </div>
+  </div>
+
+  <script src="crypto.js"></script>
+  <script>
+  (function () {
+    'use strict';
+    const C = window.Crypto2;
+    const $ = (id) => document.getElementById(id);
+    const subtle = window.crypto && window.crypto.subtle;
+
+    const T = {
+      fr: {
+        back: '← Retour au portfolio', eyebrow: 'Outil de cybersécurité · cryptographie expliquée', title: 'Laboratoire de cryptographie',
+        intro: "SHA-256, AES et RSA écrits à la main, sans bibliothèque, pour voir ce qui se passe à l'intérieur : les tours de calcul, l'état d'AES après chaque étape, la génération d'une clé RSA. Chaque résultat est comparé en direct à celui du module de chiffrement du navigateur (Web Crypto). On voit aussi pourquoi une petite clé RSA se casse en une fraction de seconde, et combien de temps tiendrait un mot de passe face à une attaque. Implémentations pédagogiques : elles ne doivent pas servir à protéger de vraies données.",
+        tHash: 'Hachage SHA-256', tAes: 'Chiffrement AES', tRsa: 'RSA', tPw: 'Mots de passe',
+        hInT: 'Message', hIn: 'Texte à hacher', hHint: "Une empreinte de 256 bits (64 caractères hexadécimaux), quelle que soit la taille du message. Impossible de revenir au message à partir de l'empreinte, et impossible en pratique de trouver deux messages qui ont la même.",
+        avT: 'Effet avalanche', avHint: "On change un seul bit du message (le dernier caractère) : environ la moitié des 256 bits de l'empreinte changent.",
+        rT: "À l'intérieur : les 64 tours sur le premier bloc de 512 bits", rHint: "À chaque tour, les huit registres a à h sont mélangés avec un mot W du message et une constante K (issue des racines cubiques des premiers nombres premiers). Les registres en rouge viennent d'être recalculés (a et e) ; les autres sont décalés d'un cran.",
+        aesT: 'AES-128', aKey: 'Clé (16 octets, hexadécimal)', aIv: "Vecteur d'initialisation / compteur (16 octets)", aGen: 'Nouvelle clé et nouveau vecteur au hasard', aMode: 'Mode', aPt: 'Message en clair', aCt: 'Message chiffré', aDec: 'Déchiffrement',
+        aTamper: 'Modifier un octet du message chiffré', aHint: 'AES seul ne protège pas contre la modification : un octet changé donne un message abîmé, parfois sans erreur. En pratique on ajoute une authentification (AES-GCM ou un HMAC), non montrée ici.',
+        aRoundT: 'Le premier bloc, tour par tour', aStep: 'Étape', aRoundHint: "L'état est une matrice de 4 × 4 octets. Chaque tour applique SubBytes (substitution par la boîte S, calculée ici à partir de l'inverse dans le corps GF(2⁸)), ShiftRows (décalage des lignes), MixColumns (mélange des colonnes) et AddRoundKey (XOR avec la clé du tour). Les octets modifiés par l'étape sont en rouge. Dix tours pour une clé de 128 bits.",
+        aKeysT: 'Clés des tours (expansion de la clé)',
+        rsaT: "Génération d'une clé RSA", rsaHint: "On tire deux grands nombres premiers p et q (test de Miller-Rabin), puis n = p·q et φ = (p−1)(q−1). La clé publique est (n, e) avec e = 65 537 ; la clé privée d est l'inverse de e modulo φ (algorithme d'Euclide étendu). Tout repose sur un fait : connaître n ne permet pas de retrouver p et q quand n est assez grand.",
+        rsaUseT: 'Chiffrer et signer', rMsg: 'Message court', rSig: 'Signature du message', rVer: 'Message reçu (à vérifier avec la signature)',
+        rUseHint: "Chiffrer : c = mᵉ mod n (avec la clé publique). Déchiffrer : m = cᵈ mod n. Signer : s = H(m)ᵈ mod n avec la clé privée ; tout le monde peut vérifier avec la clé publique que sᵉ = H(m). Ici sans rembourrage (« RSA manuel ») : en vrai on utilise OAEP pour chiffrer et PSS pour signer.",
+        rAtkT: 'Casser une clé trop courte', rAtk: 'Factoriser n (méthode rho de Pollard)',
+        rAtkHint: "La méthode rho de Pollard trouve un facteur p en environ √p essais : le temps double quand la clé gagne 4 bits. Le tableau extrapole depuis la vitesse mesurée sur ce navigateur. Pour les grandes clés, il existe une méthode bien plus rapide (le crible algébrique), mais elle reste hors de portée pour 2 048 bits : c'est la taille recommandée aujourd'hui.",
+        pwT: "Force d'un mot de passe", pwIn: "Mot de passe à tester (rien n'est envoyé)", pwTimeT: 'Temps moyen pour le trouver par force brute',
+        pwHint: "Estimation simple : taille de l'alphabet utilisé puissance la longueur, réduite pour les mots de passe courants, les prénoms, les suites (azerty, 1234), les répétitions et le motif « Mot + année + ! ». Vitesses : ordres de grandeur pour une carte graphique récente. Le stockage compte autant que le mot de passe.",
+        kdfT: 'Stocker un mot de passe : sel et hachage lent', kdfSalt: 'Sel (16 octets au hasard, différent pour chaque utilisateur)', kdfIter: 'Itérations de PBKDF2-HMAC-SHA256', kdfRun: 'Calculer',
+        kdfHint: "Un simple SHA-256 du mot de passe se calcule des milliards de fois par seconde sur une carte graphique. PBKDF2 répète le calcul des milliers de fois : la connexion d'un utilisateur prend quelques millisecondes de plus, mais chaque essai de l'attaquant devient des milliers de fois plus cher. Le sel empêche de casser tous les comptes d'un coup avec des tables précalculées. Pour des données de santé, c'est le minimum attendu (avec bcrypt, scrypt ou Argon2).",
+        note1: "Toutes les fonctions sont écrites à la main dans crypto.js : SHA-256 (FIPS 180-4), HMAC, PBKDF2 (RFC 8018), AES-128 (FIPS 197) en modes CBC et CTR, RSA avec les grands entiers du langage (BigInt), test de primalité de Miller-Rabin, Euclide étendu et rho de Pollard. Les résultats sont vérifiés en direct contre Web Crypto, le module de chiffrement du navigateur, et dans les tests contre le module crypto de Node.",
+        note2: "Ces implémentations ne sont pas protégées contre les attaques par canaux auxiliaires (temps de calcul, cache) et le RSA est sans rembourrage : c'est un outil pour comprendre, pas pour protéger. Rien de ce qui est tapé ne quitte la page.",
+        same: '= Web Crypto', diff: '≠ Web Crypto', na: 'Web Crypto indisponible', checkMath: 'vérifié',
+        changed: 'bits changés', share: 'proportion', modified: 'message modifié',
+        steps: { input: 'entrée', addRoundKey: 'AddRoundKey', subBytes: 'SubBytes', shiftRows: 'ShiftRows', mixColumns: 'MixColumns' }, round: 'tour',
+        tampered: 'Octet modifié :', tamperErr: 'Déchiffrement refusé : le rembourrage final n’est plus valide.', tamperOk: 'Déchiffrement sans erreur, mais message abîmé :',
+        badKey: 'Clé ou vecteur invalide : 32 caractères hexadécimaux attendus.',
+        bitsLabel: 'Taille de n', kGen: 'Génération', kBits: 'Bits de n', kE: 'e', kCheck: 'e·d mod φ',
+        uRows: ['Message en octets → entier m', 'Chiffré c = mᵉ mod n', 'Déchiffré cᵈ mod n', 'Texte retrouvé'], tooLong: 'Message trop long pour cette clé (m doit être < n) : prendre une clé plus grande ou un message plus court.',
+        sigOk: 'signature valide', sigKo: 'signature invalide : le message a été modifié',
+        atkOnly: 'Possible ici jusqu’à 72 bits ; au-delà, voir l’estimation.', atkFound: 'Trouvé', atkIn: 'en', atkIters: 'essais', atkFail: 'Pas trouvé dans la limite d’essais.',
+        atkCols: ['Taille de n', 'Essais (≈ √p)', 'Temps estimé'],
+        pwBits: 'Entropie estimée', pwPool: 'Alphabet', pwLen: 'Longueur', pwGuess: 'Essais',
+        flags: { common: 'Mot de passe courant ou prénom fréquent : il figure dans les listes que les attaquants essaient en premier.', repeat: 'Caractère répété plusieurs fois de suite.', sequence: 'Suite de clavier ou de chiffres (azerty, 1234…).', pattern: 'Motif classique « Mot + chiffres + ! » : les outils de cassage le testent tôt.', short: 'Moins de 8 caractères.', words: 'Phrase de mots courants : estimée à environ 11 bits par mot. Bonne idée si les mots sont nombreux et pris au hasard.' },
+        pwGood: 'Aucun défaut repéré.',
+        speedRows: { online: 'Attaque en ligne (site limité à 10 essais/s)', bcrypt: 'Stocké avec bcrypt (coût 10)', pbkdf2: 'Stocké avec PBKDF2 (≈ 600 000 itérations)', sha256: 'Stocké avec un simple SHA-256', md5: 'Stocké avec MD5 (obsolète)' },
+        units: { inst: 'instantané', s: 's', min: 'min', h: 'h', d: 'jours', y: 'ans', ky: 'mille ans', My: 'millions d’années', Gy: 'milliards d’années', more: 'plus que l’âge de l’Univers' },
+        kdfTime: 'Temps de calcul (ce code)', kdfWc: 'Temps (Web Crypto)', kdfSlow: 'Ralentissement de l’attaquant', kdfRate: 'Essais/s (ce code)', computing: 'calcul…',
+      },
+      en: {
+        back: '← Back to portfolio', eyebrow: 'Cybersecurity tool · cryptography explained', title: 'Cryptography lab',
+        intro: "SHA-256, AES and RSA written by hand, with no library, to see what happens inside: the computation rounds, the AES state after each step, the generation of an RSA key. Each result is compared live with the browser's built-in cryptography module (Web Crypto). You can also see why a small RSA key breaks in a fraction of a second, and how long a password would last against an attack. Teaching implementations: they must not be used to protect real data.",
+        tHash: 'SHA-256 hashing', tAes: 'AES encryption', tRsa: 'RSA', tPw: 'Passwords',
+        hInT: 'Message', hIn: 'Text to hash', hHint: 'A 256-bit fingerprint (64 hex characters), whatever the message size. You cannot get back to the message from the fingerprint, and in practice you cannot find two messages with the same one.',
+        avT: 'Avalanche effect', avHint: 'Change a single bit of the message (the last character): about half of the 256 bits of the hash change.',
+        rT: 'Inside: the 64 rounds on the first 512-bit block', rHint: 'At each round, the eight registers a to h are mixed with a message word W and a constant K (from the cube roots of the first primes). Registers in red were just recomputed (a and e); the others shift by one.',
+        aesT: 'AES-128', aKey: 'Key (16 bytes, hex)', aIv: 'Initialisation vector / counter (16 bytes)', aGen: 'New random key and vector', aMode: 'Mode', aPt: 'Plaintext', aCt: 'Ciphertext', aDec: 'Decryption',
+        aTamper: 'Change one byte of the ciphertext', aHint: 'AES alone does not protect against tampering: one changed byte gives a damaged message, sometimes without error. In practice authentication is added (AES-GCM or an HMAC), not shown here.',
+        aRoundT: 'The first block, round by round', aStep: 'Step', aRoundHint: 'The state is a 4 × 4 byte matrix. Each round applies SubBytes (S-box substitution, computed here from the inverse in GF(2⁸)), ShiftRows, MixColumns and AddRoundKey (XOR with the round key). Bytes changed by the step are in red. Ten rounds for a 128-bit key.',
+        aKeysT: 'Round keys (key expansion)',
+        rsaT: 'Generating an RSA key', rsaHint: 'Draw two large primes p and q (Miller-Rabin test), then n = p·q and φ = (p−1)(q−1). The public key is (n, e) with e = 65,537; the private key d is the inverse of e modulo φ (extended Euclid). Everything rests on one fact: knowing n does not reveal p and q when n is large enough.',
+        rsaUseT: 'Encrypt and sign', rMsg: 'Short message', rSig: 'Message signature', rVer: 'Received message (to check against the signature)',
+        rUseHint: 'Encrypt: c = mᵉ mod n (public key). Decrypt: m = cᵈ mod n. Sign: s = H(m)ᵈ mod n with the private key; anyone can check with the public key that sᵉ = H(m). Here without padding ("textbook RSA"): in practice OAEP is used to encrypt and PSS to sign.',
+        rAtkT: 'Breaking a key that is too short', rAtk: "Factor n (Pollard's rho)",
+        rAtkHint: "Pollard's rho finds a factor p in about √p steps: time doubles every 4 extra key bits. The table extrapolates from the speed measured in this browser. For large keys there is a much faster method (the number field sieve), but it remains out of reach for 2,048 bits: the size recommended today.",
+        pwT: 'Password strength', pwIn: 'Password to test (nothing is sent)', pwTimeT: 'Average time to find it by brute force',
+        pwHint: 'Simple estimate: alphabet size to the power of the length, reduced for common passwords, first names, sequences (qwerty, 1234), repetitions and the "Word + year + !" pattern. Speeds: orders of magnitude for a recent graphics card. Storage matters as much as the password.',
+        kdfT: 'Storing a password: salt and slow hashing', kdfSalt: 'Salt (16 random bytes, different for each user)', kdfIter: 'PBKDF2-HMAC-SHA256 iterations', kdfRun: 'Compute',
+        kdfHint: "A plain SHA-256 of the password is computed billions of times per second on a graphics card. PBKDF2 repeats the computation thousands of times: a user's login takes a few more milliseconds, but each attacker guess becomes thousands of times more expensive. The salt prevents cracking all accounts at once with precomputed tables. For health data it is the minimum expected (with bcrypt, scrypt or Argon2).",
+        note1: 'All functions are written by hand in crypto.js: SHA-256 (FIPS 180-4), HMAC, PBKDF2 (RFC 8018), AES-128 (FIPS 197) in CBC and CTR modes, RSA with the language big integers (BigInt), Miller-Rabin primality test, extended Euclid and Pollard rho. Results are checked live against Web Crypto, the browser cryptography module, and in the tests against Node crypto.',
+        note2: 'These implementations are not protected against side-channel attacks (timing, cache) and RSA is unpadded: this is a tool for understanding, not for protecting. Nothing you type leaves the page.',
+        same: '= Web Crypto', diff: '≠ Web Crypto', na: 'Web Crypto unavailable', checkMath: 'checked',
+        changed: 'bits changed', share: 'share', modified: 'modified message',
+        steps: { input: 'input', addRoundKey: 'AddRoundKey', subBytes: 'SubBytes', shiftRows: 'ShiftRows', mixColumns: 'MixColumns' }, round: 'round',
+        tampered: 'Byte changed:', tamperErr: 'Decryption refused: the final padding is no longer valid.', tamperOk: 'Decryption without error, but damaged message:',
+        badKey: 'Invalid key or vector: 32 hex characters expected.',
+        bitsLabel: 'Size of n', kGen: 'Generation', kBits: 'Bits of n', kE: 'e', kCheck: 'e·d mod φ',
+        uRows: ['Message bytes → integer m', 'Ciphertext c = mᵉ mod n', 'Decrypted cᵈ mod n', 'Recovered text'], tooLong: 'Message too long for this key (m must be < n): use a larger key or a shorter message.',
+        sigOk: 'valid signature', sigKo: 'invalid signature: the message was modified',
+        atkOnly: 'Possible here up to 72 bits; beyond, see the estimate.', atkFound: 'Found', atkIn: 'in', atkIters: 'steps', atkFail: 'Not found within the step limit.',
+        atkCols: ['Size of n', 'Steps (≈ √p)', 'Estimated time'],
+        pwBits: 'Estimated entropy', pwPool: 'Alphabet', pwLen: 'Length', pwGuess: 'Guesses',
+        flags: { common: 'Common password or frequent first name: it is in the lists attackers try first.', repeat: 'Character repeated several times in a row.', sequence: 'Keyboard or digit sequence (qwerty, 1234…).', pattern: 'Classic "Word + digits + !" pattern: cracking tools try it early.', short: 'Fewer than 8 characters.', words: 'Passphrase of common words: estimated at about 11 bits per word. A good idea if the words are many and random.' },
+        pwGood: 'No weakness found.',
+        speedRows: { online: 'Online attack (site limited to 10 guesses/s)', bcrypt: 'Stored with bcrypt (cost 10)', pbkdf2: 'Stored with PBKDF2 (≈ 600,000 iterations)', sha256: 'Stored with a plain SHA-256', md5: 'Stored with MD5 (obsolete)' },
+        units: { inst: 'instant', s: 's', min: 'min', h: 'h', d: 'days', y: 'years', ky: 'thousand years', My: 'million years', Gy: 'billion years', more: 'longer than the age of the Universe' },
+        kdfTime: 'Compute time (this code)', kdfWc: 'Time (Web Crypto)', kdfSlow: 'Attacker slowdown', kdfRate: 'Guesses/s (this code)', computing: 'computing…',
+      },
+    };
+    let lang = 'fr';
+    try { lang = localStorage.getItem('lang') || ((navigator.language || 'fr').toLowerCase().startsWith('fr') ? 'fr' : 'en'); } catch (e) {}
+    if (!T[lang]) lang = 'fr';
+    const t = (k) => T[lang][k];
+    const fmt = (v, d = 2) => (Number.isFinite(v) ? v.toLocaleString(lang === 'fr' ? 'fr-FR' : 'en-GB', { maximumFractionDigits: d }) : '—');
+    const esc = (s) => String(s).replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
+    const kpi = (k, v, u, main) => '<div class="kpi' + (main ? ' main' : '') + '"><dt>' + k + '</dt><dd>' + v + (u ? '<small>' + u + '</small>' : '') + '</dd></div>';
+    const badge = (el, ok) => { el.className = 'badge ' + (ok === null ? '' : ok ? 'ok' : 'ko'); el.textContent = ok === null ? t('na') : ok ? '✓ ' + t('same') : '✗ ' + t('diff'); };
+    const hex32 = (v) => (v >>> 0).toString(16).padStart(8, '0');
+    function duration(s) {
+      const U = T[lang].units;
+      if (!Number.isFinite(s) || s > 4.35e17 * 1000) return U.more;
+      if (s < 1) return U.inst;
+      if (s < 60) return fmt(s, 0) + ' ' + U.s;
+      if (s < 3600) return fmt(s / 60, 0) + ' ' + U.min;
+      if (s < 86400) return fmt(s / 3600, 1) + ' ' + U.h;
+      const y = s / 31557600;
+      if (y < 1) return fmt(s / 86400, 0) + ' ' + U.d;
+      if (y < 1e3) return fmt(y, 0) + ' ' + U.y;
+      if (y < 1e6) return fmt(y / 1e3, 0) + ' ' + U.ky;
+      if (y < 1e9) return fmt(y / 1e6, 0) + ' ' + U.My;
+      if (y < 1.38e10) return fmt(y / 1e9, 1) + ' ' + U.Gy;
+      return U.more;
+    }
+
+    // ======================= SHA-256 =======================
+    async function runHash() {
+      const msg = C.utf8($('hIn').value), trace = [];
+      const h = C.sha256(msg, trace), hx = C.toHex(h);
+      $('hOut').textContent = hx;
+      if (subtle) { try { const ref = new Uint8Array(await subtle.digest('SHA-256', msg)); badge($('hBadge'), C.toHex(ref) === hx); } catch (e) { badge($('hBadge'), null); } } else badge($('hBadge'), null);
+      // avalanche : on inverse le bit de poids faible du dernier octet
+      const m2 = msg.length ? msg.slice() : Uint8Array.of(1);
+      if (msg.length) m2[m2.length - 1] ^= 1;
+      const h2 = C.sha256(m2), d = C.bitsDiff(h, h2);
+      $('avMsg').textContent = t('modified') + ' : ' + C.fromUtf8(m2);
+      $('avOut').textContent = C.toHex(h2);
+      $('avKpi').innerHTML = kpi(t('changed'), d + ' / 256', '', true) + kpi(t('share'), fmt((d / 256) * 100, 1), '%');
+      let bits = '';
+      for (let i = 0; i < 256; i++) { const a = (h[i >> 3] >> (7 - (i & 7))) & 1, b = (h2[i >> 3] >> (7 - (i & 7))) & 1; bits += '<i' + (a !== b ? ' class="d"' : '') + '></i>'; }
+      $('avBits').innerHTML = bits;
+      // tableau des tours
+      const show = [0, 1, 2, 3, 4, 5, 6, 7, 31, 32, 60, 61, 62, 63];
+      let tb = '<thead><tr><th>t</th><th>W[t]</th>' + 'abcdefgh'.split('').map((c) => '<th>' + c + '</th>').join('') + '</tr></thead><tbody>';
+      show.forEach((k, idx) => {
+        if (idx && show[idx - 1] !== k - 1) tb += '<tr><td colspan="10" style="color:var(--muted)">…</td></tr>';
+        const r = trace[k];
+        tb += '<tr><td>' + k + '</td><td>' + hex32(r.W) + '</td>' + r.state.map((v, i) => '<td' + (i === 0 || i === 4 ? ' style="color:var(--accent)"' : '') + '>' + hex32(v) + '</td>').join('') + '</tr>';
+      });
+      $('rTable').innerHTML = tb + '</tbody>';
+    }
+    $('hIn').addEventListener('input', runHash);
+
+    // ======================= AES =======================
+    let aesTrace = [];
+    const randHex = (n) => C.toHex(C.randomBytes(n));
+    function getKeyIv() {
+      try { const k = C.fromHex($('aKey').value), v = C.fromHex($('aIv').value); if (k.length !== 16 || v.length !== 16) throw 0; return [k, v]; } catch (e) { return null; }
+    }
+    async function runAes() {
+      const kv = getKeyIv();
+      $('aTamperOut').hidden = true;
+      if (!kv) { $('aCt').textContent = t('badKey'); $('aDec').textContent = ''; return; }
+      const [key, iv] = kv, mode = $('aMode').value, pt = C.utf8($('aPt').value);
+      const ct = mode === 'cbc' ? C.aesCbcEncrypt(key, iv, pt) : C.aesCtr(key, iv, pt);
+      $('aCt').textContent = C.toHex(ct);
+      $('aDec').textContent = C.fromUtf8(mode === 'cbc' ? C.aesCbcDecrypt(key, iv, ct) : C.aesCtr(key, iv, ct));
+      if (subtle) {
+        try {
+          const k = await subtle.importKey('raw', key, mode === 'cbc' ? 'AES-CBC' : 'AES-CTR', false, ['encrypt']);
+          const ref = new Uint8Array(await subtle.encrypt(mode === 'cbc' ? { name: 'AES-CBC', iv } : { name: 'AES-CTR', counter: iv, length: 128 }, k, pt));
+          badge($('aBadge'), C.toHex(ref) === C.toHex(ct));
+        } catch (e) { badge($('aBadge'), null); }
+      } else badge($('aBadge'), null);
+      // premier bloc tour par tour (le bloc réellement chiffré : en CBC, message XOR vecteur)
+      const first = C.pad(pt).slice(0, 16);
+      const blk = mode === 'cbc' ? first.map((x, i) => x ^ iv[i]) : iv.slice();
+      aesTrace = []; C.aesEncryptBlock(blk, C.expandKey(key), aesTrace);
+      $('aStep').max = aesTrace.length - 1;
+      if (+$('aStep').value > aesTrace.length - 1) $('aStep').value = aesTrace.length - 1;
+      showStep();
+      const w = C.expandKey(key);
+      let kt = '<thead><tr><th>' + t('round') + '</th><th>' + (lang === 'fr' ? 'clé du tour' : 'round key') + '</th></tr></thead><tbody>';
+      for (let r = 0; r <= 10; r++) kt += '<tr><td>' + r + '</td><td>' + C.toHex(w.slice(r * 16, r * 16 + 16)) + '</td></tr>';
+      $('aKeys').innerHTML = kt + '</tbody>';
+    }
+    function stateHtml(s, prev) {
+      // affichage ligne par ligne : s[r + 4c]
+      let h = '<div class="state">';
+      for (let r = 0; r < 4; r++) for (let c = 0; c < 4; c++) { const i = r + 4 * c; h += '<span' + (prev && prev[i] !== s[i] ? ' class="ch"' : '') + '>' + s[i].toString(16).padStart(2, '0') + '</span>'; }
+      return h + '</div>';
+    }
+    function showStep() {
+      const i = +$('aStep').value, e = aesTrace[i];
+      if (!e) return;
+      const prev = i ? aesTrace[i - 1] : null;
+      $('aStepName').textContent = (e.step === 'input' ? '' : t('round') + ' ' + e.r + ' · ') + T[lang].steps[e.step];
+      $('aStates').innerHTML = (prev ? '<figure><figcaption>' + (lang === 'fr' ? 'avant' : 'before') + '</figcaption>' + stateHtml(prev.state) + '</figure>' : '') + '<figure><figcaption>' + (lang === 'fr' ? 'après' : 'after') + '</figcaption>' + stateHtml(e.state, prev && prev.state) + '</figure>';
+    }
+    $('aStep').addEventListener('input', showStep);
+    ['aKey', 'aIv', 'aPt'].forEach((id) => $(id).addEventListener('input', runAes));
+    $('aMode').addEventListener('change', runAes);
+    $('aGen').addEventListener('click', () => { $('aKey').value = randHex(16); $('aIv').value = randHex(16); runAes(); });
+    $('aTamper').addEventListener('click', () => {
+      const kv = getKeyIv(); if (!kv) return;
+      const [key, iv] = kv, mode = $('aMode').value, ct = C.fromHex($('aCt').textContent);
+      const pos = Math.floor(Math.random() * ct.length); ct[pos] ^= 1 + Math.floor(Math.random() * 255);
+      const box = $('aTamperOut'); box.hidden = false;
+      try {
+        const out = mode === 'cbc' ? C.aesCbcDecrypt(key, iv, ct) : C.aesCtr(key, iv, ct);
+        box.textContent = t('tampered') + ' ' + pos + '. ' + t('tamperOk') + ' ' + C.fromUtf8(out);
+      } catch (e) { box.textContent = t('tampered') + ' ' + pos + '. ' + t('tamperErr'); }
+    });
+
+    // ======================= RSA =======================
+    let key = null, rsaBits = 256, rhoSpeed = null;
+    function renderBits() {
+      const box = $('rBits'); box.innerHTML = '<span class="hint" style="margin:0">' + t('bitsLabel') + ' :</span>';
+      [32, 48, 64, 128, 256, 512, 1024].forEach((b) => {
+        const el = document.createElement('button'); el.type = 'button'; el.className = 'btn'; el.textContent = b + ' bits'; el.setAttribute('aria-pressed', rsaBits === b);
+        el.addEventListener('click', () => { rsaBits = b; renderBits(); genKey(); }); box.appendChild(el);
+      });
+    }
+    function genKey() {
+      $('rKpi').innerHTML = kpi(t('kGen'), t('computing'), '');
+      setTimeout(() => {
+        const t0 = performance.now(); key = C.rsaKeygen(rsaBits); const dt = performance.now() - t0;
+        const check = (key.e * key.d) % key.phi;
+        $('rKpi').innerHTML = kpi(t('kBits'), key.bits, '', true) + kpi(t('kGen'), fmt(dt, 0), 'ms') + kpi(t('kE'), key.e.toString(), '') + kpi(t('kCheck'), check.toString(), check === 1n ? '✓' : '✗');
+        const rows = [['p', key.p], ['q', key.q], ['n = p·q', key.n], ['φ = (p−1)(q−1)', key.phi], ['d = e⁻¹ mod φ', key.d]];
+        $('rKeys').innerHTML = '<tbody>' + rows.map(([k, v]) => '<tr><td style="white-space:nowrap">' + k + '</td><td style="word-break:break-all">' + v.toString() + '</td></tr>').join('') + '</tbody>';
+        runRsa(); $('rAtkOut').textContent = ''; atkTable();
+        $('rAtk').disabled = rsaBits > 72;
+        $('rAtkInfo').textContent = rsaBits > 72 ? t('atkOnly') : '';
+      }, 20);
+    }
+    function runRsa() {
+      if (!key) return;
+      const bytes = C.utf8($('rMsg').value), m = C.bytesToBig(bytes);
+      let rows;
+      if (m >= key.n) rows = [[t('uRows')[0], m.toString()], ['', t('tooLong')]];
+      else {
+        const c = C.rsaEncrypt(m, key), back = C.rsaDecrypt(c, key);
+        rows = [[t('uRows')[0], m.toString()], [t('uRows')[1], c.toString()], [t('uRows')[2], back.toString()], [t('uRows')[3], C.fromUtf8(C.bigToBytes(back))]];
+      }
+      $('rUse').innerHTML = '<tbody>' + rows.map(([k, v]) => '<tr><td style="white-space:nowrap;vertical-align:top">' + esc(k) + '</td><td style="word-break:break-all">' + esc(v) + '</td></tr>').join('') + '</tbody>';
+      const sig = C.rsaSign(C.utf8($('rMsg').value), key);
+      $('rSigOut').textContent = 's = ' + sig.toString();
+      const ok = C.rsaVerify(C.utf8($('rRecv').value), sig, key);
+      const b = $('rSigBadge'); b.className = 'badge ' + (ok ? 'ok' : 'ko'); b.textContent = ok ? '✓ ' + t('sigOk') : '✗ ' + t('sigKo');
+    }
+    $('rMsg').addEventListener('input', () => { $('rRecv').value = $('rMsg').value; runRsa(); });
+    $('rRecv').addEventListener('input', runRsa);
+    // mesure de la vitesse de rho sur ce navigateur (essais par seconde) avec une clé de 48 bits
+    function measureRho() {
+      if (rhoSpeed) return rhoSpeed;
+      const k = C.rsaKeygen(48), t0 = performance.now(), r = C.pollardRho(k.n, 3e5), dt = (performance.now() - t0) / 1000;
+      rhoSpeed = r ? r.iters / Math.max(dt, 1e-3) : 1e5;
+      return rhoSpeed;
+    }
+    function atkTable() {
+      const sp = measureRho(), cols = t('atkCols');
+      let h = '<thead><tr>' + cols.map((c, i) => '<th' + (i ? ' class="n"' : '') + '>' + c + '</th>').join('') + '</tr></thead><tbody>';
+      [32, 64, 128, 256, 512, 1024, 2048].forEach((b) => {
+        const steps = Math.pow(2, b / 4); // √p avec p ≈ 2^(b/2)
+        h += '<tr' + (b === rsaBits ? ' style="color:var(--accent)"' : '') + '><td>' + b + ' bits</td><td class="n">2^' + b / 4 + '</td><td class="n">' + duration(steps / sp) + '</td></tr>';
+      });
+      $('rAtkTable').innerHTML = h + '</tbody>';
+    }
+    $('rAtk').addEventListener('click', () => {
+      if (!key || rsaBits > 72) return;
+      $('rAtkOut').textContent = t('computing');
+      setTimeout(() => {
+        const t0 = performance.now(), r = C.pollardRho(key.n, 2e7), dt = performance.now() - t0;
+        if (!r) { $('rAtkOut').textContent = t('atkFail'); return; }
+        const p = r.factor, q = key.n / p, phi = (p - 1n) * (q - 1n), d = C.modInv(key.e, phi);
+        $('rAtkOut').textContent = t('atkFound') + ' ' + t('atkIn') + ' ' + fmt(dt, 0) + ' ms (' + fmt(r.iters, 0) + ' ' + t('atkIters') + ') : n = ' + p + ' × ' + q + ' → d = ' + d + (d === key.d ? '  ✓' : '');
+      }, 20);
+    });
+
+    // ======================= Mots de passe =======================
+    function runPw() {
+      const pw = $('pwIn').value, s = C.passwordStrength(pw);
+      $('pwMeter').style.width = Math.min(100, (s.bits / 100) * 100) + '%';
+      $('pwMeter').style.background = s.bits < 40 ? '#c8102e' : s.bits < 70 ? '#e0a458' : '#8fd18f';
+      $('pwKpi').innerHTML = kpi(t('pwBits'), fmt(s.bits, 0), 'bits', true) + kpi(t('pwLen'), [...pw].length, '') + kpi(t('pwPool'), s.pool, '') + kpi(t('pwGuess'), s.bits > 0 ? '2^' + fmt(s.bits, 0) : '1', '');
+      $('pwIssues').innerHTML = s.flags.length ? s.flags.map((f) => '<li>' + esc(T[lang].flags[f]) + '</li>').join('') : '<li class="good">' + t('pwGood') + '</li>';
+      const R = T[lang].speedRows;
+      $('pwTable').innerHTML = '<tbody>' + Object.keys(C.SPEEDS).map((k) => '<tr><td>' + R[k] + '</td><td class="n">' + duration(C.crackSeconds(s.guesses, C.SPEEDS[k])) + '</td></tr>').join('') + '</tbody>';
+    }
+    $('pwIn').addEventListener('input', runPw);
+    const ITERS = [1, 1000, 10000, 50000, 100000, 300000];
+    async function runKdf() {
+      const n = ITERS[+$('kdfIter').value];
+      $('kdfIterV').textContent = fmt(n, 0);
+      let salt; try { salt = C.fromHex($('kdfSalt').value); } catch (e) { salt = C.utf8($('kdfSalt').value); }
+      const pw = C.utf8($('pwIn').value);
+      $('kdfOut').textContent = t('computing'); $('kdfBadge').textContent = '…'; $('kdfBadge').className = 'badge';
+      await new Promise((r) => setTimeout(r, 20));
+      const t0 = performance.now(), dk = C.pbkdf2(pw, salt, n, 32), dt = performance.now() - t0;
+      $('kdfOut').textContent = C.toHex(dk);
+      let wc = null, ok = null;
+      if (subtle) {
+        try {
+          const base = await subtle.importKey('raw', pw, 'PBKDF2', false, ['deriveBits']);
+          const t1 = performance.now();
+          const ref = new Uint8Array(await subtle.deriveBits({ name: 'PBKDF2', salt, iterations: n, hash: 'SHA-256' }, base, 256));
+          wc = performance.now() - t1; ok = C.toHex(ref) === C.toHex(dk);
+        } catch (e) { ok = null; }
+      }
+      badge($('kdfBadge'), ok);
+      $('kdfKpi').innerHTML = kpi(t('kdfTime'), fmt(dt, 0), 'ms') + kpi(t('kdfWc'), wc === null ? '—' : fmt(wc, 1), 'ms') + kpi(t('kdfSlow'), '× ' + fmt(2 * n, 0), '', true) + kpi(t('kdfRate'), fmt(1000 / Math.max(dt, 0.01), 0), '/s');
+    }
+    $('kdfRun').addEventListener('click', runKdf);
+    $('kdfIter').addEventListener('input', () => ($('kdfIterV').textContent = fmt(ITERS[+$('kdfIter').value], 0)));
+
+    // ---------- Onglets et langue ----------
+    function setView(v) {
+      document.querySelectorAll('.tab').forEach((b) => b.setAttribute('aria-selected', b.dataset.view === v));
+      document.querySelectorAll('.view').forEach((s) => (s.hidden = s.id !== 'view-' + v));
+      if (v === 'rsa' && !key) genKey();
+      try { history.replaceState(null, '', '#' + v); } catch (e) {}
+    }
+    document.querySelectorAll('.tab').forEach((b) => b.addEventListener('click', () => setView(b.dataset.view)));
+    function setLang(l) {
+      lang = l; document.documentElement.lang = l;
+      document.querySelectorAll('[data-t]').forEach((el) => { const v = T[l][el.dataset.t]; if (typeof v === 'string') el.textContent = v; });
+      document.querySelectorAll('.lang button').forEach((b) => b.setAttribute('aria-pressed', b.dataset.lang === l));
+      const o = $('aMode').options; o[0].textContent = l === 'fr' ? 'CBC (blocs chaînés, rembourrage PKCS#7)' : 'CBC (chained blocks, PKCS#7 padding)'; o[1].textContent = l === 'fr' ? 'CTR (compteur, sans rembourrage)' : 'CTR (counter, no padding)';
+      try { localStorage.setItem('lang', l); } catch (e) {}
+      runHash(); runAes(); runPw(); renderBits(); if (key) { runRsa(); atkTable(); } $('kdfIterV').textContent = fmt(ITERS[+$('kdfIter').value], 0);
+    }
+    document.querySelectorAll('.lang button').forEach((b) => b.addEventListener('click', () => setLang(b.dataset.lang)));
+    $('aKey').value = randHex(16); $('aIv').value = randHex(16); $('kdfSalt').value = randHex(16);
+    setLang(lang);
+    const h0 = (location.hash || '').slice(1);
+    if (['hash', 'aes', 'rsa', 'pw'].includes(h0)) setView(h0);
+    runKdf();
+  })();
+  </script>
+</body>
+</html>
