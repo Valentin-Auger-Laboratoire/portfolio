@@ -88,6 +88,7 @@
         <button class="filter" data-filter="electronique" data-i18n="tag.electronics">Électronique</button>
         <button class="filter" data-filter="mecanique" data-i18n="tag.mechanics">Mécanique</button>
         <button class="filter" data-filter="robotique" data-i18n="tag.robotics">Robotique</button>
+        <button class="filter" data-filter="automatique" data-i18n="tag.control">Automatique</button>
         <button class="filter" data-filter="ia" data-i18n="tag.ai">IA</button>
         <button class="filter" data-filter="web" data-i18n="tag.web">Web</button>
       </div>
@@ -310,6 +311,23 @@
             <span class="card-links">
               <a class="card-link card-link--secondary" href="https://github.com/Valentin-Auger-Laboratoire/bras-robotique" target="_blank" rel="noopener" data-i18n="projects.code">Voir le code ↗</a>
               <a class="card-link" href="outils/bras-robotique/index.html" data-i18n="projects.tool">Essayer l'outil ↗</a>
+            </span>
+          </div>
+        </article>
+        <article class="project-card project-card--wide" data-tags="automatique sante web">
+          <div class="card-media"><img src="assets/projets/regulateur-pid.jpg" alt="Régulateur PID appliqué à une couveuse : réglages, réponse en température, commande de chauffe et marges de stabilité" data-i18n-attr="alt:p27.img" width="960" height="600" loading="lazy" decoding="async"></div>
+          <div class="card-top">
+            <span class="card-type" data-i18n="tag.control">Automatique</span>
+            <span class="card-date" data-i18n="p27.date">Nov. 2026</span>
+          </div>
+          <h3 data-i18n="p27.title">Régulateur PID : moteur, couveuse de néonatologie et axe de robot</h3>
+          <p data-i18n="p27.desc">Simulateur de régulation sur trois systèmes : la vitesse d'un moteur à courant continu, la température d'une couveuse (avec retard pur) et la position d'un axe de robot. On règle P, I et D et on voit la réponse à un changement de consigne puis à une perturbation (charge, porte de la couveuse ouverte), avec la commande limitée comme sur un vrai système. Dépassement, temps de réponse, erreur statique, diagrammes de Bode, marges de phase et de gain, réglages de Ziegler-Nichols et IMC, anti-emballement de l'intégrale. Tests comparés aux solutions exactes, dont le gain critique de la couveuse.</p>
+          <ul class="tags"><li>PID</li><li>Bode / marges</li><li>Ziegler-Nichols</li><li>Runge-Kutta 4</li><li>JavaScript</li></ul>
+          <div class="card-foot">
+            <span class="card-context" data-i18n="projects.contextTool">Outil web · projet personnel</span>
+            <span class="card-links">
+              <a class="card-link card-link--secondary" href="https://github.com/Valentin-Auger-Laboratoire/regulateur-pid" target="_blank" rel="noopener" data-i18n="projects.code">Voir le code ↗</a>
+              <a class="card-link" href="outils/regulateur-pid/index.html" data-i18n="projects.tool">Essayer l'outil ↗</a>
             </span>
           </div>
         </article>
