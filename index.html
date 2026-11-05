@@ -335,6 +335,23 @@
             </span>
           </div>
         </article>
+        <article class="project-card project-card--wide" data-tags="electronique sante automatique">
+          <div class="card-media"><img src="assets/projets/balneotherapie-connectee.jpg" alt="Montage de la balnéothérapie connectée (Arduino, relais, résistance chauffante) et simulation du bassin régulé entre 32 et 36 °C avec l'écran du téléphone" data-i18n-attr="alt:p33.img" width="960" height="600" loading="lazy" decoding="async"></div>
+          <div class="card-top">
+            <span class="card-type" data-i18n="tag.electronics">Électronique</span>
+            <span class="card-date" data-i18n="p33.date">Avril 2023</span>
+          </div>
+          <h3 data-i18n="p33.title">Balnéothérapie connectée : température de l'eau régulée et suivie sur smartphone</h3>
+          <p data-i18n="p33.desc">Surveiller l'eau d'un bassin de balnéothérapie : une sonde DS18B20 mesure la température, l'Arduino commande la résistance chauffante par un relais et envoie la mesure en Bluetooth vers une appli App Inventor. 48 vraies mesures reçues sur le téléphone. Relu en 2026 : sonde débranchée = −127 °C, donc chauffe permanente ; seuil à 20 °C au lieu de l'hystérésis 32 / 36 °C prévue ; appli qui lisait un entier alors que l'Arduino envoie du texte. La démo rejoue mon programme de 2023 face à une version corrigée, avec défauts à provoquer.</p>
+          <ul class="tags"><li>Arduino</li><li>DS18B20</li><li>Bluetooth</li><li>App Inventor</li><li>JavaScript</li></ul>
+          <div class="card-foot">
+            <span class="card-context" data-i18n="projects.contextSti2dTle">Projet de terminale · STI2D, option SIN</span>
+            <span class="card-links">
+              <a class="card-link card-link--secondary" href="https://github.com/Valentin-Auger-Laboratoire/balneotherapie-connectee" target="_blank" rel="noopener" data-i18n="projects.code">Voir le code ↗</a>
+              <a class="card-link" href="demos/balneotherapie/index.html" data-i18n="projects.demo">Essayer la démo ↗</a>
+            </span>
+          </div>
+        </article>
         <article class="project-card project-card--wide" data-tags="automatique sante web">
           <div class="card-media"><img src="assets/projets/regulateur-pid.jpg" alt="Régulateur PID appliqué à une couveuse : réglages, réponse en température, commande de chauffe et marges de stabilité" data-i18n-attr="alt:p27.img" width="960" height="600" loading="lazy" decoding="async"></div>
           <div class="card-top">
