@@ -368,6 +368,7 @@ main { max-width: var(--maxw); margin: 0 auto; padding: 0 16px; }
   .timeline li { grid-template-columns: 76px 1fr; gap: 14px; }
   .timeline li::before { left: -25px; top: 18px; }
   .tl-logo { width: 76px; height: 48px; padding: 4px 6px; }
+  .timeline-exp li { grid-template-columns: 1fr; }
   .timeline-exp li::before { top: 6px; }
     .topbar { justify-content: flex-end; }
   .lang-switch { right: auto; left: 16px; }
