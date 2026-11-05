@@ -419,6 +419,23 @@
             </span>
           </div>
         </article>
+        <article class="project-card project-card--wide" data-tags="electronique mecanique automatique">
+          <div class="card-media"><img src="assets/projets/generatrice-eolienne-arduino.jpg" alt="Boîtier remodelé sous SolidWorks avec le relais et la breadboard, et la tension alternative de la génératrice lue par les programmes de 2024 et de 2026" data-i18n-attr="alt:p38.img" width="960" height="600" loading="lazy" decoding="async"></div>
+          <div class="card-top">
+            <span class="card-type" data-i18n="tag.electronics">Électronique</span>
+            <span class="card-date" data-i18n="p38.date">Juil. 2024</span>
+          </div>
+          <h3 data-i18n="p38.title">Génératrice d'éolienne surveillée par Arduino : boîtier SolidWorks et mesure de la tension</h3>
+          <p data-i18n="p38.desc">Une petite éolienne entraîne une génératrice à aimants et bobine ; un Arduino mesure la tension produite et, quand elle suffit, ferme un relais qui allume une LED. J'ai remodelé sous SolidWorks un boîtier existant pour y loger la carte, le relais et la breadboard : logements, trous de vis et inserts placés selon chaque composant. Vérifié en 2026 : sans hystérésis, le relais claquait (608 commutations en 2 min en simulation, 30 avec la version corrigée) et l'entrée A0 recevait une tension alternative qui dépassait 5 V ; ajout d'un pont de diodes, d'un lissage, d'un pont diviseur et d'une diode Zener. À 5 m/s, une hélice de 20 cm récupère environ 0,5 W. La démo fait tourner les deux programmes sur le même vent simulé.</p>
+          <ul class="tags"><li>SolidWorks</li><li>Arduino</li><li>Relais</li><li>Hystérésis</li><li>JavaScript</li></ul>
+          <div class="card-foot">
+            <span class="card-context" data-i18n="projects.contextPerso">Projet personnel · CPGE TSI</span>
+            <span class="card-links">
+              <a class="card-link card-link--secondary" href="https://github.com/Valentin-Auger-Laboratoire/generatrice-eolienne-arduino" target="_blank" rel="noopener" data-i18n="projects.code">Voir le code ↗</a>
+              <a class="card-link" href="demos/eolienne/index.html" data-i18n="projects.demo">Essayer la démo ↗</a>
+            </span>
+          </div>
+        </article>
         <article class="project-card project-card--wide" data-tags="automatique sante web">
           <div class="card-media"><img src="assets/projets/regulateur-pid.jpg" alt="Régulateur PID appliqué à une couveuse : réglages, réponse en température, commande de chauffe et marges de stabilité" data-i18n-attr="alt:p27.img" width="960" height="600" loading="lazy" decoding="async"></div>
           <div class="card-top">
