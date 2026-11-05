@@ -1,0 +1,365 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Éolienne et Arduino</title>
+  <meta name="description" content="Génératrice d'éolienne surveillée par un Arduino : programme de 2024 (relais qui claque) et version 2026 (redressement, lissage, hystérésis), puissance du vent.">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --bg: #0c0c0d; --panel: #161618; --border: #262628; --border-hi: #3a3a3d;
+      --text: #f2f2f2; --dim: #9b9b9f; --muted: #6c6c70; --accent: #c8102e; --line: #c9c9cc; --warn: #e0a458; --ok: #8fd18f;
+      --mono: "JetBrains Mono", ui-monospace, monospace; --sans: "Inter", system-ui, sans-serif;
+      color-scheme: dark;
+    }
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    body { background: var(--bg); color: var(--text); font-family: var(--sans); line-height: 1.55; -webkit-font-smoothing: antialiased; }
+    .wrap { max-width: 1280px; margin: 0 auto; padding: 24px 16px 48px; }
+    .top { display: flex; justify-content: space-between; align-items: center; gap: 12px; flex-wrap: wrap; margin-bottom: 24px; }
+    .back { font-size: 0.9rem; color: var(--dim); text-decoration: none; }
+    .back:hover { color: var(--accent); }
+    .lang { display: flex; border: 1px solid var(--border-hi); }
+    .lang button { font: 500 0.78rem var(--mono); letter-spacing: .05em; background: none; color: var(--dim); border: 0; padding: 5px 10px; cursor: pointer; }
+    .lang button + button { border-left: 1px solid var(--border-hi); }
+    .lang button[aria-pressed="true"] { background: var(--text); color: var(--bg); }
+    .eyebrow { font: 500 0.82rem var(--mono); color: var(--accent); letter-spacing: .04em; }
+    h1 { font-size: clamp(1.6rem, 3.4vw, 2.3rem); line-height: 1.15; margin: 6px 0 10px; text-wrap: balance; }
+    .intro { color: var(--dim); max-width: 82ch; }
+    .intro a { color: var(--line); }
+    .warnbox { border: 1px solid #4a3a20; background: #1a160f; color: var(--warn); border-radius: 6px; padding: 8px 12px; font-size: 0.84rem; margin-top: 12px; }
+    .grid { display: grid; grid-template-columns: 320px minmax(0, 1fr); gap: 20px; align-items: start; margin-top: 20px; }
+    .stack { display: grid; gap: 16px; min-width: 0; }
+    .panel { background: var(--panel); border: 1px solid var(--border); border-radius: 8px; padding: 16px; min-width: 0; }
+    h2 { font: 600 0.78rem var(--mono); letter-spacing: .12em; text-transform: uppercase; color: var(--dim); margin-bottom: 12px; }
+    h3 { font: 600 0.72rem var(--mono); letter-spacing: .08em; text-transform: uppercase; color: var(--dim); margin: 14px 0 10px; padding-top: 12px; border-top: 1px solid var(--border); }
+    button:focus-visible, input:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+    .btn { font: 500 0.82rem var(--sans); background: none; color: var(--text); border: 1px solid var(--border-hi); border-radius: 6px; padding: 6px 11px; cursor: pointer; white-space: nowrap; }
+    .btn:hover { border-color: var(--accent); color: var(--accent); }
+    .btn[aria-pressed="true"] { border-color: var(--accent); color: var(--accent); }
+    .btn.primary { background: var(--accent); border-color: var(--accent); color: #fff; }
+    .seg { display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 10px; }
+    .ctl { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 2px 10px; margin-bottom: 10px; }
+    .ctl label { font: 500 0.76rem var(--mono); color: var(--dim); }
+    .ctl output { font: 0.8rem var(--mono); font-variant-numeric: tabular-nums; text-align: right; }
+    .ctl input[type=range] { grid-column: 1 / -1; width: 100%; accent-color: var(--accent); }
+    .lab { font: 500 0.74rem var(--mono); color: var(--dim); margin: 2px 0 6px; }
+    .hint { font-size: 0.8rem; color: var(--dim); margin-top: 8px; }
+    .kpis { display: grid; grid-template-columns: repeat(6, minmax(0, 1fr)); gap: 10px; }
+    .kpi { border: 1px solid var(--border); border-radius: 6px; padding: 8px 10px; min-width: 0; }
+    .kpi dt { font: 0.66rem var(--mono); color: var(--dim); }
+    .kpi dd { font: 600 1.02rem var(--sans); font-variant-numeric: tabular-nums; margin-top: 2px; }
+    .kpi dd small { font: 400 0.7rem var(--mono); color: var(--dim); margin-left: 3px; }
+    .kpi.bad dd { color: #ff8a8a; } .kpi.good dd { color: var(--ok); }
+    canvas#table { width: 100%; aspect-ratio: 240 / 150; display: block; border: 1px solid var(--border); border-radius: 6px; background: #0a0a0b; margin-top: 12px; cursor: crosshair; touch-action: none; }
+    .controls { display: flex; gap: 8px; flex-wrap: wrap; align-items: center; margin-top: 10px; font: 0.78rem var(--mono); color: var(--dim); }
+    .row2 { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 16px; }
+    .pins { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 6px; font: 0.74rem var(--mono); }
+    .pin { border: 1px solid var(--border); border-radius: 5px; padding: 5px 7px; min-width: 0; }
+    .pin b { display: block; color: var(--dim); font-weight: 500; font-size: 0.68rem; }
+    .pin span { font-variant-numeric: tabular-nums; }
+    .pin.hi { border-color: var(--accent); } .pin.hi span { color: #ff8a8a; }
+    .serial { font: 0.74rem/1.45 var(--mono); background: #0a0a0b; border: 1px solid var(--border); border-radius: 6px; padding: 8px 10px; height: 172px; overflow: hidden; color: var(--line); white-space: pre; }
+    .serial .t { color: var(--muted); }
+    .serial .w { color: #ff8a8a; }
+    .state { font: 0.8rem var(--mono); color: var(--dim); margin-top: 8px; }
+    .state b { color: var(--text); font-weight: 500; }
+    table { width: 100%; border-collapse: collapse; font: 0.8rem var(--mono); font-variant-numeric: tabular-nums; }
+    th, td { text-align: left; padding: 6px 8px; border-bottom: 1px solid var(--border); }
+    td.n, th.n { text-align: right; }
+    th { color: var(--dim); font-weight: 500; }
+    td.bad { color: #ff8a8a; } td.good { color: var(--ok); }
+    .tablewrap { overflow-x: auto; }
+    ol.review { padding-left: 1.2em; display: grid; gap: 6px; font-size: 0.86rem; color: var(--dim); }
+    ol.review b { color: var(--text); font-weight: 600; }
+    .note { font-size: 0.82rem; color: var(--dim); }
+    .note p + p { margin-top: 6px; }
+    canvas#scene { width: 100%; height: 250px; display: block; border: 1px solid var(--border); border-radius: 6px; background: #0a0a0b; margin-top: 12px; }
+    .chart p { font: 0.72rem var(--mono); color: var(--dim); margin-bottom: 4px; display: flex; gap: 10px; flex-wrap: wrap; }
+    .chart p i { display: inline-block; width: 12px; height: 2px; vertical-align: 3px; margin-right: 5px; }
+    .chart canvas { width: 100%; display: block; border: 1px solid var(--border); border-radius: 6px; background: #0a0a0b; }
+    canvas#scope { height: 210px; } canvas#timeline { height: 150px; }
+    tr.sel td { background: #1d1d20; color: var(--text); }
+    #clock { margin-left: auto; font-variant-numeric: tabular-nums; }
+    @media (max-width: 1000px) { .grid { grid-template-columns: minmax(0, 1fr); } .main-col { order: -1; } }
+    @media (max-width: 660px) { canvas#scene { height: 360px; } }
+    @media (max-width: 760px) { .kpis { grid-template-columns: repeat(3, minmax(0, 1fr)); } .row2 { grid-template-columns: minmax(0, 1fr); } .pins { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+  </style>
+</head>
+<body>
+  <div class="wrap">
+    <div class="top">
+      <a class="back" href="../../index.html#projets" data-t="back">← Retour au portfolio</a>
+      <div class="lang" role="group" aria-label="Langue / Language"><button type="button" data-lang="fr">FR</button><button type="button" data-lang="en">EN</button></div>
+    </div>
+    <p class="eyebrow" data-t="eyebrow">Démo · projet personnel, CPGE TSI (juillet 2024)</p>
+    <h1 data-t="title">Génératrice d'éolienne surveillée par Arduino</h1>
+    <p class="intro" data-t="intro"></p>
+    <p class="warnbox" data-t="warn"></p>
+    <div class="grid">
+      <div class="stack"><div class="panel" id="ctl"></div></div>
+      <div class="stack main-col">
+        <div class="panel">
+          <dl class="kpis" id="kpis"></dl>
+          <canvas id="scene" aria-label="Éolienne, génératrice, Arduino et relais"></canvas>
+          <div class="controls">
+            <button type="button" class="btn primary" id="play">Pause</button>
+            <button type="button" class="btn" id="reset" data-t="reset">Recommencer</button>
+            <span data-t="speedL">Vitesse</span><span class="seg" id="speeds" style="margin:0"></span><span id="clock"></span>
+          </div>
+        </div>
+        <div class="panel">
+          <div class="chart"><p><span><i style="background:#6c6c70"></i><span data-t="lgU">tension alternative de la génératrice</span></span><span><i style="background:var(--warn)"></i><span data-t="lgS24">lectures de 2024 (toutes les 100 ms)</span></span><span><i style="background:var(--accent)"></i><span data-t="lgVc">2026 : après redressement et lissage</span></span><span data-t="lgWin">dernière seconde</span></p><canvas id="scope"></canvas></div>
+          <div class="chart" style="margin-top:12px"><p><span><i style="background:var(--warn)"></i><span data-t="lgR24">relais 2024</span></span><span><i style="background:var(--accent)"></i><span data-t="lgR26">relais 2026</span></span><span><i style="background:var(--line)"></i><span data-t="lgWind">vent (m/s)</span></span><span data-t="lgWin30">30 dernières secondes</span></p><canvas id="timeline"></canvas></div>
+        </div>
+        <div class="panel row2">
+          <div><h2 data-t="ser24">Moniteur série · programme 2024</h2><div class="serial" id="s24"></div></div>
+          <div><h2 data-t="ser26">Moniteur série · programme 2026 (CSV)</h2><div class="serial" id="s26"></div></div>
+        </div>
+        <div class="panel"><h2 data-t="cmpT">Les deux programmes sur 120 s de vent</h2><div class="tablewrap"><table id="cmp"></table></div><p class="hint" data-t="cmpHint"></p></div>
+        <div class="panel"><h2 data-t="pwT">Puissance récupérable : P = ½·ρ·S·v³·Cₚ</h2><div id="pw"></div><dl class="kpis" id="pwk" style="margin-top:10px"></dl><p class="hint" data-t="pwHint"></p></div>
+        <div class="panel"><h2 data-t="revT">Ce que montre la vérification de 2026</h2><ol class="review" id="review"></ol></div>
+      </div>
+    </div>
+    <div class="panel note" style="margin-top:20px">
+      <p data-t="note1"></p>
+      <p><a href="https://github.com/Valentin-Auger-Laboratoire/generatrice-eolienne-arduino" target="_blank" rel="noopener" style="color:var(--line)"><span data-t="repo">Dépôt : boîtier SolidWorks, code 2024 et 2026, simulation</span> ↗</a></p>
+    </div>
+  </div>
+  <script src="eolienne.js"></script>
+  <script>
+  (function () {
+    'use strict';
+    const E = window.Eolienne;
+    const $ = (id) => document.getElementById(id);
+    const T = {
+      fr: {
+        back: '← Retour au portfolio', eyebrow: 'Démo · projet personnel, CPGE TSI (juillet 2024)', title: "Génératrice d'éolienne surveillée par Arduino",
+        intro: "Une petite éolienne entraîne une génératrice à aimants et bobine ; l'Arduino mesure la tension et, quand elle suffit, ferme un relais qui allume une LED. Les deux programmes tournent ici côte à côte, sur le même vent : celui de 2024 (génératrice directement sur A0, seuil 100/1023, lecture toutes les 100 ms) et celui de 2026 (redresseur, pont diviseur, moyenne glissante, hystérésis 3,0 / 2,5 V, 2 s minimum entre deux commutations).",
+        warn: "Simulation : la génératrice (0,9 V crête et 4 Hz par m/s) et le vent en rafales sont des hypothèses, les mêmes que dans simulation.py du dépôt. Le comportement des deux programmes, lui, reprend exactement leur code. Ralentir la vitesse permet de voir la sinusoïde et les instants de lecture.",
+        reset: 'Recommencer', speedL: 'Vitesse', play: 'Lecture', pause: 'Pause',
+        windT: 'Vent', mode: { rafales: 'Rafales', constant: 'Vent constant' }, meanL: 'Vent moyen', gustL: 'Force des rafales',
+        pwCtl: 'Hélice', DL: 'Diamètre', CpL: 'Rendement Cₚ',
+        kWind: 'Vent', kU: 'Crête génératrice', kCh24: 'Commutations 2024', kCh26: 'Commutations 2026', kOver: 'A0 > 5 V (2024)', kM26: 'Moyenne 2026',
+        lgU: 'tension alternative de la génératrice', lgS24: 'lectures de 2024 (toutes les 100 ms)', lgVc: '2026 : après redressement et lissage', lgWin: 'dernière seconde',
+        lgR24: 'relais 2024', lgR26: 'relais 2026', lgWind: 'vent (m/s)', lgWin30: '30 dernières secondes',
+        ser24: 'Moniteur série · programme 2024', ser26: 'Moniteur série · programme 2026 (CSV)',
+        cmpT: 'Les deux programmes sur 120 s de vent', cmpHead: ['Vent', 'Commutations 2024', 'Commutations 2026', 'A0 au-dessus de 5 V (2024)'],
+        cmpHint: 'Même vent pour les deux programmes. Le vent moyen 5 m/s avec rafales est exactement le cas de simulation.py : 608 contre 30 commutations.',
+        rafales: 'rafales', constant: 'constant',
+        pwT: 'Puissance récupérable : P = ½·ρ·S·v³·Cₚ', pwHint: 'Comparaison : une LED consomme environ 40 mW ; l’Arduino et la bobine du relais, plus de 0,5 W sous 5 V. C’est pourquoi l’éolienne est mesurée, pas utilisée pour alimenter la carte. Le vent compte au cube.',
+        kP: 'Puissance du vent récupérée', kLed: 'LED (40 mW)', kArd: 'Arduino + relais (≈ 0,6 W)', ok: 'suffisant', ko: 'insuffisant',
+        relay: 'relais', open: 'ouvert', closed: 'fermé', clicks: 'commutations',
+        revT: 'Ce que montre la vérification de 2026',
+        review: [
+          ['Le relais claque.', 'Sans hystérésis, une génératrice alternative fait passer la lecture au-dessus et au-dessous du seuil sans arrêt : 608 commutations en 2 minutes avec le programme de 2024, contre 30 avec celui de 2026.'],
+          ['L’entrée A0 n’est pas protégée.', 'Branchée en direct, la génératrice dépasse 5 V pendant 7 % du temps à 5 m/s, et ses alternances négatives sortent aussi des limites de l’entrée. En 2026 : pont de diodes, condensateur, pont diviseur 33 k / 10 k et Zener 5,1 V.'],
+          ['Effet stroboscopique.', 'À vent constant, la lecture toutes les 100 ms peut tomber toujours au même point de la sinusoïde (à 5 m/s, 20 Hz : exactement deux périodes entre deux lectures). La mesure devient alors arbitraire : elle dépend de la phase, pas de l’énergie produite.'],
+          ['Qui commande qui.', 'Le schéma de 2024 faisait passer le courant de la génératrice dans le relais ; en réalité c’est l’Arduino qui le commande, comme le faisait déjà le code. La LED sur NO a aussi besoin du +5 V sur COM.'],
+          ['Puissance.', 'Une hélice de 20 cm à 5 m/s récupère environ 0,5 W : assez pour une LED, pas pour la carte. Le vent comptant au cube, à 10 m/s on récupère 8 fois plus.'],
+        ],
+        note1: "Modèle : u(t) = 0,9·v·sin φ, avec dφ/dt = 2π·4·v (v en m/s) ; vent = moyenne + somme de 8 sinusoïdes lentes (les mêmes que simulation.py, graine 2024). 2024 : CAN 10 bits sur 0–5 V, tensions négatives lues 0. 2026 : chute de 1,4 V dans le pont de diodes, charge rapide puis décharge du condensateur (τ = 0,2 s), A0 = U·10/43. Pas de 0,5 ms.",
+        repo: 'Dépôt : boîtier SolidWorks, code 2024 et 2026, simulation',
+      },
+      en: {
+        back: '← Back to portfolio', eyebrow: 'Demo · personal project, CPGE TSI (July 2024)', title: 'Wind-turbine generator monitored by Arduino',
+        intro: 'A small wind turbine drives a magnet-and-coil generator; the Arduino measures the voltage and, when it is high enough, closes a relay that lights an LED. Both programs run side by side here on the same wind: the 2024 one (generator straight on A0, 100/1023 threshold, one reading every 100 ms) and the 2026 one (rectifier, voltage divider, moving average, 3.0 / 2.5 V hysteresis, at least 2 s between switchings).',
+        warn: 'Simulation: the generator (0.9 V peak and 4 Hz per m/s) and the gusty wind are assumptions, the same as in the repository’s simulation.py. The behaviour of both programs follows their code exactly. Slowing down shows the sine wave and the reading instants.',
+        reset: 'Restart', speedL: 'Speed', play: 'Play', pause: 'Pause',
+        windT: 'Wind', mode: { rafales: 'Gusts', constant: 'Steady wind' }, meanL: 'Mean wind', gustL: 'Gust strength',
+        pwCtl: 'Rotor', DL: 'Diameter', CpL: 'Efficiency Cₚ',
+        kWind: 'Wind', kU: 'Generator peak', kCh24: '2024 switchings', kCh26: '2026 switchings', kOver: 'A0 > 5 V (2024)', kM26: '2026 average',
+        lgU: 'generator AC voltage', lgS24: '2024 readings (every 100 ms)', lgVc: '2026: after rectifying and smoothing', lgWin: 'last second',
+        lgR24: '2024 relay', lgR26: '2026 relay', lgWind: 'wind (m/s)', lgWin30: 'last 30 seconds',
+        ser24: 'Serial monitor · 2024 program', ser26: 'Serial monitor · 2026 program (CSV)',
+        cmpT: 'Both programs over 120 s of wind', cmpHead: ['Wind', '2024 switchings', '2026 switchings', 'A0 above 5 V (2024)'],
+        cmpHint: 'Same wind for both programs. A 5 m/s mean wind with gusts is exactly the simulation.py case: 608 versus 30 switchings.',
+        rafales: 'gusts', constant: 'steady',
+        pwT: 'Recoverable power: P = ½·ρ·S·v³·Cₚ', pwHint: 'For comparison: an LED draws about 40 mW; the Arduino and the relay coil more than 0.5 W at 5 V. That is why the turbine is measured, not used to power the board. Wind counts cubed.',
+        kP: 'Wind power recovered', kLed: 'LED (40 mW)', kArd: 'Arduino + relay (≈ 0.6 W)', ok: 'enough', ko: 'not enough',
+        relay: 'relay', open: 'open', closed: 'closed', clicks: 'switchings',
+        revT: 'What the 2026 check shows',
+        review: [
+          ['The relay chatters.', 'With no hysteresis, an AC generator keeps pushing the reading above and below the threshold: 608 switchings in 2 minutes with the 2024 program, versus 30 with the 2026 one.'],
+          ['Input A0 is not protected.', 'Wired directly, the generator exceeds 5 V for 7 % of the time at 5 m/s, and its negative half-waves also leave the input limits. In 2026: diode bridge, capacitor, 33 k / 10 k divider and a 5.1 V Zener.'],
+          ['Stroboscopic effect.', 'With a steady wind, reading every 100 ms can always land on the same point of the sine wave (at 5 m/s, 20 Hz: exactly two periods between readings). The measurement then depends on the phase, not on the energy produced.'],
+          ['Who drives what.', 'The 2024 diagram ran the generator current through the relay; in fact the Arduino drives it, as the code already did. The LED on NO also needs +5 V on COM.'],
+          ['Power.', 'A 20 cm rotor at 5 m/s recovers about 0.5 W: enough for an LED, not for the board. Wind counts cubed: at 10 m/s you get 8 times more.'],
+        ],
+        note1: 'Model: u(t) = 0.9·v·sin φ, with dφ/dt = 2π·4·v (v in m/s); wind = mean + sum of 8 slow sine waves (the same as simulation.py, seed 2024). 2024: 10-bit ADC over 0–5 V, negative voltages read as 0. 2026: 1.4 V drop in the diode bridge, fast charge then capacitor discharge (τ = 0.2 s), A0 = U·10/43. 0.5 ms step.',
+        repo: 'Repository: SolidWorks enclosure, 2024 and 2026 code, simulation',
+      },
+    };
+    let lang = 'fr';
+    try { lang = localStorage.getItem('lang') || ((navigator.language || 'fr').toLowerCase().startsWith('fr') ? 'fr' : 'en'); } catch (e) {}
+    if (!T[lang]) lang = 'fr';
+    const t = (k) => T[lang][k];
+    const fmt = (v, d = 1) => (Number.isFinite(v) ? v.toLocaleString(lang === 'fr' ? 'fr-FR' : 'en-GB', { maximumFractionDigits: d, minimumFractionDigits: d }) : '—');
+    const kpi = (k, v, u, cls) => '<div class="kpi' + (cls ? ' ' + cls : '') + '"><dt>' + k + '</dt><dd>' + v + (u ? '<small>' + u + '</small>' : '') + '</dd></div>';
+    const S = { mode: 'rafales', mean: 5, gust: 1, speed: 1, D: 0.2, Cp: 0.2 };
+    let sim = null, running = true, scope = [], tl = [], samples24 = [];
+    function opts() { return { mean: S.mean, gust: S.mode === 'rafales' ? S.gust : 0 }; }
+    function reset() { sim = E.createSim(opts()); scope = []; tl = []; samples24 = []; ui(); }
+    function canvas(id) {
+      const cv = $(id), dpr = window.devicePixelRatio || 1, w = cv.clientWidth, h = cv.clientHeight;
+      if (cv.width !== Math.round(w * dpr) || cv.height !== Math.round(h * dpr)) { cv.width = Math.round(w * dpr); cv.height = Math.round(h * dpr); }
+      const c = cv.getContext('2d'); c.setTransform(dpr, 0, 0, dpr, 0, 0); return { c, w, h };
+    }
+    // ------------------------------------------------------------------ commandes
+    function seg(box, key, list, onChange) {
+      const s = document.createElement('div'); s.className = 'seg';
+      list.forEach(([v, label]) => { const b = document.createElement('button'); b.type = 'button'; b.className = 'btn'; b.textContent = label; b.setAttribute('aria-pressed', String(S[key]) === String(v)); b.addEventListener('click', () => { S[key] = v; s.querySelectorAll('button').forEach((x) => x.setAttribute('aria-pressed', x === b)); onChange(); }); s.appendChild(b); });
+      box.appendChild(s);
+    }
+    function head(box, txt, first) { const h = document.createElement(first ? 'h2' : 'h3'); h.textContent = txt; box.appendChild(h); }
+    function slider(box, key, label, min, max, step, show, onChange, live) {
+      const row = document.createElement('div'); row.className = 'ctl';
+      row.innerHTML = '<label for="s-' + key + '">' + label + '</label><output></output><input type="range" id="s-' + key + '">';
+      const r = row.querySelector('input'), o = row.querySelector('output');
+      Object.assign(r, { min, max, step }); r.value = S[key]; o.textContent = show(S[key]);
+      r.addEventListener('input', () => { S[key] = parseFloat(r.value); o.textContent = show(S[key]); if (live) live(); });
+      r.addEventListener('change', onChange); box.appendChild(row);
+    }
+    function renderCtl() {
+      const box = $('ctl'); box.innerHTML = '';
+      head(box, t('windT'), true); seg(box, 'mode', Object.entries(T[lang].mode), reset);
+      slider(box, 'mean', t('meanL'), 0, 12, 0.5, (v) => fmt(v, 1) + ' m/s', () => { sim.opt.mean = S.mean; }, () => { if (sim) sim.opt.mean = S.mean; });
+      slider(box, 'gust', t('gustL'), 0, 2, 0.1, (v) => '× ' + fmt(v, 1), () => { sim.opt.gust = S.mode === 'rafales' ? S.gust : 0; }, () => { if (sim) sim.opt.gust = S.mode === 'rafales' ? S.gust : 0; });
+      head(box, t('pwCtl'));
+      slider(box, 'D', t('DL'), 0.1, 1.0, 0.05, (v) => fmt(v * 100, 0) + ' cm', drawPower, drawPower);
+      slider(box, 'Cp', t('CpL'), 0.05, 0.45, 0.01, (v) => fmt(v, 2), drawPower, drawPower);
+      const sp = $('speeds'); sp.innerHTML = '';
+      [[1, '×1'], [0.25, '×¼'], [0.05, '×1/20']].forEach(([v, l]) => { const b = document.createElement('button'); b.type = 'button'; b.className = 'btn'; b.textContent = l; b.setAttribute('aria-pressed', S.speed === v); b.addEventListener('click', () => { S.speed = v; sp.querySelectorAll('button').forEach((x) => x.setAttribute('aria-pressed', x === b)); }); sp.appendChild(b); });
+    }
+    // ------------------------------------------------------------------ scène
+    function drawScene() {
+      const { c, w, h } = canvas('scene');
+      c.fillStyle = '#0a0a0b'; c.fillRect(0, 0, w, h);
+      c.font = '10px "JetBrains Mono", monospace'; c.textAlign = 'center';
+      // éolienne
+      const narrow = w < 620, topH = narrow ? 150 : h;
+      const tx = narrow ? w * 0.3 : Math.min(130, w * 0.15), ty = topH * 0.42, R = Math.min(70, topH * 0.3);
+      c.strokeStyle = '#6c6c70'; c.lineWidth = 6; c.beginPath(); c.moveTo(tx, ty); c.lineTo(tx, topH - 16); c.stroke();
+      const ang = sim.phase / 6;
+      for (let k = 0; k < 4; k++) { const a = ang + (k * Math.PI) / 2; c.save(); c.translate(tx, ty); c.rotate(a); c.fillStyle = '#c9c9cc'; c.beginPath(); c.ellipse(R / 2, 0, R / 2, 7, 0, 0, Math.PI * 2); c.fill(); c.restore(); }
+      c.fillStyle = '#2b2b30'; c.beginPath(); c.arc(tx, ty, 10, 0, 7); c.fill();
+      c.fillStyle = '#9b9b9f'; c.fillText(fmt(sim.v, 1) + ' m/s', tx, topH - 4);
+      // flèches de vent
+      c.strokeStyle = 'rgba(201,201,204,0.25)'; c.lineWidth = 1.5;
+      for (let k = 0; k < 4; k++) { const y = ty - R + k * (R * 0.66), off = ((sim.t * sim.v * 30) % 60); c.beginPath(); c.moveTo((narrow ? tx - R - 70 : 10) + off, y); c.lineTo((narrow ? tx - R - 44 : 36) + off, y); c.stroke(); }
+      // génératrice
+      const gx = tx + R + 30;
+      c.fillStyle = '#26262a'; c.fillRect(gx, ty - 22, 60, 44); c.fillStyle = '#9b9b9f'; c.fillText('G ~', gx + 30, ty + 4); c.fillText(fmt(Math.abs(sim.u), 2) + ' V', gx + 30, ty + 38);
+      // deux montages
+      const bx = narrow ? 8 : gx + 90, bw = narrow ? (w - 32) / 2 : (w - bx - 16) / 2 - 8;
+      [['2024', sim.r24, sim.ch24, sim.raw24 + ' / 1023'], ['2026', sim.r26, sim.ch26, fmt(sim.m26, 2) + ' V']].forEach(([lab, on, ch, val], i) => {
+        const x = bx + i * (bw + 16), y = narrow ? topH + 4 : 18, hh = narrow ? h - topH - 12 : h - 36;
+        c.strokeStyle = '#3a3a3d'; c.lineWidth = 1; c.strokeRect(x, y, bw, hh);
+        c.fillStyle = '#f2f2f2'; c.font = '600 12px Inter, sans-serif'; c.textAlign = 'left'; c.fillText(lab === '2024' ? (lang === 'fr' ? 'Programme 2024' : '2024 program') : (lang === 'fr' ? 'Programme 2026' : '2026 program'), x + 10, y + 18);
+        c.font = '10px "JetBrains Mono", monospace'; c.fillStyle = '#9b9b9f';
+        c.fillText((lab === '2024' ? 'A0 ' : (lang === 'fr' ? 'moy. ' : 'avg ')) + val, x + 10, y + 36);
+        // Arduino
+        c.fillStyle = '#1f4f4a'; c.fillRect(x + 10, y + 48, Math.min(90, bw * 0.4), 44); c.fillStyle = '#f2f2f2'; c.textAlign = 'center'; c.fillText('Arduino', x + 10 + Math.min(90, bw * 0.4) / 2, y + 74);
+        // relais
+        const rx = x + 20 + Math.min(90, bw * 0.4);
+        c.fillStyle = on ? '#e0a458' : '#2b2b30'; c.fillRect(rx, y + 54, 46, 32); c.fillStyle = on ? '#111' : '#9b9b9f'; c.fillText('D8', rx + 23, y + 74);
+        // LED
+        const lx = Math.min(rx + 70, x + bw - 14), ly = y + 70;
+        if (on) { c.fillStyle = 'rgba(255,40,60,0.35)'; c.beginPath(); c.arc(lx, ly, 16, 0, 7); c.fill(); }
+        c.fillStyle = on ? '#ff2b3f' : '#4a1a20'; c.beginPath(); c.arc(lx, ly, 7, 0, 7); c.fill();
+        c.fillStyle = '#9b9b9f'; c.textAlign = 'left';
+        c.fillText(t('relay') + ' ' + (on ? t('closed') : t('open')), x + 10, y + 112);
+        c.fillStyle = lab === '2024' && ch > 60 ? '#ff8a8a' : '#f2f2f2'; c.font = '600 20px Inter, sans-serif'; c.fillText(String(ch), x + 10, y + 142);
+        c.font = '10px "JetBrains Mono", monospace'; c.fillStyle = '#9b9b9f'; c.fillText(t('clicks'), x + 10, y + 158);
+        if (lab === '2024' && sim.u > 5) { c.fillStyle = '#ff8a8a'; c.fillText('A0 > 5 V !', x + 10, y + 176); }
+      });
+    }
+    function plot(id, o, draw) {
+      const { c, w, h } = canvas(id);
+      c.fillStyle = '#0a0a0b'; c.fillRect(0, 0, w, h);
+      const pl = 40, pr = 12, pt = 8, pb = 20;
+      const X = (x) => pl + ((x - o.xmin) / (o.xmax - o.xmin)) * (w - pl - pr), Y = (y) => pt + (1 - (y - o.ymin) / (o.ymax - o.ymin)) * (h - pt - pb);
+      c.font = '10px "JetBrains Mono", monospace'; c.fillStyle = '#6c6c70'; c.strokeStyle = '#1e1e21'; c.lineWidth = 1; c.textAlign = 'right'; c.textBaseline = 'middle';
+      for (let v = Math.ceil(o.ymin / o.ystep) * o.ystep; v <= o.ymax + 1e-9; v += o.ystep) { c.beginPath(); c.moveTo(pl, Y(v)); c.lineTo(w - pr, Y(v)); c.stroke(); c.fillText(fmt(v, 0) + (o.yu || ''), pl - 4, Y(v)); }
+      c.textAlign = 'center'; c.textBaseline = 'top';
+      for (let v = Math.ceil(o.xmin / o.xstep) * o.xstep; v <= o.xmax + 1e-9; v += o.xstep) { c.beginPath(); c.moveTo(X(v), pt); c.lineTo(X(v), h - pb); c.stroke(); c.fillText(fmt(v, o.xd || 0) + ' s', X(v), h - pb + 4); }
+      c.save(); c.beginPath(); c.rect(pl, pt, w - pl - pr, h - pt - pb); c.clip(); draw(c, X, Y); c.restore();
+    }
+    function drawScope() {
+      const t1 = sim.t, t0 = t1 - 1, ymax = Math.max(8, Math.ceil((E.K.ampl * (S.mean + 3) + 1) / 2) * 2);
+      plot('scope', { xmin: t0, xmax: t1, xstep: 0.2, xd: 1, ymin: -ymax, ymax, ystep: ymax / 2, yu: ' V' }, (c, X, Y) => {
+        c.fillStyle = 'rgba(200,16,46,0.10)'; c.fillRect(X(t0), Y(ymax), X(t1) - X(t0), Y(5) - Y(ymax));
+        c.strokeStyle = '#8a3030'; c.setLineDash([4, 4]); c.beginPath(); c.moveTo(X(t0), Y(5)); c.lineTo(X(t1), Y(5)); c.stroke(); c.setLineDash([]);
+        c.strokeStyle = '#8a6a30'; c.setLineDash([2, 3]); c.beginPath(); c.moveTo(X(t0), Y(0.49)); c.lineTo(X(t1), Y(0.49)); c.stroke(); c.setLineDash([]);
+        c.strokeStyle = '#6c6c70'; c.lineWidth = 1.2; c.beginPath(); scope.forEach(([x, u], i) => (i ? c.lineTo(X(x), Y(u)) : c.moveTo(X(x), Y(u)))); c.stroke();
+        c.strokeStyle = '#c8102e'; c.lineWidth = 2; c.beginPath(); scope.forEach(([x, , vc], i) => (i ? c.lineTo(X(x), Y(vc)) : c.moveTo(X(x), Y(vc)))); c.stroke();
+        samples24.forEach(([x, v, on]) => { if (x < t0) return; c.fillStyle = on ? '#e0a458' : '#6c4a20'; c.beginPath(); c.arc(X(x), Y(v), 4, 0, 7); c.fill(); });
+      });
+    }
+    function drawTimeline() {
+      const t1 = Math.max(30, sim.t), t0 = t1 - 30;
+      plot('timeline', { xmin: t0, xmax: t1, xstep: 5, ymin: 0, ymax: 12, ystep: 4 }, (c, X, Y) => {
+        c.strokeStyle = '#c9c9cc'; c.lineWidth = 1.2; c.beginPath(); tl.forEach(([x, v], i) => (i ? c.lineTo(X(x), Y(v)) : c.moveTo(X(x), Y(v)))); c.stroke();
+        const strip = (idx, y0, col) => { c.fillStyle = col; tl.forEach(([x, , a, b], i) => { if ((idx ? b : a) && i) c.fillRect(X(tl[i - 1][0]), Y(y0 + 1.2), Math.max(1, X(x) - X(tl[i - 1][0])), Y(y0) - Y(y0 + 1.2)); }); };
+        strip(0, 10.4, '#e0a458'); strip(1, 8.8, '#c8102e');
+      });
+    }
+    function drawPower() {
+      const P = E.power(S.D, S.mean, S.Cp);
+      $('pwk').innerHTML = kpi(t('kP'), P < 1 ? fmt(P * 1000, 0) : fmt(P, 2), P < 1 ? 'mW' : 'W', 'main') + kpi(t('kLed'), P >= 0.04 ? t('ok') : t('ko'), '', P >= 0.04 ? 'good' : 'bad') + kpi(t('kArd'), P >= 0.6 ? t('ok') : t('ko'), '', P >= 0.6 ? 'good' : 'bad');
+      $('pw').innerHTML = '<p class="hint">' + (lang === 'fr' ? 'Hélice de ' : 'Rotor ') + fmt(S.D * 100, 0) + ' cm, ' + fmt(S.mean, 1) + ' m/s, Cₚ = ' + fmt(S.Cp, 2) + ' : P = ½ × 1,2 × ' + fmt(Math.PI * (S.D / 2) ** 2, 4) + ' m² × ' + fmt(S.mean, 1) + '³ × ' + fmt(S.Cp, 2) + ' = <b>' + (P < 1 ? fmt(P * 1000, 0) + ' mW' : fmt(P, 2) + ' W') + '</b></p>';
+    }
+    function runCompare() {
+      const H = t('cmpHead');
+      let h = '<thead><tr>' + H.map((c, i) => '<th' + (i ? ' class="n"' : '') + '>' + c + '</th>').join('') + '</tr></thead><tbody>';
+      [[3, 1], [4, 1], [5, 1], [6, 1], [8, 1], [5, 0]].forEach(([m, g]) => {
+        const r = E.summary(m, g, 120);
+        h += '<tr' + (m === 5 && g === 1 ? ' class="sel"' : '') + '><td>' + fmt(m, 0) + ' m/s, ' + (g ? t('rafales') : t('constant')) + '</td><td class="n bad">' + r.ch24 + '</td><td class="n">' + r.ch26 + '</td><td class="n">' + fmt(r.over5 * 100, 0) + ' %</td></tr>';
+      });
+      $('cmp').innerHTML = h + '</tbody>';
+    }
+    function ui() {
+      $('kpis').innerHTML = kpi(t('kWind'), fmt(sim.v, 1), 'm/s') + kpi(t('kU'), fmt(E.K.ampl * sim.v, 1), 'V') + kpi(t('kCh24'), sim.ch24, '', sim.ch24 > 60 ? 'bad' : '') + kpi(t('kCh26'), sim.ch26, '') + kpi(t('kOver'), fmt(sim.t > 0 ? (sim.over5 / sim.t) * 100 : 0, 0), '%', sim.over5 > 0 ? 'bad' : '') + kpi(t('kM26'), fmt(sim.m26, 2), 'V');
+      const ser = (arr) => arr.slice(-8).map((l) => '<span class="t">' + fmt(l.t, 2).padStart(7) + '  </span>' + l.m).join('\n');
+      $('s24').innerHTML = ser(sim.serial24); $('s26').innerHTML = ser(sim.serial26);
+      $('clock').textContent = 't = ' + fmt(sim.t, 1) + ' s';
+      $('play').textContent = running ? t('pause') : t('play');
+    }
+    let last = null, uiAcc = 0, tlAcc = 0, scAcc = 0, lastN24 = 0;
+    function frame(ts) {
+      if (last === null) last = ts; const dt = Math.min(0.05, (ts - last) / 1000); last = ts;
+      if (running && sim) {
+        const steps = Math.round((dt * S.speed) / sim.opt.dt);
+        for (let k = 0; k < steps; k++) {
+          const prev = sim.next24; sim.step();
+          if (sim.next24 !== prev) samples24.push([sim.t, Math.max(0, Math.min(5, sim.u)), sim.r24]);
+          scAcc += sim.opt.dt; if (scAcc >= 0.001) { scAcc = 0; scope.push([sim.t, sim.u, sim.vc]); }
+          tlAcc += sim.opt.dt; if (tlAcc >= 0.05) { tlAcc = 0; tl.push([sim.t, sim.v, sim.r24, sim.r26]); }
+        }
+        while (scope.length && scope[0][0] < sim.t - 1) scope.shift();
+        while (samples24.length && samples24[0][0] < sim.t - 1) samples24.shift();
+        while (tl.length && tl[0][0] < sim.t - 30) tl.shift();
+      }
+      if (sim) { drawScene(); drawScope(); drawTimeline(); }
+      uiAcc += dt; if (uiAcc > 0.12 && sim) { ui(); uiAcc = 0; }
+      requestAnimationFrame(frame);
+    }
+    $('play').addEventListener('click', () => { running = !running; ui(); });
+    $('reset').addEventListener('click', reset);
+    function setLang(l) {
+      lang = l; document.documentElement.lang = l;
+      document.querySelectorAll('[data-t]').forEach((el) => { const v = T[l][el.dataset.t]; if (typeof v === 'string') el.textContent = v; });
+      document.querySelectorAll('.lang button').forEach((b) => b.setAttribute('aria-pressed', b.dataset.lang === l));
+      try { localStorage.setItem('lang', l); } catch (e) {}
+      $('review').innerHTML = T[l].review.map(([a, b]) => '<li><b>' + a + '</b> ' + b + '</li>').join('');
+      renderCtl(); drawPower(); runCompare(); if (sim) ui();
+    }
+    document.querySelectorAll('.lang button').forEach((b) => b.addEventListener('click', () => setLang(b.dataset.lang)));
+    reset(); setLang(lang);
+    requestAnimationFrame(frame);
+  })();
+  </script>
+</body>
+</html>
