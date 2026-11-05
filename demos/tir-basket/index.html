@@ -1,0 +1,350 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Tir de basket</title>
+  <meta name="description" content="Trajectoire d'un tir de basket à 3 points : modèle sans frottement, modèle de 2024 et frottement quadratique, calés sur des points mesurés.">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --bg: #0c0c0d; --panel: #161618; --border: #262628; --border-hi: #3a3a3d;
+      --text: #f2f2f2; --dim: #9b9b9f; --muted: #6c6c70; --accent: #c8102e; --line: #c9c9cc; --warn: #e0a458; --ok: #8fd18f;
+      --mono: "JetBrains Mono", ui-monospace, monospace; --sans: "Inter", system-ui, sans-serif;
+      color-scheme: dark;
+    }
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    body { background: var(--bg); color: var(--text); font-family: var(--sans); line-height: 1.55; -webkit-font-smoothing: antialiased; }
+    .wrap { max-width: 1280px; margin: 0 auto; padding: 24px 16px 48px; }
+    .top { display: flex; justify-content: space-between; align-items: center; gap: 12px; flex-wrap: wrap; margin-bottom: 24px; }
+    .back { font-size: 0.9rem; color: var(--dim); text-decoration: none; }
+    .back:hover { color: var(--accent); }
+    .lang { display: flex; border: 1px solid var(--border-hi); }
+    .lang button { font: 500 0.78rem var(--mono); letter-spacing: .05em; background: none; color: var(--dim); border: 0; padding: 5px 10px; cursor: pointer; }
+    .lang button + button { border-left: 1px solid var(--border-hi); }
+    .lang button[aria-pressed="true"] { background: var(--text); color: var(--bg); }
+    .eyebrow { font: 500 0.82rem var(--mono); color: var(--accent); letter-spacing: .04em; }
+    h1 { font-size: clamp(1.6rem, 3.4vw, 2.3rem); line-height: 1.15; margin: 6px 0 10px; text-wrap: balance; }
+    .intro { color: var(--dim); max-width: 82ch; }
+    .intro a { color: var(--line); }
+    .warnbox { border: 1px solid #4a3a20; background: #1a160f; color: var(--warn); border-radius: 6px; padding: 8px 12px; font-size: 0.84rem; margin-top: 12px; }
+    .grid { display: grid; grid-template-columns: 320px minmax(0, 1fr); gap: 20px; align-items: start; margin-top: 20px; }
+    .stack { display: grid; gap: 16px; min-width: 0; }
+    .panel { background: var(--panel); border: 1px solid var(--border); border-radius: 8px; padding: 16px; min-width: 0; }
+    h2 { font: 600 0.78rem var(--mono); letter-spacing: .12em; text-transform: uppercase; color: var(--dim); margin-bottom: 12px; }
+    h3 { font: 600 0.72rem var(--mono); letter-spacing: .08em; text-transform: uppercase; color: var(--dim); margin: 14px 0 10px; padding-top: 12px; border-top: 1px solid var(--border); }
+    button:focus-visible, input:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+    .btn { font: 500 0.82rem var(--sans); background: none; color: var(--text); border: 1px solid var(--border-hi); border-radius: 6px; padding: 6px 11px; cursor: pointer; white-space: nowrap; }
+    .btn:hover { border-color: var(--accent); color: var(--accent); }
+    .btn[aria-pressed="true"] { border-color: var(--accent); color: var(--accent); }
+    .btn.primary { background: var(--accent); border-color: var(--accent); color: #fff; }
+    .seg { display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 10px; }
+    .ctl { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 2px 10px; margin-bottom: 10px; }
+    .ctl label { font: 500 0.76rem var(--mono); color: var(--dim); }
+    .ctl output { font: 0.8rem var(--mono); font-variant-numeric: tabular-nums; text-align: right; }
+    .ctl input[type=range] { grid-column: 1 / -1; width: 100%; accent-color: var(--accent); }
+    .lab { font: 500 0.74rem var(--mono); color: var(--dim); margin: 2px 0 6px; }
+    .hint { font-size: 0.8rem; color: var(--dim); margin-top: 8px; }
+    .kpis { display: grid; grid-template-columns: repeat(6, minmax(0, 1fr)); gap: 10px; }
+    .kpi { border: 1px solid var(--border); border-radius: 6px; padding: 8px 10px; min-width: 0; }
+    .kpi dt { font: 0.66rem var(--mono); color: var(--dim); }
+    .kpi dd { font: 600 1.02rem var(--sans); font-variant-numeric: tabular-nums; margin-top: 2px; }
+    .kpi dd small { font: 400 0.7rem var(--mono); color: var(--dim); margin-left: 3px; }
+    .kpi.bad dd { color: #ff8a8a; } .kpi.good dd { color: var(--ok); }
+    canvas#table { width: 100%; aspect-ratio: 240 / 150; display: block; border: 1px solid var(--border); border-radius: 6px; background: #0a0a0b; margin-top: 12px; cursor: crosshair; touch-action: none; }
+    .controls { display: flex; gap: 8px; flex-wrap: wrap; align-items: center; margin-top: 10px; font: 0.78rem var(--mono); color: var(--dim); }
+    .row2 { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 16px; }
+    .pins { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 6px; font: 0.74rem var(--mono); }
+    .pin { border: 1px solid var(--border); border-radius: 5px; padding: 5px 7px; min-width: 0; }
+    .pin b { display: block; color: var(--dim); font-weight: 500; font-size: 0.68rem; }
+    .pin span { font-variant-numeric: tabular-nums; }
+    .pin.hi { border-color: var(--accent); } .pin.hi span { color: #ff8a8a; }
+    .serial { font: 0.74rem/1.45 var(--mono); background: #0a0a0b; border: 1px solid var(--border); border-radius: 6px; padding: 8px 10px; height: 172px; overflow: hidden; color: var(--line); white-space: pre; }
+    .serial .t { color: var(--muted); }
+    .serial .w { color: #ff8a8a; }
+    .state { font: 0.8rem var(--mono); color: var(--dim); margin-top: 8px; }
+    .state b { color: var(--text); font-weight: 500; }
+    table { width: 100%; border-collapse: collapse; font: 0.8rem var(--mono); font-variant-numeric: tabular-nums; }
+    th, td { text-align: left; padding: 6px 8px; border-bottom: 1px solid var(--border); }
+    td.n, th.n { text-align: right; }
+    th { color: var(--dim); font-weight: 500; }
+    td.bad { color: #ff8a8a; } td.good { color: var(--ok); }
+    .tablewrap { overflow-x: auto; }
+    ol.review { padding-left: 1.2em; display: grid; gap: 6px; font-size: 0.86rem; color: var(--dim); }
+    ol.review b { color: var(--text); font-weight: 600; }
+    .note { font-size: 0.82rem; color: var(--dim); }
+    .note p + p { margin-top: 6px; }
+    canvas#court { width: 100%; aspect-ratio: 16 / 9; display: block; border: 1px solid var(--border); border-radius: 6px; background: #0a0a0b; margin-top: 12px; }
+    .kpis { grid-template-columns: repeat(7, minmax(0, 1fr)) !important; }
+    .legend { display: inline-flex; gap: 6px; align-items: center; }
+    .legend i { display: inline-block; width: 14px; height: 2px; margin-left: 8px; }
+    .charts { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px; }
+    .chart p { font: 0.72rem var(--mono); color: var(--dim); margin-bottom: 4px; display: flex; gap: 10px; flex-wrap: wrap; }
+    .chart p.hint { font: 0.8rem var(--sans); display: block; }
+    .chart p i { display: inline-block; width: 12px; height: 2px; vertical-align: 3px; margin-right: 5px; }
+    .chart canvas { width: 100%; height: 240px; display: block; border: 1px solid var(--border); border-radius: 6px; background: #0a0a0b; }
+    .issues { list-style: none; display: grid; gap: 6px; margin-top: 12px; }
+    .issues li { font-size: 0.85rem; display: grid; grid-template-columns: auto minmax(0, 1fr); gap: 10px; align-items: baseline; padding: 7px 10px; border: 1px solid var(--border); border-radius: 6px; }
+    .issues .lv { font: 600 0.68rem var(--mono); padding: 1px 6px; border-radius: 3px; border: 1px solid var(--warn); color: var(--warn); }
+    .issues .err .lv { background: var(--accent); border-color: var(--accent); color: #fff; }
+    .issues .good { display: block; color: var(--ok); border-color: #2e4a2e; }
+    tr.sel td { color: var(--accent); }
+    @media (max-width: 1100px) { .kpis { grid-template-columns: repeat(4, minmax(0, 1fr)) !important; } }
+    @media (max-width: 760px) { .kpis { grid-template-columns: repeat(2, minmax(0, 1fr)) !important; } .charts { grid-template-columns: minmax(0, 1fr); } }
+    @media (max-width: 1000px) { .grid { grid-template-columns: minmax(0, 1fr); } .main-col { order: -1; } }
+    @media (max-width: 760px) { .kpis { grid-template-columns: repeat(3, minmax(0, 1fr)); } .row2 { grid-template-columns: minmax(0, 1fr); } .pins { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+  </style>
+</head>
+<body>
+  <div class="wrap">
+    <div class="top">
+      <a class="back" href="../../index.html#projets" data-t="back">← Retour au portfolio</a>
+      <div class="lang" role="group" aria-label="Langue / Language"><button type="button" data-lang="fr">FR</button><button type="button" data-lang="en">EN</button></div>
+    </div>
+    <p class="eyebrow" data-t="eyebrow">Démo · projet de modélisation physique, CPGE TSI (2024)</p>
+    <h1 data-t="title">Trajectoire d'un tir de basket à 3 points</h1>
+    <p class="intro" data-t="intro"></p>
+    <p class="warnbox" data-t="warn"></p>
+    <div class="grid">
+      <div class="stack"><div class="panel" id="ctl"></div></div>
+      <div class="stack main-col">
+        <div class="panel">
+          <dl class="kpis" id="kpis"></dl>
+          <canvas id="court" aria-label="Trajectoire vue de côté"></canvas>
+          <div class="controls"><button type="button" class="btn" id="replay" data-t="replay">Relancer le tir</button><span class="legend"><i style="background:var(--accent)"></i><span data-t="lgCur">modèle choisi</span> <i style="background:#6c6c70"></i><span data-t="lgOther">deux autres modèles</span></span></div>
+          <ul class="issues" id="iss"></ul>
+        </div>
+        <div class="panel charts">
+          <div class="chart"><p><span><i style="background:var(--line)"></i><span data-t="lgPts">mes 78 points y(t)</span></span><span><i style="background:var(--accent)"></i><span data-t="lgFit">modèle calé (vy₀ et instant du lâcher)</span></span></p><canvas id="chPts"></canvas><p class="hint" id="hPts"></p></div>
+          <div class="chart"><p><span><i style="background:#8a1c2c"></i><span data-t="lgMap">tirs réussis (angle × vitesse)</span></span><span><i style="background:var(--line)"></i><span data-t="lgCurPt">tir actuel</span></span></p><canvas id="chMap"></canvas><p class="hint" id="hMap"></p></div>
+        </div>
+        <div class="panel"><h2 data-t="tabT">Vitesse nécessaire pour un tir à 3 points (m/s)</h2><div class="tablewrap"><table id="tab"></table></div><p class="hint" data-t="tabHint"></p></div>
+        <div class="panel"><h2 data-t="revT">Ce que montre la vérification de 2026</h2><ol class="review" id="review"></ol></div>
+      </div>
+    </div>
+    <div class="panel note" style="margin-top:20px">
+      <p data-t="note1"></p>
+      <p><a href="https://github.com/Valentin-Auger-Laboratoire/trajectoire-tir-basket" target="_blank" rel="noopener" style="color:var(--line)"><span data-t="repo">Dépôt : code de 2024, points mesurés, script de comparaison</span> ↗</a></p>
+    </div>
+  </div>
+  <script src="basket.js"></script>
+  <script>
+  (function () {
+    'use strict';
+    const B = window.Basket;
+    const $ = (id) => document.getElementById(id);
+    const T = {
+      fr: {
+        back: '← Retour au portfolio', eyebrow: 'Démo · projet de modélisation physique, CPGE TSI (2024)', title: "Trajectoire d'un tir de basket à 3 points",
+        intro: "Peut-on augmenter ses chances de réussir un tir à 3 points en jouant sur la vitesse, l'angle et la hauteur de lâcher ? En 2024, j'ai écrit les équations du mouvement, filmé et pointé un vrai tir, puis résolu le modèle avec frottement en Python. Cette page rejoue trois modèles : sans frottement, mon modèle de 2024, et le frottement quadratique réel. Mes 78 points mesurés servent à caler la vitesse du tir.",
+        warn: "Les points sont la hauteur du ballon y(t), numérisée depuis mon pointage vidéo ; l'échelle verticale a été calée sur g et la position horizontale n'est pas récupérable. Le Cₓ ne peut pas être calé avec la seule hauteur : la valeur théorique d'une sphère (0,47) est utilisée, réglable. Aucune image du tir n'est publiée.",
+        modelT: 'Modèle de frottement', model: { sans: 'Sans frottement', '2024': 'Mon modèle de 2024', quad: 'Quadratique (½ρCₓSv²)' },
+        shotT: 'Tir', v0L: 'Vitesse au lâcher v₀', angL: 'Angle de tir', h0L: 'Hauteur de lâcher', CxL: 'Coefficient de traînée Cₓ',
+        presetT: 'Tirs types', preset: { y2024: 'Mon modèle de 2024 (7,1 m/s, 45°)', fit: 'Vitesse calée sur mes points (45°)', best: 'Meilleur angle (50°)' },
+        kRes: 'Résultat', kNeed: 'Vitesse nécessaire', kWin: 'Marge de vitesse', kApex: 'Sommet', kEntry: 'Angle d’entrée', kDrag: 'Traînée / poids', kRe: 'Reynolds',
+        res: { panier: 'Panier', court: 'Court', long: 'Long', basse: 'Trop bas' },
+        replay: 'Relancer le tir', lgCur: 'modèle choisi', lgOther: 'deux autres modèles',
+        lgPts: 'mes 78 points y(t)', lgFit: 'modèle calé (vy₀ et instant du lâcher)', lgMap: 'tirs réussis (angle × vitesse)', lgCurPt: 'tir actuel',
+        hPts: (vy, tr, r) => 'Lâcher vers t = ' + tr + ' s, vitesse verticale calée vy₀ = ' + vy + ' m/s, écart moyen ' + r + ' cm. L’erreur de numérisation est d’environ 3 cm : les points ne départagent pas les modèles de frottement.',
+        hMap: (lo, hi) => 'À cet angle, le ballon rentre entre ' + lo + ' et ' + hi + ' m/s : moins de 0,15 m/s de marge.',
+        tabT: 'Vitesse nécessaire pour un tir à 3 points (m/s)', tabHead: ['Angle', 'Sans frottement', 'Modèle 2024', 'Quadratique Cₓ = 0,47', 'Quadratique Cₓ = 0,6'],
+        tabHint: 'Lâcher à 1,80 m, centre du cercle à 3,05 m et 6,75 m. Le modèle de 2024 donne presque les mêmes vitesses que « sans frottement » : son coefficient est beaucoup trop petit.',
+        iShort: (d) => 'Le ballon passe ' + d + ' cm devant le centre du cercle.', iLong: (d) => 'Le ballon passe ' + d + ' cm derrière le centre du cercle.', iLow: 'Le ballon ne monte même pas à la hauteur du cercle.', iIn: 'Panier : le ballon passe dans le cercle.',
+        i2024: 'Avec mon modèle de 2024 (7,1 m/s à 45°), le ballon retombe bien avant le panier : il faudrait environ 9 m/s.', iFlat: 'Angle d’entrée faible : le cercle « vu » par le ballon est très étroit.',
+        revT: 'Ce que montre la vérification de 2026',
+        review: [
+          ['Le frottement de 2024 était trop faible.', 'Mon code avait la bonne forme (−k·|v|·v) mais le coefficient de Stokes 6πηr = 4,37·10⁻⁵ kg/s, valable seulement à très basse vitesse. À Re ≈ 1,3·10⁵, la traînée est quadratique : ½ρCₓS ≈ 0,0136 kg/m, environ 300 fois plus. À 8 m/s, elle vaut 14 % du poids.'],
+          ['Le vrai tir était plus puissant que mon modèle.', 'Calée sur mes points, la vitesse verticale au lâcher vaut environ 7,0 à 7,1 m/s (selon le modèle), contre 5,0 m/s dans mon modèle de 2024 (7,1 m/s à 45°).'],
+          ['La vitesse compte plus que l’angle.', 'Entre 45° et 55°, la vitesse nécessaire ne change que de 0,15 m/s, mais la marge qui fait rentrer le ballon n’est que d’environ ±0,07 m/s. Le meilleur angle est vers 50°.'],
+          ['Cₓ n’est pas identifiable avec la seule hauteur.', 'Les modèles avec et sans frottement collent tous les deux à 3 cm près à mes points, l’ordre de grandeur de la numérisation. Il faudrait x(t), ou un tir plus long, pour mesurer Cₓ.'],
+        ],
+        note1: "Modèle : m·dv/dt = m·g − k·|v|·v, intégré par Runge-Kutta d'ordre 4 (pas de 2 ms). Ballon taille 7 : 0,624 kg, rayon 12,4 cm ; air : ρ = 1,20 kg/m³. Le tir est « panier » si le centre du ballon descend à 3,05 m à moins de 10 cm du centre du cercle (rayon du cercle moins rayon du ballon) ; ni rebond sur le cercle, ni effet de rotation.",
+        repo: 'Dépôt : code de 2024, points mesurés, script de comparaison',
+      },
+      en: {
+        back: '← Back to portfolio', eyebrow: 'Demo · physics modelling project, CPGE TSI (2024)', title: 'Trajectory of a 3-point basketball shot',
+        intro: 'Can you improve your chances on a 3-point shot by playing with speed, angle and release height? In 2024 I wrote the equations of motion, filmed and tracked a real shot, then solved the model with air drag in Python. This page replays three models: no drag, my 2024 model, and the real quadratic drag. My 78 measured points are used to fit the shot speed.',
+        warn: 'The points are the ball height y(t), digitised from my video tracking; the vertical scale was fitted on g and the horizontal position cannot be recovered. Cₓ cannot be fitted from height alone: the theoretical sphere value (0.47) is used, adjustable. No image of the shot is published.',
+        modelT: 'Drag model', model: { sans: 'No drag', '2024': 'My 2024 model', quad: 'Quadratic (½ρCₓSv²)' },
+        shotT: 'Shot', v0L: 'Release speed v₀', angL: 'Release angle', h0L: 'Release height', CxL: 'Drag coefficient Cₓ',
+        presetT: 'Sample shots', preset: { y2024: 'My 2024 model (7.1 m/s, 45°)', fit: 'Speed fitted on my points (45°)', best: 'Best angle (50°)' },
+        kRes: 'Result', kNeed: 'Required speed', kWin: 'Speed margin', kApex: 'Apex', kEntry: 'Entry angle', kDrag: 'Drag / weight', kRe: 'Reynolds',
+        res: { panier: 'Basket', court: 'Short', long: 'Long', basse: 'Too low' },
+        replay: 'Shoot again', lgCur: 'selected model', lgOther: 'two other models',
+        lgPts: 'my 78 points y(t)', lgFit: 'fitted model (vy₀ and release time)', lgMap: 'successful shots (angle × speed)', lgCurPt: 'current shot',
+        hPts: (vy, tr, r) => 'Release around t = ' + tr + ' s, fitted vertical speed vy₀ = ' + vy + ' m/s, mean deviation ' + r + ' cm. The digitising error is about 3 cm: the points cannot tell the drag models apart.',
+        hMap: (lo, hi) => 'At this angle the ball goes in between ' + lo + ' and ' + hi + ' m/s: less than 0.15 m/s of margin.',
+        tabT: 'Speed required for a 3-point shot (m/s)', tabHead: ['Angle', 'No drag', '2024 model', 'Quadratic Cₓ = 0.47', 'Quadratic Cₓ = 0.6'],
+        tabHint: 'Release at 1.80 m, hoop centre at 3.05 m and 6.75 m. The 2024 model gives almost the same speeds as "no drag": its coefficient is far too small.',
+        iShort: (d) => 'The ball passes ' + d + ' cm in front of the hoop centre.', iLong: (d) => 'The ball passes ' + d + ' cm behind the hoop centre.', iLow: 'The ball does not even reach hoop height.', iIn: 'Basket: the ball goes through the hoop.',
+        i2024: 'With my 2024 model (7.1 m/s at 45°), the ball lands well short of the basket: about 9 m/s would be needed.', iFlat: 'Shallow entry angle: the hoop "seen" by the ball is very narrow.',
+        revT: 'What the 2026 check shows',
+        review: [
+          ['The 2024 drag was too weak.', 'My code had the right form (−k·|v|·v) but used the Stokes coefficient 6πηr = 4.37·10⁻⁵ kg/s, only valid at very low speed. At Re ≈ 1.3·10⁵ drag is quadratic: ½ρCₓS ≈ 0.0136 kg/m, about 300 times more. At 8 m/s it is 14 % of the weight.'],
+          ['The real shot was stronger than my model.', 'Fitted on my points, the vertical release speed is about 7.0 to 7.1 m/s (depending on the model), versus 5.0 m/s in my 2024 model (7.1 m/s at 45°).'],
+          ['Speed matters more than angle.', 'Between 45° and 55° the required speed only changes by 0.15 m/s, but the margin that makes the ball go in is only about ±0.07 m/s. The best angle is around 50°.'],
+          ['Cₓ cannot be identified from height alone.', 'Models with and without drag both fit my points to within 3 cm, the size of the digitising error. x(t), or a longer shot, would be needed to measure Cₓ.'],
+        ],
+        note1: 'Model: m·dv/dt = m·g − k·|v|·v, integrated with 4th-order Runge-Kutta (2 ms step). Size 7 ball: 0.624 kg, 12.4 cm radius; air: ρ = 1.20 kg/m³. A shot is a "basket" if the ball centre comes down through 3.05 m within 10 cm of the hoop centre (hoop radius minus ball radius); no rim bounce, no spin.',
+        repo: 'Repository: 2024 code, measured points, comparison script',
+      },
+    };
+    let lang = 'fr';
+    try { lang = localStorage.getItem('lang') || ((navigator.language || 'fr').toLowerCase().startsWith('fr') ? 'fr' : 'en'); } catch (e) {}
+    if (!T[lang]) lang = 'fr';
+    const t = (k) => T[lang][k];
+    const fmt = (v, d = 1) => (Number.isFinite(v) ? v.toLocaleString(lang === 'fr' ? 'fr-FR' : 'en-GB', { maximumFractionDigits: d, minimumFractionDigits: d }) : '—');
+    const S = { model: 'quad', Cx: 0.47, v0: 9.5, angle: 50, h0: 1.8 };
+    const kpi = (k, v, u, cls) => '<div class="kpi' + (cls ? ' ' + cls : '') + '"><dt>' + k + '</dt><dd>' + v + (u ? '<small>' + u + '</small>' : '') + '</dd></div>';
+    let shots = null, anim0 = null, mapCache = null, mapKey = '';
+    function canvas(id) {
+      const cv = $(id), dpr = window.devicePixelRatio || 1, w = cv.clientWidth, h = cv.clientHeight;
+      if (cv.width !== Math.round(w * dpr) || cv.height !== Math.round(h * dpr)) { cv.width = Math.round(w * dpr); cv.height = Math.round(h * dpr); }
+      const c = cv.getContext('2d'); c.setTransform(dpr, 0, 0, dpr, 0, 0); return { c, w, h };
+    }
+    // ------------------------------------------------------------------ commandes
+    const sliders = {};
+    function slider(box, key, label, min, max, step, show) {
+      const row = document.createElement('div'); row.className = 'ctl';
+      row.innerHTML = '<label for="s-' + key + '">' + label + '</label><output></output><input type="range" id="s-' + key + '">';
+      const r = row.querySelector('input'), o = row.querySelector('output');
+      Object.assign(r, { min, max, step }); r.value = S[key]; o.textContent = show(S[key]);
+      r.addEventListener('input', () => { S[key] = parseFloat(r.value); o.textContent = show(S[key]); update(false); });
+      r.addEventListener('change', () => update(true));
+      sliders[key] = { r, o, show }; box.appendChild(row);
+    }
+    function setVal(key, v) { S[key] = v; const s = sliders[key]; if (s) { s.r.value = v; s.o.textContent = s.show(v); } }
+    function seg(box, key, list, onChange) {
+      const s = document.createElement('div'); s.className = 'seg';
+      list.forEach(([v, label]) => { const b = document.createElement('button'); b.type = 'button'; b.className = 'btn'; b.textContent = label; b.setAttribute('aria-pressed', String(S[key]) === String(v)); b.addEventListener('click', () => { S[key] = v; s.querySelectorAll('button').forEach((x) => x.setAttribute('aria-pressed', x === b)); onChange(); }); s.appendChild(b); });
+      box.appendChild(s);
+    }
+    function head(box, txt, first) { const h = document.createElement(first ? 'h2' : 'h3'); h.textContent = txt; box.appendChild(h); }
+    function renderCtl() {
+      const box = $('ctl'); box.innerHTML = '';
+      head(box, t('modelT'), true); seg(box, 'model', Object.entries(T[lang].model), () => update(true));
+      slider(box, 'Cx', t('CxL'), 0.2, 1.0, 0.01, (v) => fmt(v, 2));
+      head(box, t('shotT'));
+      slider(box, 'v0', t('v0L'), 6, 12, 0.01, (v) => fmt(v, 2) + ' m/s');
+      slider(box, 'angle', t('angL'), 30, 70, 0.5, (v) => fmt(v, 1) + '°');
+      slider(box, 'h0', t('h0L'), 1.6, 2.4, 0.05, (v) => fmt(v, 2) + ' m');
+      head(box, t('presetT'));
+      const P = T[lang].preset, wrap = document.createElement('div'); wrap.className = 'seg';
+      [['y2024', () => { S.model = '2024'; setVal('v0', 7.1); setVal('angle', 45); setVal('h0', 1.8); }], ['fit', () => { setVal('angle', 45); setVal('h0', 1.8); const f = B.fitPoints({ angle: 45, model: S.model, Cx: S.Cx }); setVal('v0', +f.v0.toFixed(2)); }], ['best', () => { setVal('angle', 50); setVal('h0', 1.8); setVal('v0', +B.requiredSpeed(50, S.model, S.Cx, 1.8).toFixed(2)); }]].forEach(([k, fn]) => {
+        const b = document.createElement('button'); b.type = 'button'; b.className = 'btn'; b.textContent = P[k]; b.addEventListener('click', () => { fn(); renderCtl(); update(true); }); wrap.appendChild(b);
+      });
+      box.appendChild(wrap);
+    }
+    // ------------------------------------------------------------------ calculs et affichage
+    function update(full) {
+      shots = ['sans', '2024', 'quad'].map((m) => [m, B.shoot({ v0: S.v0, angle: S.angle, h0: S.h0, model: m, Cx: S.Cx })]);
+      const cur = shots.find((s) => s[0] === S.model)[1];
+      const need = B.requiredSpeed(S.angle, S.model, S.Cx, S.h0);
+      const win = B.speedWindow(S.angle, S.model, S.Cx, S.h0);
+      const resTxt = T[lang].res[cur.result] + (cur.miss !== null && cur.result !== 'panier' ? ' (' + fmt(Math.abs(cur.miss) * 100, 0) + ' cm)' : '');
+      $('kpis').innerHTML = kpi(t('kRes'), resTxt, '', cur.result === 'panier' ? 'good' : 'bad') + kpi(t('kNeed'), fmt(need, 2), 'm/s') + kpi(t('kWin'), '± ' + fmt((win.hi - win.lo) / 2, 2), 'm/s') + kpi(t('kApex'), fmt(cur.apex, 2), 'm') + kpi(t('kEntry'), cur.entry === null ? '—' : fmt(cur.entry, 0), '°') + kpi(t('kDrag'), fmt(B.dragRatio(S.v0, S.model, S.Cx) * 100, S.model === 'quad' ? 1 : 3), '%') + kpi(t('kRe'), (B.reynolds(S.v0) / 1e5).toFixed(2).replace('.', lang === 'fr' ? ',' : '.') + '·10⁵', '');
+      const L = [];
+      if (cur.result === 'panier') L.push(['good', t('iIn')]);
+      else if (cur.result === 'basse') L.push(['err', t('iLow')]);
+      else if (cur.result === 'court') L.push(['err', t('iShort')(fmt(Math.abs(cur.miss) * 100, 0))]);
+      else L.push(['err', t('iLong')(fmt(Math.abs(cur.miss) * 100, 0))]);
+      if (S.model === '2024' && Math.abs(S.v0 - 7.1) < 0.05 && Math.abs(S.angle - 45) < 0.3) L.push(['warn', t('i2024')]);
+      if (cur.entry !== null && cur.entry < 32 && Math.abs(cur.miss) < 0.5) L.push(['warn', t('iFlat')]);
+      $('iss').innerHTML = L.map(([lv, m]) => (lv === 'good' ? '<li class="good">' + m + '</li>' : '<li class="' + lv + '"><span class="lv">!</span><span>' + m + '</span></li>')).join('');
+      anim0 = null;
+      drawPts();
+      const key = S.model + S.Cx + S.h0;
+      if (full || !mapCache) { if (key !== mapKey) { mapCache = B.successMap(S.model, S.Cx, S.h0); mapKey = key; } }
+      drawMap(win); $('hMap').textContent = t('hMap')(fmt(win.lo, 2), fmt(win.hi, 2));
+      if (full) drawTable();
+    }
+    function drawCourt(frac) {
+      const { c, w, h } = canvas('court');
+      c.fillStyle = '#0a0a0b'; c.fillRect(0, 0, w, h);
+      const xmax = 8, ymax = 5.2, k = Math.min((w - 30) / xmax, (h - 30) / ymax), ox = 18, oy = h - 18;
+      const X = (x) => ox + x * k, Y = (y) => oy - y * k;
+      // grille
+      c.strokeStyle = '#1e1e21'; c.lineWidth = 1; c.font = '10px "JetBrains Mono", monospace'; c.fillStyle = '#6c6c70';
+      for (let x = 0; x <= xmax; x++) { c.beginPath(); c.moveTo(X(x), Y(0)); c.lineTo(X(x), Y(ymax)); c.stroke(); c.textAlign = 'center'; c.fillText(x + ' m', X(x), oy + 4 + 8); }
+      for (let y = 1; y <= 5; y++) { c.beginPath(); c.moveTo(X(0), Y(y)); c.lineTo(X(xmax), Y(y)); c.stroke(); c.textAlign = 'left'; c.fillText(y + ' m', X(0) + 2, Y(y) - 2); }
+      // sol, ligne à 3 points, panneau, cercle
+      c.strokeStyle = '#c9c9cc'; c.lineWidth = 2; c.beginPath(); c.moveTo(X(-0.2), Y(0)); c.lineTo(X(xmax), Y(0)); c.stroke();
+      c.fillStyle = '#c8102e'; c.fillRect(X(0) - 1, Y(0) - 4, 3, 8);
+      const hx = B.C.hoopX, hy = B.C.hoopH, hr = B.C.hoopD / 2;
+      c.strokeStyle = '#9b9b9f'; c.lineWidth = 4; c.beginPath(); c.moveTo(X(hx + hr + 0.15), Y(hy - 0.15)); c.lineTo(X(hx + hr + 0.15), Y(hy + 0.9)); c.stroke();
+      c.strokeStyle = '#c9c9cc'; c.lineWidth = 2; c.beginPath(); c.moveTo(X(hx + hr + 0.15), Y(hy)); c.lineTo(X(hx + hr), Y(hy)); c.stroke();
+      c.strokeStyle = '#e0a458'; c.lineWidth = 3; c.beginPath(); c.moveTo(X(hx - hr), Y(hy)); c.lineTo(X(hx + hr), Y(hy)); c.stroke();
+      c.strokeStyle = 'rgba(201,201,204,0.4)'; c.lineWidth = 1; c.beginPath(); c.moveTo(X(hx - hr), Y(hy)); c.lineTo(X(hx - hr * 0.6), Y(hy - 0.4)); c.lineTo(X(hx + hr * 0.6), Y(hy - 0.4)); c.lineTo(X(hx + hr), Y(hy)); c.stroke();
+      c.fillStyle = '#9b9b9f'; c.textAlign = 'center'; c.fillText(lang === 'fr' ? 'lâcher' : 'release', X(0) + 18, Y(S.h0) - 10); c.fillText('3,05 m · 6,75 m', X(hx), Y(hy) - 12);
+      c.fillStyle = '#c9c9cc'; c.beginPath(); c.arc(X(0), Y(S.h0), 3, 0, 7); c.fill();
+      // trajectoires
+      for (const [m, r] of shots) {
+        const isCur = m === S.model;
+        c.strokeStyle = isCur ? '#c8102e' : 'rgba(108,108,112,0.9)'; c.lineWidth = isCur ? 2.4 : 1.2; c.setLineDash(m === '2024' && !isCur ? [5, 4] : []);
+        c.beginPath(); r.pts.forEach(([x, y], i) => { if (x > xmax + 0.5) return; i ? c.lineTo(X(x), Y(Math.max(0, y))) : c.moveTo(X(x), Y(y)); }); c.stroke(); c.setLineDash([]);
+      }
+      // ballon animé
+      const cur = shots.find((s) => s[0] === S.model)[1], pts = cur.pts, n = Math.min(pts.length - 1, Math.floor(frac * (pts.length - 1)));
+      const [bx, by] = pts[n];
+      if (bx <= xmax + 0.3) { c.fillStyle = '#d2691e'; c.beginPath(); c.arc(X(bx), Y(Math.max(B.C.r, by)), Math.max(4, B.C.r * k), 0, 7); c.fill(); c.strokeStyle = '#3a1a0a'; c.lineWidth = 1; c.stroke(); }
+    }
+    function plot(id, o, draw) {
+      const { c, w, h } = canvas(id);
+      c.fillStyle = '#0a0a0b'; c.fillRect(0, 0, w, h);
+      const pl = 42, pr = 14, pt = 8, pb = 22;
+      const X = (x) => pl + ((x - o.xmin) / (o.xmax - o.xmin)) * (w - pl - pr), Y = (y) => pt + (1 - (y - o.ymin) / (o.ymax - o.ymin)) * (h - pt - pb);
+      c.font = '10px "JetBrains Mono", monospace'; c.fillStyle = '#6c6c70'; c.strokeStyle = '#1e1e21'; c.lineWidth = 1; c.textAlign = 'right'; c.textBaseline = 'middle';
+      for (let v = Math.ceil(o.ymin / o.ystep) * o.ystep; v <= o.ymax + 1e-9; v += o.ystep) { c.beginPath(); c.moveTo(pl, Y(v)); c.lineTo(w - pr, Y(v)); c.stroke(); c.fillText(fmt(v, o.yd || 0) + (o.yu || ''), pl - 4, Y(v)); }
+      c.textAlign = 'center'; c.textBaseline = 'top';
+      for (let v = Math.ceil(o.xmin / o.xstep) * o.xstep; v <= o.xmax + 1e-9; v += o.xstep) { c.beginPath(); c.moveTo(X(v), pt); c.lineTo(X(v), h - pb); c.stroke(); c.fillText(fmt(v, o.xd || 0) + (o.xu || ''), X(v), h - pb + 5); }
+      c.save(); c.beginPath(); c.rect(pl, pt, w - pl - pr, h - pt - pb); c.clip(); draw(c, X, Y); c.restore();
+    }
+    function drawPts() {
+      const f = B.fitPoints({ angle: S.angle, model: S.model, Cx: S.Cx, h0: S.h0 });
+      const g = B.relHeight({ v0: f.v0, angle: S.angle, model: S.model, Cx: S.Cx, h0: S.h0 }, f.tr);
+      plot('chPts', { xmin: 0, xmax: 2.6, xstep: 0.5, xd: 1, xu: ' s', ymin: -0.2, ymax: 4.2, ystep: 1, yd: 0, yu: ' m' }, (c, X, Y) => {
+        c.fillStyle = '#c9c9cc'; B.POINTS.forEach(([x, y]) => { c.beginPath(); c.arc(X(x), Y(y), 2.3, 0, 7); c.fill(); });
+        c.strokeStyle = '#c8102e'; c.lineWidth = 2; c.beginPath(); let pen = false;
+        for (let x = f.tr; x <= 2.6; x += 0.01) { const m = g(x); if (m === null) continue; const y = m + f.yr; pen ? c.lineTo(X(x), Y(y)) : c.moveTo(X(x), Y(y)); pen = true; } c.stroke();
+        c.strokeStyle = '#6c6c70'; c.setLineDash([3, 3]); c.beginPath(); c.moveTo(X(f.tr), Y(-0.2)); c.lineTo(X(f.tr), Y(4.2)); c.stroke(); c.setLineDash([]);
+      });
+      $('hPts').textContent = t('hPts')(fmt(f.vy0, 2), fmt(f.tr, 2), fmt(f.rms * 100, 1));
+    }
+    function drawMap(win) {
+      const M = mapCache;
+      plot('chMap', { xmin: M.v0, xmax: M.v1, xstep: 1, xd: 0, xu: ' m/s', ymin: M.a0, ymax: M.a1, ystep: 10, yu: '°' }, (c, X, Y) => {
+        const dv = (M.v1 - M.v0) / (M.nv - 1), da = (M.a1 - M.a0) / (M.na - 1);
+        c.fillStyle = '#8a1c2c';
+        M.grid.forEach((row, i) => row.forEach((ok, j) => { if (ok) { const v = M.v0 + j * dv, a = M.a0 + i * da; c.fillRect(X(v - dv / 2), Y(a + da / 2), X(v + dv / 2) - X(v - dv / 2) + 0.5, Y(a - da / 2) - Y(a + da / 2) + 0.5); } }));
+        c.strokeStyle = '#f2f2f2'; c.lineWidth = 1.5; c.beginPath(); c.arc(X(S.v0), Y(S.angle), 5, 0, 7); c.stroke();
+      });
+    }
+    function drawTable() {
+      const H = t('tabHead');
+      let h = '<thead><tr>' + H.map((c, i) => '<th' + (i ? ' class="n"' : '') + '>' + c + '</th>').join('') + '</tr></thead><tbody>';
+      [40, 45, 50, 55, 60].forEach((a) => { h += '<tr' + (a === 50 ? ' class="sel"' : '') + '><td>' + a + '°</td>' + [['sans'], ['2024'], ['quad', 0.47], ['quad', 0.6]].map(([m, cx]) => '<td class="n">' + fmt(B.requiredSpeed(a, m, cx, S.h0), 2) + '</td>').join('') + '</tr>'; });
+      $('tab').innerHTML = h + '</tbody>';
+    }
+    function frame(ts) {
+      if (shots) { if (anim0 === null) anim0 = ts; const cur = shots.find((s) => s[0] === S.model)[1]; const T0 = cur.pts[cur.pts.length - 1][2]; drawCourt(Math.min(1, (ts - anim0) / 1000 / Math.max(0.5, T0))); }
+      requestAnimationFrame(frame);
+    }
+    $('replay').addEventListener('click', () => (anim0 = null));
+    function setLang(l) {
+      lang = l; document.documentElement.lang = l;
+      document.querySelectorAll('[data-t]').forEach((el) => { const v = T[l][el.dataset.t]; if (typeof v === 'string') el.textContent = v; });
+      document.querySelectorAll('.lang button').forEach((b) => b.setAttribute('aria-pressed', b.dataset.lang === l));
+      try { localStorage.setItem('lang', l); } catch (e) {}
+      $('review').innerHTML = T[l].review.map(([a, b]) => '<li><b>' + a + '</b> ' + b + '</li>').join('');
+      renderCtl(); update(true);
+    }
+    document.querySelectorAll('.lang button').forEach((b) => b.addEventListener('click', () => setLang(b.dataset.lang)));
+    setLang(lang);
+    window.addEventListener('resize', () => update(false));
+    requestAnimationFrame(frame);
+  })();
+  </script>
+</body>
+</html>
