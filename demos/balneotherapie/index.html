@@ -1,0 +1,414 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Balnéothérapie connectée</title>
+  <meta name="description" content="Simulation de la régulation de température d'un bassin de balnéothérapie (Arduino, DS18B20, relais, Bluetooth, 2023) : programme d'origine et version corrigée.">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --bg: #0c0c0d; --panel: #161618; --border: #262628; --border-hi: #3a3a3d;
+      --text: #f2f2f2; --dim: #9b9b9f; --muted: #6c6c70; --accent: #c8102e; --line: #c9c9cc; --warn: #e0a458; --ok: #8fd18f;
+      --mono: "JetBrains Mono", ui-monospace, monospace; --sans: "Inter", system-ui, sans-serif;
+      color-scheme: dark;
+    }
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    body { background: var(--bg); color: var(--text); font-family: var(--sans); line-height: 1.55; -webkit-font-smoothing: antialiased; }
+    .wrap { max-width: 1280px; margin: 0 auto; padding: 24px 16px 48px; }
+    .top { display: flex; justify-content: space-between; align-items: center; gap: 12px; flex-wrap: wrap; margin-bottom: 24px; }
+    .back { font-size: 0.9rem; color: var(--dim); text-decoration: none; }
+    .back:hover { color: var(--accent); }
+    .lang { display: flex; border: 1px solid var(--border-hi); }
+    .lang button { font: 500 0.78rem var(--mono); letter-spacing: .05em; background: none; color: var(--dim); border: 0; padding: 5px 10px; cursor: pointer; }
+    .lang button + button { border-left: 1px solid var(--border-hi); }
+    .lang button[aria-pressed="true"] { background: var(--text); color: var(--bg); }
+    .eyebrow { font: 500 0.82rem var(--mono); color: var(--accent); letter-spacing: .04em; }
+    h1 { font-size: clamp(1.6rem, 3.4vw, 2.3rem); line-height: 1.15; margin: 6px 0 10px; text-wrap: balance; }
+    .intro { color: var(--dim); max-width: 82ch; }
+    .intro a { color: var(--line); }
+    .warnbox { border: 1px solid #4a3a20; background: #1a160f; color: var(--warn); border-radius: 6px; padding: 8px 12px; font-size: 0.84rem; margin-top: 12px; }
+    .grid { display: grid; grid-template-columns: 320px minmax(0, 1fr); gap: 20px; align-items: start; margin-top: 20px; }
+    .stack { display: grid; gap: 16px; min-width: 0; }
+    .panel { background: var(--panel); border: 1px solid var(--border); border-radius: 8px; padding: 16px; min-width: 0; }
+    h2 { font: 600 0.78rem var(--mono); letter-spacing: .12em; text-transform: uppercase; color: var(--dim); margin-bottom: 12px; }
+    h3 { font: 600 0.72rem var(--mono); letter-spacing: .08em; text-transform: uppercase; color: var(--dim); margin: 14px 0 10px; padding-top: 12px; border-top: 1px solid var(--border); }
+    button:focus-visible, input:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+    .btn { font: 500 0.82rem var(--sans); background: none; color: var(--text); border: 1px solid var(--border-hi); border-radius: 6px; padding: 6px 11px; cursor: pointer; white-space: nowrap; }
+    .btn:hover { border-color: var(--accent); color: var(--accent); }
+    .btn[aria-pressed="true"] { border-color: var(--accent); color: var(--accent); }
+    .btn.primary { background: var(--accent); border-color: var(--accent); color: #fff; }
+    .seg { display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 10px; }
+    .ctl { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 2px 10px; margin-bottom: 10px; }
+    .ctl label { font: 500 0.76rem var(--mono); color: var(--dim); }
+    .ctl output { font: 0.8rem var(--mono); font-variant-numeric: tabular-nums; text-align: right; }
+    .ctl input[type=range] { grid-column: 1 / -1; width: 100%; accent-color: var(--accent); }
+    .lab { font: 500 0.74rem var(--mono); color: var(--dim); margin: 2px 0 6px; }
+    .hint { font-size: 0.8rem; color: var(--dim); margin-top: 8px; }
+    .kpis { display: grid; grid-template-columns: repeat(6, minmax(0, 1fr)); gap: 10px; }
+    .kpi { border: 1px solid var(--border); border-radius: 6px; padding: 8px 10px; min-width: 0; }
+    .kpi dt { font: 0.66rem var(--mono); color: var(--dim); }
+    .kpi dd { font: 600 1.02rem var(--sans); font-variant-numeric: tabular-nums; margin-top: 2px; }
+    .kpi dd small { font: 400 0.7rem var(--mono); color: var(--dim); margin-left: 3px; }
+    .kpi.bad dd { color: #ff8a8a; } .kpi.good dd { color: var(--ok); }
+    canvas#table { width: 100%; aspect-ratio: 240 / 150; display: block; border: 1px solid var(--border); border-radius: 6px; background: #0a0a0b; margin-top: 12px; cursor: crosshair; touch-action: none; }
+    .controls { display: flex; gap: 8px; flex-wrap: wrap; align-items: center; margin-top: 10px; font: 0.78rem var(--mono); color: var(--dim); }
+    .row2 { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 16px; }
+    .pins { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 6px; font: 0.74rem var(--mono); }
+    .pin { border: 1px solid var(--border); border-radius: 5px; padding: 5px 7px; min-width: 0; }
+    .pin b { display: block; color: var(--dim); font-weight: 500; font-size: 0.68rem; }
+    .pin span { font-variant-numeric: tabular-nums; }
+    .pin.hi { border-color: var(--accent); } .pin.hi span { color: #ff8a8a; }
+    .serial { font: 0.74rem/1.45 var(--mono); background: #0a0a0b; border: 1px solid var(--border); border-radius: 6px; padding: 8px 10px; height: 172px; overflow: hidden; color: var(--line); white-space: pre; }
+    .serial .t { color: var(--muted); }
+    .serial .w { color: #ff8a8a; }
+    .state { font: 0.8rem var(--mono); color: var(--dim); margin-top: 8px; }
+    .state b { color: var(--text); font-weight: 500; }
+    table { width: 100%; border-collapse: collapse; font: 0.8rem var(--mono); font-variant-numeric: tabular-nums; }
+    th, td { text-align: left; padding: 6px 8px; border-bottom: 1px solid var(--border); }
+    td.n, th.n { text-align: right; }
+    th { color: var(--dim); font-weight: 500; }
+    td.bad { color: #ff8a8a; } td.good { color: var(--ok); }
+    .tablewrap { overflow-x: auto; }
+    ol.review { padding-left: 1.2em; display: grid; gap: 6px; font-size: 0.86rem; color: var(--dim); }
+    ol.review b { color: var(--text); font-weight: 600; }
+    .note { font-size: 0.82rem; color: var(--dim); }
+    .note p + p { margin-top: 6px; }
+    .sceneRow { display: grid; grid-template-columns: minmax(0, 1fr) 190px; gap: 12px; margin-top: 12px; align-items: stretch; }
+    canvas#scene { width: 100%; height: 280px; display: block; border: 1px solid var(--border); border-radius: 6px; background: #0a0a0b; }
+    .phone { border: 2px solid var(--border-hi); border-radius: 22px; padding: 14px 12px; background: #101012; display: flex; flex-direction: column; gap: 10px; min-height: 280px; }
+    .ph-bar { font: 600 0.78rem var(--sans); color: var(--text); text-align: center; border-bottom: 1px solid var(--border); padding-bottom: 8px; }
+    .ph-conn { font: 0.72rem var(--mono); color: var(--ok); text-align: center; }
+    .ph-val { font: 700 2rem var(--sans); text-align: center; font-variant-numeric: tabular-nums; margin: 8px 0; }
+    .ph-alert { font-size: 0.8rem; text-align: center; border-radius: 8px; padding: 8px; border: 1px solid var(--border); color: var(--dim); }
+    .ph-alert.good { color: var(--ok); border-color: #2e4a2e; } .ph-alert.warn { color: var(--warn); border-color: #4a3a20; } .ph-alert.bad { color: #fff; background: var(--accent); border-color: var(--accent); }
+    .chart p { font: 0.72rem var(--mono); color: var(--dim); margin-bottom: 4px; display: flex; gap: 10px; flex-wrap: wrap; }
+    .chart p i { display: inline-block; width: 12px; height: 2px; vertical-align: 3px; margin-right: 5px; }
+    .chart canvas { width: 100%; height: 220px; display: block; border: 1px solid var(--border); border-radius: 6px; background: #0a0a0b; }
+    tr.sel td { color: var(--accent); }
+    .pins { grid-template-columns: repeat(2, minmax(0, 1fr)) !important; }
+    @media (max-width: 760px) { .sceneRow { grid-template-columns: minmax(0, 1fr); } .phone { min-height: 0; } }
+    @media (max-width: 1000px) { .grid { grid-template-columns: minmax(0, 1fr); } .main-col { order: -1; } }
+    @media (max-width: 760px) { .kpis { grid-template-columns: repeat(3, minmax(0, 1fr)); } .row2 { grid-template-columns: minmax(0, 1fr); } .pins { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+  </style>
+</head>
+<body>
+  <div class="wrap">
+    <div class="top">
+      <a class="back" href="../../index.html#projets" data-t="back">← Retour au portfolio</a>
+      <div class="lang" role="group" aria-label="Langue / Language"><button type="button" data-lang="fr">FR</button><button type="button" data-lang="en">EN</button></div>
+    </div>
+    <p class="eyebrow" data-t="eyebrow">Démo · projet de terminale STI2D, option SIN (avril 2023)</p>
+    <h1 data-t="title">Balnéothérapie connectée : régulation de la température de l'eau</h1>
+    <p class="intro" data-t="intro"></p>
+    <p class="warnbox" data-t="warn"></p>
+
+    <div class="grid">
+      <div class="stack"><div class="panel" id="ctl"></div></div>
+      <div class="stack main-col">
+        <div class="panel">
+          <dl class="kpis" id="kpis"></dl>
+          <div class="sceneRow">
+            <canvas id="scene" aria-label="Bassin, sonde, relais, Arduino et module Bluetooth"></canvas>
+            <div class="phone" id="phone" aria-live="polite"></div>
+          </div>
+          <div class="controls">
+            <button type="button" class="btn primary" id="play">Pause</button>
+            <button type="button" class="btn" id="reset" data-t="reset">Recommencer</button>
+            <span data-t="speedL">Vitesse</span>
+            <span class="seg" id="speeds" style="margin:0"></span>
+            <span id="clock"></span>
+          </div>
+        </div>
+        <div class="panel">
+          <div class="chart"><p><span><i style="background:var(--accent)"></i><span data-t="lgT">température de l'eau</span></span><span><i style="background:#2e4a2e"></i><span data-t="lgBand">confort 32–36 °C</span></span><span><i style="background:var(--warn)"></i><span data-t="lgRelay">relais (chauffe)</span></span></p><canvas id="chT"></canvas></div>
+        </div>
+        <div class="panel row2">
+          <div><h2 data-t="termT">Terminal Bluetooth (9600 bauds)</h2><div class="serial" id="term"></div></div>
+          <div><h2 data-t="pinsT">Broches de l'Arduino</h2><div class="pins" id="pins"></div><p class="hint" id="pinHint"></p></div>
+        </div>
+        <div class="panel"><h2 data-t="cmpT">Les deux programmes face aux défauts</h2><div class="tablewrap"><table id="cmp"></table></div><p class="hint" data-t="cmpHint"></p></div>
+        <div class="panel"><h2 data-t="mesT">Mes mesures d'avril 2023</h2><div class="chart"><p><span><i style="background:var(--line)"></i><span data-t="lgMes">mesures reçues sur le téléphone (séries A et B)</span></span><span><i style="background:var(--accent)"></i><span data-t="lgFit">maquette simulée (relais allumé)</span></span></p><canvas id="chMes"></canvas></div><p class="hint" id="mesHint"></p></div>
+        <div class="panel"><h2 data-t="revT">Ce que la simulation montre de ma relecture</h2><ol class="review" id="review"></ol></div>
+      </div>
+    </div>
+    <div class="panel note" style="margin-top:20px">
+      <p data-t="note1"></p>
+      <p><a href="https://github.com/Valentin-Auger-Laboratoire/balneotherapie-connectee" target="_blank" rel="noopener" style="color:var(--line)"><span data-t="repo">Code source, schémas et mesures</span> ↗</a></p>
+    </div>
+  </div>
+  <script src="balneo.js"></script>
+  <script>
+  (function () {
+    'use strict';
+    const B = window.Balneo;
+    const $ = (id) => document.getElementById(id);
+    const T = {
+      fr: {
+        back: '← Retour au portfolio', eyebrow: 'Démo · projet de terminale STI2D, option SIN (avril 2023)', title: "Balnéothérapie connectée : régulation de la température de l'eau",
+        intro: "La sonde DS18B20 mesure l'eau, l'Arduino commande la résistance chauffante par un relais et envoie la température en Bluetooth vers le téléphone. Le programme « 2023 » est un portage ligne à ligne de mon programme : relais allumé si T ≤ 20 °C, delay(10000), message println à 2 décimales. Le programme « 2026 » applique ma relecture : hystérésis 32 / 36 °C, sonde débranchée détectée, coupure au-delà de 38 °C, boucle non bloquante. Le téléphone affiche ce que montrerait l'appli recréée.",
+        warn: "Simulation. La maquette est calée sur mes 48 vraies mesures (pente de chauffe de la série B), mais son volume et ses pertes sont supposés : la puissance de chauffe en est déduite. Le bassin de 15 m³ est illustratif. Les différences entre les deux programmes, elles, viennent directement du code.",
+        reset: 'Recommencer', speedL: 'Vitesse', play: 'Lecture', pause: 'Pause',
+        progT: 'Programme', prog: { '2023': '2023 (portage fidèle)', '2026': '2026 (corrigé)' },
+        poolT: 'Installation', pool: { maquette: 'Maquette du TP (calée sur mes mesures)', bassin: 'Bassin de 15 m³ (illustratif)' },
+        faultT: 'Défaut (au tiers de la durée)', fault: { none: 'Aucun', sonde: 'Sonde débranchée', relais: 'Relais collé', froid: "Eau froide ajoutée" },
+        setT: 'Consignes du programme 2026', lo: 'Chauffer sous', hi: 'Arrêter au-dessus de', amb: 'Température de la pièce',
+        kT: 'Eau', kRelay: 'Relais D7', kComfort: 'Temps à 32–36 °C', kMax: 'Maximum', kE: 'Énergie', kAlarm: 'Alerte',
+        on: 'HIGH (chauffe)', off: 'LOW', none: 'aucune',
+        termT: 'Terminal Bluetooth (9600 bauds)', pinsT: "Broches de l'Arduino", cmpT: 'Les deux programmes face aux défauts',
+        cmpHint: 'Même installation, durée complète simulée pour chaque cas (12 h pour la maquette, 24 h pour le bassin).',
+        cmpHead: ['Défaut', 'Programme', 'Temp. finale', 'Maximum', 'Temps à 32–36 °C', 'Alerte'],
+        mesT: "Mes mesures d'avril 2023", lgMes: 'mesures reçues sur le téléphone (séries A et B)', lgFit: 'maquette simulée (relais allumé)',
+        mesHint: (p, per, P, rms) => 'Série B : chauffe mesurée de ' + p + ' °C/min (relais à HIGH, eau sous 20 °C). Période réelle de la boucle : ' + per + ' s (delay(10000) + conversion). Avec 1 L d’eau et des pertes de 0,3 W/K supposés, cette pente correspond à environ ' + P + ' W de chauffe utile. Écart quadratique entre la simulation et la série B : ' + rms + ' °C.',
+        lgT: "température de l'eau", lgBand: 'confort 32–36 °C', lgRelay: 'relais (chauffe)',
+        al: { sonde: 'Sonde débranchée', surchauffe: 'Surchauffe : coupure demandée' },
+        ph: { title: 'Balnéo · température', conn: 'Connecté', cold: 'Eau froide (sous 32 °C)', warm: 'Eau chaude (au-dessus de 36 °C)', ok: 'Dans la plage de confort', probe: 'Sonde débranchée !', hot: 'Eau trop chaude (au-dessus de 38 °C) !', stale: 'Plus de mesure depuis 30 s', wait: 'En attente de mesure…' },
+        pinHint: (s) => (s ? 'Sonde débranchée : getTempCByIndex(0) renvoie −127.' : 'D7 commande le relais ; D2/D3 = SoftwareSerial vers le module Bluetooth.'),
+        revT: 'Ce que la simulation montre de ma relecture',
+        review: [
+          ['Sonde débranchée = −127 °C.', "Défaut « sonde débranchée » sur le bassin : −127 ≤ 20, donc le programme 2023 laisse la chauffe allumée en permanence et l'eau dépasse 50 °C. Le 2026 détecte la valeur, coupe la chauffe et alerte."],
+          ['Seuil à 20 °C.', "Le code coupe à 20 °C alors que le commentaire dit 32 °C : avec le programme 2023, l'eau n'atteint jamais la plage de confort d'une balnéothérapie."],
+          ['Pas d’hystérésis.', 'Avec un seul seuil, le relais commute à chaque mesure autour de la consigne. Le 2026 chauffe sous 32 °C et s’arrête au-dessus de 36 °C, comme prévu dans mon algorigramme.'],
+          ['delay(10000).', 'Une mesure toutes les 10,6 s et rien d’autre pendant ce temps. Le 2026 lit la sonde chaque seconde sans bloquer et envoie toujours une valeur toutes les 10 s (même format, l’appli reste compatible).'],
+          ['Pas d’alerte.', 'Le besoin demandait d’alerter un agent. Le 2026 coupe et signale une surchauffe au-delà de 38 °C. Un relais collé, en revanche, ne se coupe pas par logiciel : il faut aussi un thermostat de sécurité matériel, indépendant de l’Arduino.'],
+        ],
+        note1: "Modèle : C·dT/dt = P·relais − UA·(T − T_pièce), avec C = masse d'eau × 4 186 J/(kg·K). DS18B20 en 12 bits (pas de 0,0625 °C) avec un léger bruit, message Bluetooth identique à println(temperature) : 2 décimales et un retour à la ligne. Le téléphone reprend les alertes de l'appli recréée en 2026 (sonde débranchée, plus de 38 °C, plus de mesure depuis 30 s, hors de 32–36 °C).",
+        repo: 'Code source, schémas et mesures',
+      },
+      en: {
+        back: '← Back to portfolio', eyebrow: 'Demo · STI2D final-year project, digital systems option (April 2023)', title: 'Connected balneotherapy: water temperature control',
+        intro: 'The DS18B20 probe measures the water, the Arduino drives the heater through a relay and sends the temperature over Bluetooth to the phone. The "2023" program is a line-by-line port of my program: relay on if T ≤ 20 °C, delay(10000), println message with 2 decimals. The "2026" program applies my review: 32 / 36 °C hysteresis, unplugged probe detected, cut-off above 38 °C, non-blocking loop. The phone shows what the recreated app would display.',
+        warn: 'Simulation. The bench model is fitted to my 48 real measurements (heating slope of series B), but its volume and losses are assumed: the heater power is deduced from them. The 15 m³ pool is illustrative. The differences between the two programs come straight from the code.',
+        reset: 'Restart', speedL: 'Speed', play: 'Play', pause: 'Pause',
+        progT: 'Program', prog: { '2023': '2023 (faithful port)', '2026': '2026 (fixed)' },
+        poolT: 'Setup', pool: { maquette: 'Lab bench model (fitted to my data)', bassin: '15 m³ pool (illustrative)' },
+        faultT: 'Fault (at one third of the run)', fault: { none: 'None', sonde: 'Probe unplugged', relais: 'Relay stuck closed', froid: 'Cold water added' },
+        setT: '2026 program set points', lo: 'Heat below', hi: 'Stop above', amb: 'Room temperature',
+        kT: 'Water', kRelay: 'Relay D7', kComfort: 'Time at 32–36 °C', kMax: 'Maximum', kE: 'Energy', kAlarm: 'Alert',
+        on: 'HIGH (heating)', off: 'LOW', none: 'none',
+        termT: 'Bluetooth terminal (9600 baud)', pinsT: 'Arduino pins', cmpT: 'Both programs facing faults',
+        cmpHint: 'Same setup, full run simulated for each case (12 h for the bench model, 24 h for the pool).',
+        cmpHead: ['Fault', 'Program', 'Final temp.', 'Maximum', 'Time at 32–36 °C', 'Alert'],
+        mesT: 'My April 2023 measurements', lgMes: 'readings received on the phone (series A and B)', lgFit: 'simulated bench model (relay on)',
+        mesHint: (p, per, P, rms) => 'Series B: measured heating of ' + p + ' °C/min (relay HIGH, water below 20 °C). Actual loop period: ' + per + ' s (delay(10000) + conversion). With an assumed 1 L of water and 0.3 W/K of losses, this slope means about ' + P + ' W of useful heating. RMS difference between the simulation and series B: ' + rms + ' °C.',
+        lgT: 'water temperature', lgBand: 'comfort 32–36 °C', lgRelay: 'relay (heating)',
+        al: { sonde: 'Probe unplugged', surchauffe: 'Overheating: cut-off requested' },
+        ph: { title: 'Balneo · temperature', conn: 'Connected', cold: 'Cold water (below 32 °C)', warm: 'Warm water (above 36 °C)', ok: 'In the comfort range', probe: 'Probe unplugged!', hot: 'Water too hot (above 38 °C)!', stale: 'No reading for 30 s', wait: 'Waiting for a reading…' },
+        pinHint: (s) => (s ? 'Probe unplugged: getTempCByIndex(0) returns −127.' : 'D7 drives the relay; D2/D3 = SoftwareSerial to the Bluetooth module.'),
+        revT: 'What the simulation shows from my review',
+        review: [
+          ['Unplugged probe = −127 °C.', '"Probe unplugged" fault on the pool: −127 ≤ 20, so the 2023 program keeps heating forever and the water goes above 50 °C. The 2026 program detects the value, cuts the heater and raises an alert.'],
+          ['Threshold at 20 °C.', 'The code switches off at 20 °C while the comment says 32 °C: with the 2023 program the water never reaches a balneotherapy comfort range.'],
+          ['No hysteresis.', 'With a single threshold, the relay toggles at every reading around the set point. The 2026 program heats below 32 °C and stops above 36 °C, as planned in my flowchart.'],
+          ['delay(10000).', 'One reading every 10.6 s and nothing else in between. The 2026 program reads the probe every second without blocking and still sends a value every 10 s (same format, so the app stays compatible).'],
+          ['No alert.', 'The brief asked to alert staff. The 2026 program cuts off and reports overheating above 38 °C. A relay stuck closed, however, cannot be switched off in software: an independent hardware safety thermostat is also needed.'],
+        ],
+        note1: 'Model: C·dT/dt = P·relay − UA·(T − T_room), with C = water mass × 4,186 J/(kg·K). DS18B20 at 12 bits (0.0625 °C steps) with slight noise, Bluetooth message identical to println(temperature): 2 decimals and a line break. The phone mirrors the alerts of the app recreated in 2026 (probe unplugged, above 38 °C, no reading for 30 s, outside 32–36 °C).',
+        repo: 'Source code, diagrams and measurements',
+      },
+    };
+    let lang = 'fr';
+    try { lang = localStorage.getItem('lang') || ((navigator.language || 'fr').toLowerCase().startsWith('fr') ? 'fr' : 'en'); } catch (e) {}
+    if (!T[lang]) lang = 'fr';
+    const t = (k) => T[lang][k];
+    const fmt = (v, d = 1) => (Number.isFinite(v) ? v.toLocaleString(lang === 'fr' ? 'fr-FR' : 'en-GB', { maximumFractionDigits: d, minimumFractionDigits: d }) : '—');
+    const clock0 = B.sec('11:44:39.097');
+    const hms = (s) => { s = clock0 + s; const h = Math.floor(s / 3600) % 24, m = Math.floor((s % 3600) / 60), x = s % 60; return String(h).padStart(2, '0') + ':' + String(m).padStart(2, '0') + ':' + x.toFixed(3).padStart(6, '0'); };
+    const dur = (s) => (s < 3600 ? fmt(s / 60, 0) + ' min' : fmt(s / 3600, 1) + ' h');
+
+    const S = { prog: '2023', pool: 'maquette', fault: 'none', lo: 32, hi: 36, amb: 23, speed: 600 };
+    let sim = null, running = true;
+    const opts = (prog, fault) => {
+      const P = B.POOLS[S.pool], f = fault || S.fault;
+      return { prog: prog || S.prog, pool: S.pool, lo: S.lo, hi: S.hi, max: 38, Tamb: S.amb, fault: f === 'none' ? null : { type: f, t: P.horizon / 3 } };
+    };
+    function reset() { sim = B.createSim(opts()); runCompare(); ui(); drawScene(); drawChart(); }
+
+    // ------------------------------------------------------------------ commandes
+    function seg(box, key, list, onChange) {
+      const s = document.createElement('div'); s.className = 'seg';
+      list.forEach(([v, label]) => { const b = document.createElement('button'); b.type = 'button'; b.className = 'btn'; b.textContent = label; b.setAttribute('aria-pressed', String(S[key]) === String(v)); b.addEventListener('click', () => { S[key] = v; s.querySelectorAll('button').forEach((x) => x.setAttribute('aria-pressed', x === b)); onChange(); }); s.appendChild(b); });
+      box.appendChild(s);
+    }
+    function head(box, txt, first) { const h = document.createElement(first ? 'h2' : 'h3'); h.textContent = txt; box.appendChild(h); }
+    function slider(box, key, label, min, max, step, show, onChange) {
+      const row = document.createElement('div'); row.className = 'ctl';
+      row.innerHTML = '<label for="s-' + key + '">' + label + '</label><output></output><input type="range" id="s-' + key + '">';
+      const r = row.querySelector('input'), o = row.querySelector('output');
+      Object.assign(r, { min, max, step }); r.value = S[key]; o.textContent = show(S[key]);
+      r.addEventListener('input', () => { S[key] = parseFloat(r.value); o.textContent = show(S[key]); });
+      r.addEventListener('change', onChange); box.appendChild(row);
+    }
+    function renderCtl() {
+      const box = $('ctl'); box.innerHTML = '';
+      head(box, t('progT'), true); seg(box, 'prog', Object.entries(T[lang].prog), reset);
+      head(box, t('poolT')); seg(box, 'pool', Object.entries(T[lang].pool), () => { S.amb = B.POOLS[S.pool].Tamb; renderCtl(); reset(); });
+      head(box, t('faultT')); seg(box, 'fault', Object.entries(T[lang].fault), reset);
+      head(box, t('setT'));
+      slider(box, 'lo', t('lo'), 26, 34, 0.5, (v) => fmt(v, 1) + ' °C', () => { if (S.hi < S.lo + 1) S.hi = S.lo + 1; reset(); });
+      slider(box, 'hi', t('hi'), 30, 38, 0.5, (v) => fmt(v, 1) + ' °C', () => { if (S.hi < S.lo + 1) S.lo = S.hi - 1; reset(); });
+      slider(box, 'amb', t('amb'), 15, 30, 0.5, (v) => fmt(v, 1) + ' °C', reset);
+      const sp = $('speeds'); sp.innerHTML = '';
+      [[60, '×60'], [600, '×600'], [3600, '×3600']].forEach(([v, l]) => { const b = document.createElement('button'); b.type = 'button'; b.className = 'btn'; b.textContent = l; b.setAttribute('aria-pressed', S.speed === v); b.addEventListener('click', () => { S.speed = v; sp.querySelectorAll('button').forEach((x) => x.setAttribute('aria-pressed', x === b)); }); sp.appendChild(b); });
+    }
+    // ------------------------------------------------------------------ tableau comparatif
+    function runCompare() {
+      const P = B.POOLS[S.pool], H = t('cmpHead');
+      let h = '<thead><tr>' + H.map((c, i) => '<th' + (i > 1 ? ' class="n"' : '') + '>' + c + '</th>').join('') + '</tr></thead><tbody>';
+      ['none', 'sonde', 'relais', 'froid'].forEach((f) => ['2023', '2026'].forEach((p) => {
+        const r = B.summary(B.createSim(opts(p, f)).run(P.horizon, 2));
+        const al = [...new Set(r.alarms)].map((a) => T[lang].al[a]).join(', ') || '—';
+        h += '<tr' + (f === S.fault && p === S.prog ? ' class="sel"' : '') + '><td>' + T[lang].fault[f] + '</td><td>' + p + '</td><td class="n">' + fmt(r.T, 1) + ' °C</td><td class="n' + (r.maxT > 38 ? ' bad' : '') + '">' + fmt(r.maxT, 1) + ' °C</td><td class="n' + (r.comfort > 0.5 ? ' good' : '') + '">' + fmt(r.comfort * 100, 0) + ' %</td><td class="n">' + al + '</td></tr>';
+      }));
+      $('cmp').innerHTML = h + '</tbody>';
+    }
+    // ------------------------------------------------------------------ dessin de la scène
+    function canvas(id) {
+      const cv = $(id), dpr = window.devicePixelRatio || 1, w = cv.clientWidth, h = cv.clientHeight;
+      if (cv.width !== Math.round(w * dpr) || cv.height !== Math.round(h * dpr)) { cv.width = Math.round(w * dpr); cv.height = Math.round(h * dpr); }
+      const c = cv.getContext('2d'); c.setTransform(dpr, 0, 0, dpr, 0, 0); return { c, w, h };
+    }
+    const waterColor = (T) => { const u = Math.max(0, Math.min(1, (T - 15) / 30)); const r = Math.round(40 + 170 * u), g = Math.round(70 + 20 * (1 - Math.abs(u - 0.5) * 2)), b = Math.round(90 - 60 * u); return 'rgb(' + r + ',' + g + ',' + b + ')'; };
+    function drawScene() {
+      if (!sim) return;
+      const { c, w, h } = canvas('scene');
+      c.fillStyle = '#0a0a0b'; c.fillRect(0, 0, w, h);
+      const heat = sim.state.collé ? 1 : sim.io.relais, Tw = sim.state.T;
+      c.font = '10px "JetBrains Mono", monospace'; c.textAlign = 'center';
+      // cuve
+      const tx = 20, ty = 40, tw = Math.min(260, w * 0.5), th = h - 70;
+      c.fillStyle = waterColor(Tw); c.globalAlpha = 0.75; c.fillRect(tx + 4, ty + 18, tw - 8, th - 22); c.globalAlpha = 1;
+      c.strokeStyle = '#c9c9cc'; c.lineWidth = 2; c.beginPath(); c.moveTo(tx, ty); c.lineTo(tx, ty + th); c.lineTo(tx + tw, ty + th); c.lineTo(tx + tw, ty); c.stroke();
+      c.fillStyle = '#f2f2f2'; c.font = '600 18px Inter, sans-serif'; c.fillText(fmt(Tw, 1) + ' °C', tx + tw / 2, ty + th / 2);
+      c.font = '10px "JetBrains Mono", monospace'; c.fillStyle = '#9b9b9f'; c.fillText(S.pool === 'bassin' ? (lang === 'fr' ? 'bassin 15 m³' : '15 m³ pool') : (lang === 'fr' ? 'maquette ~1 L' : 'bench ~1 L'), tx + tw / 2, ty + th + 14);
+      // résistance chauffante
+      const ry = ty + th - 16; c.strokeStyle = heat ? '#ff5a3a' : '#5a5a60'; c.lineWidth = 3; c.beginPath();
+      for (let i = 0; i <= 12; i++) { const x = tx + 20 + i * ((tw - 70) / 12), y = ry + (i % 2 ? -6 : 6); i ? c.lineTo(x, y) : c.moveTo(x, y); } c.stroke();
+      if (heat) { c.fillStyle = 'rgba(255,90,58,0.15)'; c.fillRect(tx + 10, ry - 16, tw - 50, 30); }
+      c.fillStyle = '#9b9b9f'; c.fillText(lang === 'fr' ? 'résistance' : 'heater', tx + tw / 2 - 20, ry + 22 > ty + th ? ty + th - 2 : ry + 22);
+      // sonde
+      const px = tx + tw - 28; c.strokeStyle = sim.state.sondeOK ? '#c9c9cc' : '#c8102e'; c.lineWidth = 2;
+      c.beginPath(); c.moveTo(px, ty - 10); c.lineTo(px, ty + th * 0.55); c.stroke();
+      c.fillStyle = sim.state.sondeOK ? '#c9c9cc' : '#c8102e'; c.fillRect(px - 4, ty + th * 0.55, 8, 16);
+      c.fillText('DS18B20', px, ty - 14);
+      // Arduino + relais + Bluetooth
+      const ax = tx + tw + 40, ay = ty + 10, aw = Math.min(150, w - ax - 20);
+      if (aw > 70) {
+        c.fillStyle = '#1f4f4a'; c.fillRect(ax, ay, aw, 70); c.fillStyle = '#f2f2f2'; c.fillText('Arduino', ax + aw / 2, ay + 38);
+        // fil sonde → D6
+        c.strokeStyle = sim.state.sondeOK ? '#6c6c70' : 'rgba(200,16,46,0.4)'; c.setLineDash(sim.state.sondeOK ? [] : [4, 4]); c.beginPath(); c.moveTo(px, ty - 10); c.lineTo(px, ay + 20); c.lineTo(ax, ay + 20); c.stroke(); c.setLineDash([]);
+        c.fillStyle = '#9b9b9f'; c.textAlign = 'left'; c.fillText('D6', ax + 4, ay + 14);
+        // relais
+        const rx = ax, ryy = ay + 100; c.fillStyle = heat ? '#e0a458' : '#2b2b30'; c.fillRect(rx, ryy, 60, 30); c.fillStyle = heat ? '#111' : '#9b9b9f'; c.textAlign = 'center'; c.fillText(lang === 'fr' ? 'relais' : 'relay', rx + 30, ryy + 19);
+        c.strokeStyle = '#6c6c70'; c.beginPath(); c.moveTo(ax + 20, ay + 70); c.lineTo(ax + 20, ryy); c.stroke(); c.fillStyle = '#9b9b9f'; c.fillText('D7', ax + 30, ay + 86);
+        c.strokeStyle = heat ? '#ff5a3a' : '#5a5a60'; c.beginPath(); c.moveTo(rx, ryy + 15); c.lineTo(tx + tw - 50, ryy + 15); c.lineTo(tx + tw - 50, ry); c.stroke();
+        if (sim.state.collé) { c.fillStyle = '#ff8a8a'; c.fillText(lang === 'fr' ? 'contact collé' : 'contact stuck', rx + 30, ryy + 44); }
+        // Bluetooth
+        const bx = ax + aw - 50, by = ay + 100; c.fillStyle = '#2b2b30'; c.fillRect(bx, by, 50, 30); c.fillStyle = '#c9c9cc'; c.fillText('BT', bx + 25, by + 19);
+        c.strokeStyle = '#6c6c70'; c.beginPath(); c.moveTo(bx + 25, ay + 70); c.lineTo(bx + 25, by); c.stroke(); c.fillStyle = '#9b9b9f'; c.fillText('D2/D3', bx + 25, ay + 86);
+        const age = sim.out.msgs.length ? sim.t - sim.out.msgs[sim.out.msgs.length - 1].t : 99;
+        if (age < 2.5) { c.strokeStyle = 'rgba(201,201,204,' + (1 - age / 2.5) + ')'; c.lineWidth = 1.5; for (let k = 1; k <= 3; k++) { c.beginPath(); c.arc(bx + 50, by + 15, 6 + k * 6 + age * 8, -0.6, 0.6); c.stroke(); } }
+      }
+    }
+    // ------------------------------------------------------------------ téléphone (logique de l'appli recréée)
+    function drawPhone() {
+      const P = T[lang].ph, msgs = sim.out.msgs, last = msgs[msgs.length - 1];
+      let val = '—', cls = '', alert = P.wait;
+      if (last) {
+        const v = parseFloat(last.m), age = sim.t - last.t;
+        if (v === -127) { val = '−127'; cls = 'bad'; alert = P.probe; }
+        else { val = last.m.replace('.', lang === 'fr' ? ',' : '.') + ' °C'; if (v > 38) { cls = 'bad'; alert = P.hot; } else if (v > 36) { cls = 'warn'; alert = P.warm; } else if (v < 32) { cls = 'warn'; alert = P.cold; } else { cls = 'good'; alert = P.ok; } }
+        if (age > 30) { cls = 'bad'; alert = P.stale; }
+      }
+      $('phone').innerHTML = '<div class="ph-bar">' + P.title + '</div><div class="ph-conn">● ' + P.conn + '</div><div class="ph-val">' + val + '</div><div class="ph-alert ' + cls + '">' + alert + '</div>';
+    }
+    // ------------------------------------------------------------------ graphiques
+    function plot(id, series, o) {
+      const { c, w, h } = canvas(id);
+      c.fillStyle = '#0a0a0b'; c.fillRect(0, 0, w, h);
+      const pl = 40, pr = 18, pt = 8, pb = 20;
+      const X = (x) => pl + ((x - o.xmin) / (o.xmax - o.xmin)) * (w - pl - pr), Y = (y) => pt + (1 - (y - o.ymin) / (o.ymax - o.ymin)) * (h - pt - pb);
+      (o.bands || []).forEach((b) => { c.fillStyle = b.color; c.fillRect(pl, Y(b.hi), w - pl - pr, Y(b.lo) - Y(b.hi)); });
+      c.font = '10px "JetBrains Mono", monospace'; c.fillStyle = '#6c6c70'; c.strokeStyle = '#1e1e21'; c.lineWidth = 1; c.textAlign = 'right'; c.textBaseline = 'middle';
+      for (let v = Math.ceil(o.ymin / o.ystep) * o.ystep; v <= o.ymax + 1e-9; v += o.ystep) { c.beginPath(); c.moveTo(pl, Y(v)); c.lineTo(w - pr, Y(v)); c.stroke(); c.fillText(fmt(v, o.yd || 0), pl - 4, Y(v)); }
+      c.textAlign = 'center'; c.textBaseline = 'top';
+      for (let v = Math.ceil(o.xmin / o.xstep) * o.xstep; v <= o.xmax + 1e-9; v += o.xstep) { c.beginPath(); c.moveTo(X(v), pt); c.lineTo(X(v), h - pb); c.stroke(); c.fillText(o.xfmt(v), X(v), h - pb + 4); }
+      (o.hlines || []).forEach((l) => { c.strokeStyle = l.color; c.setLineDash([4, 4]); c.beginPath(); c.moveTo(pl, Y(l.y)); c.lineTo(w - pr, Y(l.y)); c.stroke(); c.setLineDash([]); });
+      c.save(); c.beginPath(); c.rect(pl, pt, w - pl - pr, h - pt - pb); c.clip();
+      series.forEach((s) => {
+        c.strokeStyle = s.color; c.fillStyle = s.color; c.lineWidth = s.width || 1.6;
+        if (s.dots) s.pts.forEach(([x, y]) => { c.beginPath(); c.arc(X(x), Y(y), 2.2, 0, 7); c.fill(); });
+        else if (s.strip) { s.pts.forEach(([x, y], i) => { if (y && i) { c.globalAlpha = 0.5; c.fillRect(X(s.pts[i - 1][0]), h - pb - 6, Math.max(1, X(x) - X(s.pts[i - 1][0])), 6); c.globalAlpha = 1; } }); }
+        else { c.beginPath(); s.pts.forEach(([x, y], i) => (i ? c.lineTo(X(x), Y(y)) : c.moveTo(X(x), Y(y)))); c.stroke(); }
+      });
+      c.restore();
+    }
+    function drawChart() {
+      if (!sim) return;
+      const P = B.POOLS[S.pool], o = sim.out, Hh = P.horizon / 3600;
+      const pts = o.t.map((x, i) => [x / 3600, o.T[i]]), rel = o.t.map((x, i) => [x / 3600, o.relais[i]]);
+      const ymax = Math.max(40, Math.ceil((Math.max(...o.T, 36) + 2) / 5) * 5);
+      plot('chT', [{ pts, color: '#c8102e', width: 1.8 }, { pts: rel, color: '#e0a458', strip: true }], { xmin: 0, xmax: Hh, xstep: Hh > 12 ? 4 : 2, xfmt: (v) => fmt(v, 0) + ' h', ymin: 10, ymax, ystep: 5, bands: [{ lo: S.lo, hi: S.hi, color: 'rgba(46,74,46,0.45)' }], hlines: [{ y: 20, color: '#8a8a90' }, { y: 38, color: '#8a3030' }] });
+    }
+    let rmsB = 0;
+    function drawMes() {
+      // série A puis série B, sur leur vraie échelle de temps ; la maquette simulée part de 18,12 °C, relais allumé
+      const tA = B.MESURES.A.map(([hh, v]) => [(B.sec(hh) - clock0) / 60, v]), tB = B.MESURES.B.map(([hh, v]) => [(B.sec(hh) - clock0) / 60, v]);
+      const s = B.createSim({ prog: '2023', pool: 'maquette', seed: 5 }); const b0 = B.sec(B.MESURES.B[0][0]) - clock0;
+      s.run(B.SERIE_B[B.SERIE_B.length - 1][0] + 20, 0.5);
+      const fit = s.out.t.map((x, i) => [(b0 + x) / 60, s.out.T[i]]);
+      let e = 0; for (const [x, v] of B.SERIE_B) { const i = s.out.t.findIndex((u) => u >= x); e += (s.out.T[i] - v) ** 2; } rmsB = Math.sqrt(e / B.SERIE_B.length);
+      plot('chMes', [{ pts: tA.concat(tB), color: '#c9c9cc', dots: true }, { pts: fit, color: '#c8102e', width: 1.8 }], { xmin: 0, xmax: 13, xstep: 2, xfmt: (v) => hms(v * 60).slice(0, 5), ymin: 17.5, ymax: 23.5, ystep: 1, hlines: [{ y: 20, color: '#8a8a90' }] });
+      $('mesHint').textContent = t('mesHint')(fmt(B.PENTE_B * 60, 3), fmt(B.PERIODE, 2), fmt(B.MAQ.P, 1), fmt(rmsB, 2));
+    }
+    // ------------------------------------------------------------------ panneaux
+    function ui() {
+      const s = B.summary(sim), heat = sim.state.collé ? 1 : sim.io.relais;
+      const kpi = (k, v, u, cls) => '<div class="kpi' + (cls ? ' ' + cls : '') + '"><dt>' + k + '</dt><dd>' + v + (u ? '<small>' + u + '</small>' : '') + '</dd></div>';
+      const al = sim.io.alarm ? T[lang].al[sim.io.alarm] : t('none');
+      $('kpis').innerHTML = kpi(t('kT'), fmt(sim.state.T, 2), '°C', sim.state.T > 38 ? 'bad' : sim.state.T >= S.lo && sim.state.T <= S.hi ? 'good' : '') + kpi(t('kRelay'), heat ? t('on') : t('off'), '') + kpi(t('kComfort'), fmt(s.comfort * 100, 0), '%') + kpi(t('kMax'), fmt(s.maxT, 1), '°C', s.maxT > 38 ? 'bad' : '') + kpi(t('kE'), s.energy > 2000 ? fmt(s.energy / 1000, 1) : fmt(s.energy, 1), s.energy > 2000 ? 'kWh' : 'Wh') + kpi(t('kAlarm'), al, '', sim.io.alarm ? 'bad' : '');
+      const lines = sim.out.msgs.slice(-9).map((l) => '<span class="t">' + hms(l.t) + '  </span>' + (l.m === '-127.00' ? '<span class="w">' + l.m + '</span>' : l.m));
+      $('term').innerHTML = lines.join('\n');
+      const lastMsg = sim.out.msgs[sim.out.msgs.length - 1];
+      const pins = [['D6 · DS18B20', sim.state.sondeOK ? (lastMsg ? lastMsg.m + ' °C' : '…') : '−127', !sim.state.sondeOK], ['D7 · ' + (lang === 'fr' ? 'relais' : 'relay'), heat ? 'HIGH' : 'LOW', heat], ['D2 · RX BT', '9600', false], ['D3 · TX BT', lastMsg ? lastMsg.m : '—', false]];
+      $('pins').innerHTML = pins.map(([k, v, hi]) => '<div class="pin' + (hi ? ' hi' : '') + '"><b>' + k + '</b><span>' + v + '</span></div>').join('');
+      $('pinHint').textContent = t('pinHint')(!sim.state.sondeOK);
+      $('clock').textContent = 't = ' + dur(sim.t) + ' / ' + dur(B.POOLS[S.pool].horizon);
+      $('play').textContent = running ? t('pause') : t('play');
+      drawPhone();
+    }
+    // ------------------------------------------------------------------ boucle
+    let last = null, acc = 0, uiAcc = 0, chAcc = 0;
+    function frame(ts) {
+      if (last === null) last = ts;
+      const dtReal = Math.min(0.05, (ts - last) / 1000); last = ts;
+      const P = B.POOLS[S.pool];
+      if (running && sim && sim.t < P.horizon) {
+        acc += dtReal * S.speed; const h = 0.5;
+        let n = 0; while (acc > h && n < 20000) { sim.step(h); acc -= h; n++; }
+      }
+      drawScene(); uiAcc += dtReal; chAcc += dtReal;
+      if (uiAcc > 0.1) { ui(); uiAcc = 0; }
+      if (chAcc > 0.5) { drawChart(); chAcc = 0; }
+      requestAnimationFrame(frame);
+    }
+    $('play').addEventListener('click', () => { running = !running; ui(); });
+    $('reset').addEventListener('click', reset);
+    function setLang(l) {
+      lang = l; document.documentElement.lang = l;
+      document.querySelectorAll('[data-t]').forEach((el) => { const v = T[l][el.dataset.t]; if (typeof v === 'string') el.textContent = v; });
+      document.querySelectorAll('.lang button').forEach((b) => b.setAttribute('aria-pressed', b.dataset.lang === l));
+      try { localStorage.setItem('lang', l); } catch (e) {}
+      $('review').innerHTML = T[l].review.map(([a, b]) => '<li><b>' + a + '</b> ' + b + '</li>').join('');
+      renderCtl(); drawMes(); if (sim) { runCompare(); ui(); drawChart(); }
+    }
+    document.querySelectorAll('.lang button').forEach((b) => b.addEventListener('click', () => setLang(b.dataset.lang)));
+    setLang(lang); reset();
+    window.addEventListener('resize', () => { drawScene(); drawChart(); drawMes(); });
+    requestAnimationFrame(frame);
+  })();
+  </script>
+</body>
+</html>
