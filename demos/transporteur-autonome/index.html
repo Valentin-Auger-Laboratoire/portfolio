@@ -1,0 +1,368 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Transporteur autonome</title>
+  <meta name="description" content="Simulation du transporteur autonome suiveur de ligne (Arduino, 2022) : portage fidèle du programme d'origine et version corrigée.">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --bg: #0c0c0d; --panel: #161618; --border: #262628; --border-hi: #3a3a3d;
+      --text: #f2f2f2; --dim: #9b9b9f; --muted: #6c6c70; --accent: #c8102e; --line: #c9c9cc; --warn: #e0a458; --ok: #8fd18f;
+      --mono: "JetBrains Mono", ui-monospace, monospace; --sans: "Inter", system-ui, sans-serif;
+      color-scheme: dark;
+    }
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    body { background: var(--bg); color: var(--text); font-family: var(--sans); line-height: 1.55; -webkit-font-smoothing: antialiased; }
+    .wrap { max-width: 1280px; margin: 0 auto; padding: 24px 16px 48px; }
+    .top { display: flex; justify-content: space-between; align-items: center; gap: 12px; flex-wrap: wrap; margin-bottom: 24px; }
+    .back { font-size: 0.9rem; color: var(--dim); text-decoration: none; }
+    .back:hover { color: var(--accent); }
+    .lang { display: flex; border: 1px solid var(--border-hi); }
+    .lang button { font: 500 0.78rem var(--mono); letter-spacing: .05em; background: none; color: var(--dim); border: 0; padding: 5px 10px; cursor: pointer; }
+    .lang button + button { border-left: 1px solid var(--border-hi); }
+    .lang button[aria-pressed="true"] { background: var(--text); color: var(--bg); }
+    .eyebrow { font: 500 0.82rem var(--mono); color: var(--accent); letter-spacing: .04em; }
+    h1 { font-size: clamp(1.6rem, 3.4vw, 2.3rem); line-height: 1.15; margin: 6px 0 10px; text-wrap: balance; }
+    .intro { color: var(--dim); max-width: 82ch; }
+    .intro a { color: var(--line); }
+    .warnbox { border: 1px solid #4a3a20; background: #1a160f; color: var(--warn); border-radius: 6px; padding: 8px 12px; font-size: 0.84rem; margin-top: 12px; }
+    .grid { display: grid; grid-template-columns: 320px minmax(0, 1fr); gap: 20px; align-items: start; margin-top: 20px; }
+    .stack { display: grid; gap: 16px; min-width: 0; }
+    .panel { background: var(--panel); border: 1px solid var(--border); border-radius: 8px; padding: 16px; min-width: 0; }
+    h2 { font: 600 0.78rem var(--mono); letter-spacing: .12em; text-transform: uppercase; color: var(--dim); margin-bottom: 12px; }
+    h3 { font: 600 0.72rem var(--mono); letter-spacing: .08em; text-transform: uppercase; color: var(--dim); margin: 14px 0 10px; padding-top: 12px; border-top: 1px solid var(--border); }
+    button:focus-visible, input:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+    .btn { font: 500 0.82rem var(--sans); background: none; color: var(--text); border: 1px solid var(--border-hi); border-radius: 6px; padding: 6px 11px; cursor: pointer; white-space: nowrap; }
+    .btn:hover { border-color: var(--accent); color: var(--accent); }
+    .btn[aria-pressed="true"] { border-color: var(--accent); color: var(--accent); }
+    .btn.primary { background: var(--accent); border-color: var(--accent); color: #fff; }
+    .seg { display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 10px; }
+    .ctl { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 2px 10px; margin-bottom: 10px; }
+    .ctl label { font: 500 0.76rem var(--mono); color: var(--dim); }
+    .ctl output { font: 0.8rem var(--mono); font-variant-numeric: tabular-nums; text-align: right; }
+    .ctl input[type=range] { grid-column: 1 / -1; width: 100%; accent-color: var(--accent); }
+    .lab { font: 500 0.74rem var(--mono); color: var(--dim); margin: 2px 0 6px; }
+    .hint { font-size: 0.8rem; color: var(--dim); margin-top: 8px; }
+    .kpis { display: grid; grid-template-columns: repeat(6, minmax(0, 1fr)); gap: 10px; }
+    .kpi { border: 1px solid var(--border); border-radius: 6px; padding: 8px 10px; min-width: 0; }
+    .kpi dt { font: 0.66rem var(--mono); color: var(--dim); }
+    .kpi dd { font: 600 1.02rem var(--sans); font-variant-numeric: tabular-nums; margin-top: 2px; }
+    .kpi dd small { font: 400 0.7rem var(--mono); color: var(--dim); margin-left: 3px; }
+    .kpi.bad dd { color: #ff8a8a; } .kpi.good dd { color: var(--ok); }
+    canvas#table { width: 100%; aspect-ratio: 240 / 150; display: block; border: 1px solid var(--border); border-radius: 6px; background: #0a0a0b; margin-top: 12px; cursor: crosshair; touch-action: none; }
+    .controls { display: flex; gap: 8px; flex-wrap: wrap; align-items: center; margin-top: 10px; font: 0.78rem var(--mono); color: var(--dim); }
+    .row2 { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 16px; }
+    .pins { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 6px; font: 0.74rem var(--mono); }
+    .pin { border: 1px solid var(--border); border-radius: 5px; padding: 5px 7px; min-width: 0; }
+    .pin b { display: block; color: var(--dim); font-weight: 500; font-size: 0.68rem; }
+    .pin span { font-variant-numeric: tabular-nums; }
+    .pin.hi { border-color: var(--accent); } .pin.hi span { color: #ff8a8a; }
+    .serial { font: 0.74rem/1.45 var(--mono); background: #0a0a0b; border: 1px solid var(--border); border-radius: 6px; padding: 8px 10px; height: 172px; overflow: hidden; color: var(--line); white-space: pre; }
+    .serial .t { color: var(--muted); }
+    .serial .w { color: #ff8a8a; }
+    .state { font: 0.8rem var(--mono); color: var(--dim); margin-top: 8px; }
+    .state b { color: var(--text); font-weight: 500; }
+    table { width: 100%; border-collapse: collapse; font: 0.8rem var(--mono); font-variant-numeric: tabular-nums; }
+    th, td { text-align: left; padding: 6px 8px; border-bottom: 1px solid var(--border); }
+    td.n, th.n { text-align: right; }
+    th { color: var(--dim); font-weight: 500; }
+    td.bad { color: #ff8a8a; } td.good { color: var(--ok); }
+    .tablewrap { overflow-x: auto; }
+    ol.review { padding-left: 1.2em; display: grid; gap: 6px; font-size: 0.86rem; color: var(--dim); }
+    ol.review b { color: var(--text); font-weight: 600; }
+    .note { font-size: 0.82rem; color: var(--dim); }
+    .note p + p { margin-top: 6px; }
+    @media (max-width: 1000px) { .grid { grid-template-columns: minmax(0, 1fr); } .main-col { order: -1; } }
+    @media (max-width: 760px) { .kpis { grid-template-columns: repeat(3, minmax(0, 1fr)); } .row2 { grid-template-columns: minmax(0, 1fr); } .pins { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+  </style>
+</head>
+<body>
+  <div class="wrap">
+    <div class="top">
+      <a class="back" href="../../index.html#projets" data-t="back">← Retour au portfolio</a>
+      <div class="lang" role="group" aria-label="Langue / Language"><button type="button" data-lang="fr">FR</button><button type="button" data-lang="en">EN</button></div>
+    </div>
+    <p class="eyebrow" data-t="eyebrow">Démo · projet de 1re STI2D (mai 2022)</p>
+    <h1 data-t="title">Transporteur autonome : suivi de ligne et arrêt devant obstacle</h1>
+    <p class="intro" data-t="intro">Le robot que j'ai programmé en 2022 sur Arduino, rejoué en simulation vue de dessus. Le programme « 2022 » est un portage ligne à ligne de mon programme final : mêmes broches, même seuil de 15 cm, mêmes delay(150) et delay(5000). Le programme « 2026 » applique les corrections de ma relecture : boucle non bloquante, mesure avant de repartir, mesures invalides filtrées, LED clignotante et recherche de la ligne. Cliquez sur la table pour poser ou retirer un obstacle.</p>
+    <p class="warnbox" data-t="warn">Simulation : dimensions, vitesse des moteurs et capteurs sont des hypothèses plausibles (motoréducteurs TT sous environ 5 V), pas des mesures du vrai robot. Les écarts entre les deux programmes, eux, viennent directement du code.</p>
+
+    <div class="grid">
+      <div class="stack"><div class="panel" id="ctl"></div></div>
+      <div class="stack main-col">
+        <div class="panel">
+          <dl class="kpis" id="kpis"></dl>
+          <canvas id="table" aria-label="Table vue de dessus"></canvas>
+          <div class="controls">
+            <button type="button" class="btn primary" id="play">Pause</button>
+            <button type="button" class="btn" id="reset" data-t="reset">Recommencer</button>
+            <span data-t="speedL">Vitesse</span>
+            <span class="seg" id="speeds" style="margin:0"></span>
+            <span id="clock"></span>
+          </div>
+          <p class="state" id="state"></p>
+        </div>
+        <div class="panel row2">
+          <div><h2 data-t="pinsT">Broches de l'Arduino</h2><div class="pins" id="pins"></div></div>
+          <div><h2 data-t="serialT">Moniteur série (9600 bauds)</h2><div class="serial" id="serial"></div></div>
+        </div>
+        <div class="panel"><h2 data-t="cmpT">Les deux programmes sur le même scénario (60 s simulées)</h2><div class="tablewrap"><table id="cmp"></table></div><p class="hint" id="cmpHint"></p></div>
+        <div class="panel"><h2 data-t="revT">Ce que la simulation montre de ma relecture</h2><ol class="review" id="review"></ol></div>
+      </div>
+    </div>
+
+    <div class="panel note" style="margin-top:20px">
+      <p data-t="note1"></p>
+      <p data-t="note2"></p>
+      <p><a href="https://github.com/Valentin-Auger-Laboratoire/transporteur-autonome" target="_blank" rel="noopener" style="color:var(--line)"><span data-t="repo">Code source</span> ↗</a></p>
+    </div>
+  </div>
+
+  <script src="transporteur.js"></script>
+  <script>
+  (function () {
+    'use strict';
+    const TR = window.Transporteur;
+    const $ = (id) => document.getElementById(id);
+    const T = {
+      fr: {
+        back: '← Retour au portfolio', eyebrow: 'Démo · projet de 1re STI2D (mai 2022)', title: 'Transporteur autonome : suivi de ligne et arrêt devant obstacle',
+        intro: "Le robot que j'ai programmé en 2022 sur Arduino, rejoué en simulation vue de dessus. Le programme « 2022 » est un portage ligne à ligne de mon programme final : mêmes broches, même seuil de 15 cm, mêmes delay(150) et delay(5000). Le programme « 2026 » applique les corrections de ma relecture : boucle non bloquante, mesure avant de repartir, mesures invalides filtrées, LED clignotante et recherche de la ligne. Cliquez sur la table pour poser ou retirer un obstacle.",
+        warn: 'Simulation : dimensions, vitesse des moteurs et capteurs sont des hypothèses plausibles (motoréducteurs TT sous environ 5 V), pas des mesures du vrai robot. Les écarts entre les deux programmes, eux, viennent directement du code.',
+        reset: 'Recommencer', speedL: 'Vitesse', play: 'Lecture', pause: 'Pause',
+        progT: 'Programme', prog: { '2022': '2022 (portage fidèle)', '2026': '2026 (corrigé)' },
+        trackT: 'Parcours', track: { doux: 'Courbes douces (R ≈ 36 cm)', serre: 'Virage serré (R ≈ 20 cm)' },
+        scT: 'Scénario', sc: { none: 'Sans obstacle', box: 'Boîte sur la ligne', hand: 'Main qui passe (3 s)', tissu: 'Cible absorbante (tissu)' },
+        motT: 'Moteurs et alimentation', pwm: 'Consigne PWM maximale', pwmHint: (v) => (v === 141 ? 'valeur du code : 5 × 255 / 9' : v > 141 ? 'plus vite que le code' : 'plus lent que le code'), vbat: 'Tension de la pile',
+        clickHint: 'Clic sur la table : poser un obstacle (ou retirer celui sous le curseur).',
+        kT: 'Temps', kLaps: 'Tours', kV: 'Vitesse moy.', kStops: 'Arrêts', kHit: 'Contacts', kOff: 'Sorties de ligne',
+        pinsT: "Broches de l'Arduino", serialT: 'Moniteur série (9600 bauds)', cmpT: 'Les deux programmes sur le même scénario (60 s simulées)',
+        cmpHead: ['Programme', 'Tours', 'Vitesse moy.', 'Arrêts', 'Contacts', 'Sorties de ligne', 'Écart max à la ligne'],
+        lost: 'perdu', pin: { D2: 'D2 · LED', D3: 'D3 · PWM A', D4: 'D4 · ligne D', D6: 'D6 · ultrasons', D8: 'D8 · ligne G', D11: 'D11 · PWM B', D12: 'D12 · sens A', D13: 'D13 · sens B' },
+        act: { g: 'tourner à gauche', d: 'tourner à droite', av: 'tout droit', stop: 'arrêt', '—': '—' },
+        stateL: 'Programme', phaseL: 'en cours', actL: 'action', distL: 'dernière mesure',
+        offTrack: 'Le robot a perdu la ligne : il continue tout droit (le programme 2022 ne sait pas la rechercher).',
+        revT: 'Ce que la simulation montre de ma relecture',
+        review: [
+          ['Boucle bloquante.', "Avec delay(150), la ligne n'est lue qu'environ 6 fois par seconde. Montez la consigne PWM à 180, ou prenez le virage serré : le programme 2022 sort de la ligne, le 2026 (lecture toutes les 10 ms) tient jusqu'à 255."],
+          ['Il repart avant de regarder.', 'Scénario « boîte sur la ligne » : après les 5 s d’arrêt, le 2022 avance pendant 150 ms avant de mesurer à nouveau. Il se rapproche à chaque cycle et finit par toucher la boîte. Le 2026 mesure avant de repartir et reste à distance.'],
+          ['Pas d’écho = 0 cm.', 'Scénario « cible absorbante » : le tissu ne renvoie pas d’écho, la mesure vaut 0 et le 2022 s’arrête alors que la cible est loin. Le 2026 distingue « mesure invalide » d’« obstacle proche » : il s’arrête aussi, par prudence, mais il l’affiche.'],
+          ['LED fixe.', 'Le cahier des charges demandait une LED clignotante : le 2026 la fait clignoter à 2 Hz sans bloquer la boucle.'],
+          ['Ligne perdue.', 'Si la ligne sort des deux capteurs, le 2022 continue tout droit. Le 2026 tourne du côté où il l’a vue en dernier.'],
+          ['Virages saccadés.', 'LOW_SPEED = 0 arrête complètement la roue intérieure. Le 2026 la garde à 35 % : la trajectoire est plus fluide et l’écart à la ligne plus faible.'],
+        ],
+        note1: "Modèle : robot à deux roues motrices (voie 13 cm), deux capteurs de ligne infrarouges 9 cm devant l'essieu, écartés de 3,6 cm, ruban noir de 19 mm, télémètre à ultrasons à l'avant (cône de ±15°, mesure entière en cm comme MeasureInCentimeters, durée de l'écho prise en compte), motoréducteurs du premier ordre (τ = 0,12 s) avec une zone morte. Moteur A = droit, moteur B = gauche (déduit des fonctions g() et d() du code).",
+        note2: 'Le code source (2022), le schéma de câblage et le brochage sont dans le dépôt GitHub du projet.',
+        cmpHint: 'Même scénario, mêmes réglages, 60 s simulées pour chaque programme.',
+        repo: 'Code source',
+      },
+      en: {
+        back: '← Back to portfolio', eyebrow: 'Demo · STI2D high-school project (May 2022)', title: 'Autonomous carrier: line following and obstacle stop',
+        intro: 'The robot I programmed on Arduino in 2022, replayed in a top-down simulation. The "2022" program is a line-by-line port of my final program: same pins, same 15 cm threshold, same delay(150) and delay(5000). The "2026" program applies the fixes from my review: non-blocking loop, measure before moving off, invalid readings filtered, blinking LED and line search. Click on the table to add or remove an obstacle.',
+        warn: 'Simulation: dimensions, motor speed and sensors are plausible assumptions (TT gear motors at about 5 V), not measurements of the real robot. The differences between the two programs come straight from the code.',
+        reset: 'Restart', speedL: 'Speed', play: 'Play', pause: 'Pause',
+        progT: 'Program', prog: { '2022': '2022 (faithful port)', '2026': '2026 (fixed)' },
+        trackT: 'Track', track: { doux: 'Gentle curves (R ≈ 36 cm)', serre: 'Tight bend (R ≈ 20 cm)' },
+        scT: 'Scenario', sc: { none: 'No obstacle', box: 'Box on the line', hand: 'Passing hand (3 s)', tissu: 'Absorbent target (fabric)' },
+        motT: 'Motors and power', pwm: 'Maximum PWM command', pwmHint: (v) => (v === 141 ? 'value in the code: 5 × 255 / 9' : v > 141 ? 'faster than the code' : 'slower than the code'), vbat: 'Battery voltage',
+        clickHint: 'Click on the table: add an obstacle (or remove the one under the cursor).',
+        kT: 'Time', kLaps: 'Laps', kV: 'Mean speed', kStops: 'Stops', kHit: 'Contacts', kOff: 'Line exits',
+        pinsT: 'Arduino pins', serialT: 'Serial monitor (9600 baud)', cmpT: 'Both programs on the same scenario (60 simulated seconds)',
+        cmpHead: ['Program', 'Laps', 'Mean speed', 'Stops', 'Contacts', 'Line exits', 'Max offset from line'],
+        lost: 'lost', pin: { D2: 'D2 · LED', D3: 'D3 · PWM A', D4: 'D4 · line R', D6: 'D6 · ultrasonic', D8: 'D8 · line L', D11: 'D11 · PWM B', D12: 'D12 · dir A', D13: 'D13 · dir B' },
+        act: { g: 'turn left', d: 'turn right', av: 'straight on', stop: 'stop', '—': '—' },
+        stateL: 'Program', phaseL: 'running', actL: 'action', distL: 'last reading',
+        offTrack: 'The robot has lost the line: it keeps going straight (the 2022 program cannot search for it).',
+        revT: 'What the simulation shows from my review',
+        review: [
+          ['Blocking loop.', 'With delay(150), the line is only read about 6 times per second. Raise the PWM command to 180, or take the tight bend: the 2022 program leaves the line, the 2026 one (reading every 10 ms) holds up to 255.'],
+          ['It moves before looking.', '"Box on the line" scenario: after the 5 s stop, the 2022 program drives for 150 ms before measuring again. It creeps closer each cycle and ends up touching the box. The 2026 program measures before moving off and keeps its distance.'],
+          ['No echo = 0 cm.', '"Absorbent target" scenario: the fabric returns no echo, the reading is 0 and the 2022 program stops although the target is far away. The 2026 program tells "invalid reading" apart from "close obstacle": it also stops, to be safe, but says why.'],
+          ['Steady LED.', 'The brief asked for a blinking LED: the 2026 program blinks it at 2 Hz without blocking the loop.'],
+          ['Lost line.', 'If the line leaves both sensors, the 2022 program goes straight on. The 2026 one turns towards the side where it last saw it.'],
+          ['Jerky turns.', 'LOW_SPEED = 0 stops the inner wheel completely. The 2026 program keeps it at 35 %: a smoother path and a smaller offset from the line.'],
+        ],
+        note1: 'Model: two-wheel differential robot (13 cm track), two infrared line sensors 9 cm ahead of the axle, 3.6 cm apart, 19 mm black tape, front ultrasonic ranger (±15° cone, integer reading in cm like MeasureInCentimeters, echo time included), first-order gear motors (τ = 0.12 s) with a dead zone. Motor A = right, motor B = left (deduced from the g() and d() functions in the code).',
+        note2: "The source code (2022), wiring diagram and pin mapping are in the project's GitHub repository.",
+        cmpHint: 'Same scenario, same settings, 60 simulated seconds for each program.',
+        repo: 'Source code',
+      },
+    };
+    let lang = 'fr';
+    try { lang = localStorage.getItem('lang') || ((navigator.language || 'fr').toLowerCase().startsWith('fr') ? 'fr' : 'en'); } catch (e) {}
+    if (!T[lang]) lang = 'fr';
+    const t = (k) => T[lang][k];
+    const fmt = (v, d = 1) => (Number.isFinite(v) ? v.toLocaleString(lang === 'fr' ? 'fr-FR' : 'en-GB', { maximumFractionDigits: d, minimumFractionDigits: d }) : '—');
+
+    // ------------------------------------------------------------------ état
+    const S = { prog: '2022', track: 'doux', sc: 'none', pwm: 141, vbat: 9, speed: 1 };
+    let sim = null, running = true, trail = [], obstacles = [];
+    function scenarioObstacles() {
+      if (S.sc === 'box') return [TR.obstacleOnTrack(150, 8, {}, S.track)];
+      if (S.sc === 'hand') return [TR.obstacleOnTrack(150, 6, { from: 0, to: 12, hand: true }, S.track)];
+      if (S.sc === 'tissu') return [TR.obstacleOnTrack(300, 10, { absorb: true }, S.track)];
+      return [];
+    }
+    function opts(prog) { return { prog: prog || S.prog, track: S.track, pwmMax: S.pwm, vbat: S.vbat, obstacles: obstacles.map((o) => Object.assign({}, o)) }; }
+    function reset(keepObstacles) {
+      if (!keepObstacles) obstacles = scenarioObstacles();
+      sim = TR.createSim(opts()); sim.opt.obstacles = obstacles; trail = [];
+      runCompare(); draw(); ui();
+    }
+    // ------------------------------------------------------------------ commandes
+    function seg(box, key, opts, onChange) {
+      const s = document.createElement('div'); s.className = 'seg';
+      opts.forEach(([v, label]) => { const b = document.createElement('button'); b.type = 'button'; b.className = 'btn'; b.textContent = label; b.setAttribute('aria-pressed', String(S[key]) === String(v)); b.addEventListener('click', () => { S[key] = v; s.querySelectorAll('button').forEach((x) => x.setAttribute('aria-pressed', x === b)); onChange(); }); s.appendChild(b); });
+      box.appendChild(s);
+    }
+    function head(box, txt, first) { const h = document.createElement(first ? 'h2' : 'h3'); h.textContent = txt; box.appendChild(h); }
+    function slider(box, key, label, min, max, step, show, onChange) {
+      const row = document.createElement('div'); row.className = 'ctl';
+      row.innerHTML = '<label for="s-' + key + '">' + label + '</label><output></output><input type="range" id="s-' + key + '">';
+      const r = row.querySelector('input'), o = row.querySelector('output');
+      Object.assign(r, { min, max, step }); r.value = S[key]; o.textContent = show(S[key]);
+      r.addEventListener('input', () => { S[key] = parseFloat(r.value); o.textContent = show(S[key]); });
+      r.addEventListener('change', onChange); box.appendChild(row);
+      return row;
+    }
+    function renderCtl() {
+      const box = $('ctl'); box.innerHTML = '';
+      head(box, t('progT'), true); seg(box, 'prog', Object.entries(T[lang].prog), () => reset(true));
+      head(box, t('trackT')); seg(box, 'track', Object.entries(T[lang].track), () => reset(false));
+      head(box, t('scT')); seg(box, 'sc', Object.entries(T[lang].sc), () => reset(false));
+      const p = document.createElement('p'); p.className = 'hint'; p.textContent = t('clickHint'); box.appendChild(p);
+      head(box, t('motT'));
+      const row = slider(box, 'pwm', t('pwm'), 60, 255, 1, (v) => v + ' / 255', () => reset(true));
+      const hint = document.createElement('p'); hint.className = 'hint'; hint.style.marginTop = '-6px'; hint.textContent = t('pwmHint')(S.pwm); row.appendChild(hint);
+      row.querySelector('input').addEventListener('input', () => (hint.textContent = t('pwmHint')(S.pwm)));
+      slider(box, 'vbat', t('vbat'), 6, 9.6, 0.1, (v) => fmt(v, 1) + ' V', () => reset(true));
+      const sp = $('speeds'); sp.innerHTML = '';
+      [1, 2, 4].forEach((v) => { const b = document.createElement('button'); b.type = 'button'; b.className = 'btn'; b.textContent = '×' + v; b.setAttribute('aria-pressed', S.speed === v); b.addEventListener('click', () => { S.speed = v; sp.querySelectorAll('button').forEach((x) => x.setAttribute('aria-pressed', x === b)); }); sp.appendChild(b); });
+    }
+    // ------------------------------------------------------------------ comparaison des deux programmes
+    function runCompare() {
+      const rows = ['2022', '2026'].map((p) => [p, TR.summary(TR.createSim(opts(p)).run(60))]);
+      TR.createSim(opts()); // remet le parcours courant
+      const H = t('cmpHead');
+      let h = '<thead><tr>' + H.map((c, i) => '<th' + (i ? ' class="n"' : '') + '>' + c + '</th>').join('') + '</tr></thead><tbody>';
+      rows.forEach(([p, r]) => {
+        h += '<tr><td>' + T[lang].prog[p] + '</td><td class="n">' + fmt(r.laps, 2) + (r.lost ? ' (' + t('lost') + ')' : '') + '</td><td class="n">' + fmt(r.meanV, 1) + ' cm/s</td><td class="n">' + r.stops + '</td><td class="n' + (r.collisions ? ' bad' : '') + '">' + r.collisions + '</td><td class="n' + (r.offLine || r.lost ? ' bad' : '') + '">' + r.offLine + '</td><td class="n">' + fmt(r.maxOff, 1) + ' cm</td></tr>';
+      });
+      $('cmp').innerHTML = h + '</tbody>'; $('cmpHint').textContent = t('cmpHint');
+    }
+    // ------------------------------------------------------------------ dessin
+    const cv = $('table');
+    function geom() { const w = cv.clientWidth, h = cv.clientHeight, k = Math.min(w / TR.TABLE.w, h / TR.TABLE.h); return { w, h, k, ox: (w - TR.TABLE.w * k) / 2, oy: (h - TR.TABLE.h * k) / 2 }; }
+    function draw() {
+      if (!sim) return;
+      const dpr = window.devicePixelRatio || 1, g = geom();
+      if (cv.width !== Math.round(g.w * dpr) || cv.height !== Math.round(g.h * dpr)) { cv.width = Math.round(g.w * dpr); cv.height = Math.round(g.h * dpr); }
+      const c = cv.getContext('2d'); c.setTransform(dpr, 0, 0, dpr, 0, 0);
+      // repère : y vers le haut (sens trigonométrique)
+      const X = (x) => g.ox + x * g.k, Y = (y) => g.oy + (TR.TABLE.h - y) * g.k;
+      c.fillStyle = '#0a0a0b'; c.fillRect(0, 0, g.w, g.h);
+      c.fillStyle = '#d6d3cc'; c.fillRect(X(0), Y(TR.TABLE.h), TR.TABLE.w * g.k, TR.TABLE.h * g.k);
+      // ligne noire
+      const P = TR.TRACK.pts;
+      c.strokeStyle = '#111'; c.lineWidth = Math.max(2, TR.LINE_W * g.k); c.lineJoin = 'round';
+      c.beginPath(); P.forEach(([x, y], i) => (i ? c.lineTo(X(x), Y(y)) : c.moveTo(X(x), Y(y)))); c.closePath(); c.stroke();
+      // trace
+      c.strokeStyle = 'rgba(200,16,46,0.55)'; c.lineWidth = 1.5; c.beginPath(); trail.forEach(([x, y], i) => (i ? c.lineTo(X(x), Y(y)) : c.moveTo(X(x), Y(y)))); c.stroke();
+      // obstacles
+      const now = sim.t;
+      for (const ob of obstacles) {
+        const active = (ob.from === undefined || now >= ob.from) && (ob.to === undefined || now < ob.to);
+        if (!active && ob.hand) continue;
+        c.fillStyle = ob.absorb ? '#7a6a58' : ob.hand ? '#b88f72' : '#5a5a60'; c.globalAlpha = active ? 1 : 0.3;
+        c.fillRect(X(ob.x), Y(ob.y + ob.h), ob.w * g.k, ob.h * g.k);
+        c.globalAlpha = 1; c.fillStyle = '#222'; c.font = '10px "JetBrains Mono", monospace'; c.textAlign = 'center';
+        c.fillText(ob.absorb ? (lang === 'fr' ? 'tissu' : 'fabric') : ob.hand ? (lang === 'fr' ? 'main' : 'hand') : '', X(ob.x + ob.w / 2), Y(ob.y + ob.h) - 4);
+      }
+      const st = sim.st, R = TR.ROBOT, cs = Math.cos(st.th), sn = Math.sin(st.th);
+      const W = (u, v) => [X(st.x + u * cs - v * sn), Y(st.y + u * sn + v * cs)];
+      // cône des ultrasons
+      const d = sim.io.dist > 0 ? Math.min(sim.io.dist, 120) : 120;
+      const o0 = W(R.usX, 0);
+      c.fillStyle = sim.io.dist === 0 ? 'rgba(224,164,88,0.12)' : sim.io.dist <= 15 ? 'rgba(200,16,46,0.22)' : 'rgba(160,160,170,0.14)';
+      c.beginPath(); c.moveTo(o0[0], o0[1]);
+      for (let k = -1; k <= 1.0001; k += 0.25) { const a = k * R.cone; const p = W(R.usX + d * Math.cos(a), d * Math.sin(a)); c.lineTo(p[0], p[1]); }
+      c.closePath(); c.fill();
+      // châssis
+      const body = [[R.len - R.rear, R.wid / 2], [R.len - R.rear, -R.wid / 2], [-R.rear, -R.wid / 2], [-R.rear, R.wid / 2]].map(([u, v]) => W(u, v));
+      c.fillStyle = '#2a2a2e'; c.strokeStyle = '#c9c9cc'; c.lineWidth = 1.2; c.beginPath(); body.forEach(([x, y], i) => (i ? c.lineTo(x, y) : c.moveTo(x, y))); c.closePath(); c.fill(); c.stroke();
+      // roues jaunes (TT)
+      [[R.track / 2], [-R.track / 2]].forEach(([v]) => { const a = W(-3, v), b = W(3, v); c.strokeStyle = '#e8c14a'; c.lineWidth = Math.max(3, 2.6 * g.k); c.beginPath(); c.moveTo(a[0], a[1]); c.lineTo(b[0], b[1]); c.stroke(); });
+      // carte Arduino
+      const ard = [[8, 3.5], [8, -3.5], [1, -3.5], [1, 3.5]].map(([u, v]) => W(u, v));
+      c.fillStyle = '#1f4f4a'; c.beginPath(); ard.forEach(([x, y], i) => (i ? c.lineTo(x, y) : c.moveTo(x, y))); c.closePath(); c.fill();
+      // capteurs de ligne
+      [[R.sensY, st.L], [-R.sensY, st.R]].forEach(([v, on]) => { const p = W(R.sensX, v); c.fillStyle = on ? '#c8102e' : '#9b9b9f'; c.beginPath(); c.arc(p[0], p[1], Math.max(2.5, 0.9 * g.k), 0, 7); c.fill(); });
+      // capteur à ultrasons
+      const u1 = W(R.usX, 2.2), u2 = W(R.usX, -2.2); c.strokeStyle = '#c9c9cc'; c.lineWidth = Math.max(3, 1.6 * g.k); c.beginPath(); c.moveTo(u1[0], u1[1]); c.lineTo(u2[0], u2[1]); c.stroke();
+      // LED
+      const lp = W(4.5, 0);
+      if (sim.io.led) { c.fillStyle = 'rgba(255,40,60,0.35)'; c.beginPath(); c.arc(lp[0], lp[1], Math.max(8, 4 * g.k), 0, 7); c.fill(); }
+      c.fillStyle = sim.io.led ? '#ff2b3f' : '#4a1a20'; c.beginPath(); c.arc(lp[0], lp[1], Math.max(3, 1.2 * g.k), 0, 7); c.fill();
+      if (sim.world.stats.lost) { c.fillStyle = 'rgba(10,10,11,0.75)'; c.fillRect(0, g.h - 30, g.w, 30); c.fillStyle = '#ff8a8a'; c.font = '12px Inter, sans-serif'; c.textAlign = 'center'; c.fillText(t('offTrack'), g.w / 2, g.h - 11); }
+    }
+    // ------------------------------------------------------------------ panneaux
+    let lastSerial = -1;
+    function ui() {
+      const s = TR.summary(sim), io = sim.io, st = sim.st;
+      const kpi = (k, v, u, cls) => '<div class="kpi' + (cls ? ' ' + cls : '') + '"><dt>' + k + '</dt><dd>' + v + (u ? '<small>' + u + '</small>' : '') + '</dd></div>';
+      $('kpis').innerHTML = kpi(t('kT'), fmt(sim.t, 1), 's') + kpi(t('kLaps'), fmt(s.laps, 2), '') + kpi(t('kV'), fmt(s.meanV, 1), 'cm/s') + kpi(t('kStops'), s.stops, '') + kpi(t('kHit'), s.collisions, '', s.collisions ? 'bad' : '') + kpi(t('kOff'), s.offLine, '', s.offLine || s.lost ? 'bad' : 'good');
+      const P = T[lang].pin;
+      const pins = [['D2', io.led ? 'HIGH' : 'LOW', io.led], ['D3', io.pwmA, io.pwmA > 0], ['D4', st.R ? 'HIGH' : 'LOW', st.R], ['D6', io.dist + ' cm', io.dist > 0 && io.dist <= 15], ['D8', st.L ? 'HIGH' : 'LOW', st.L], ['D11', io.pwmB, io.pwmB > 0], ['D12', 'HIGH', false], ['D13', 'HIGH', false]];
+      $('pins').innerHTML = pins.map(([k, v, hi]) => '<div class="pin' + (hi ? ' hi' : '') + '"><b>' + P[k] + '</b><span>' + v + '</span></div>').join('');
+      if (sim.serial.length !== lastSerial || true) {
+        const lines = sim.serial.slice(-10).map((l) => '<span class="t">' + fmt(l.t, 2).padStart(6) + '  </span>' + (l.m.startsWith('!!') ? '<span class="w">' + l.m + '</span>' : l.m));
+        $('serial').innerHTML = lines.join('\n'); lastSerial = sim.serial.length;
+      }
+      $('state').innerHTML = t('stateL') + ' <b>' + T[lang].prog[S.prog] + '</b> · ' + t('phaseL') + ' <b>' + io.phase + '</b> · ' + t('actL') + ' <b>' + T[lang].act[io.act] + '</b> · ' + t('distL') + ' <b>' + io.dist + ' cm</b>';
+      $('clock').textContent = 't = ' + fmt(sim.t, 1) + ' s';
+      $('play').textContent = running ? t('pause') : t('play');
+    }
+    // ------------------------------------------------------------------ boucle d'animation
+    let last = null, acc = 0, uiAcc = 0;
+    function frame(ts) {
+      if (last === null) last = ts;
+      const dtReal = Math.min(0.05, (ts - last) / 1000); last = ts;
+      if (running && sim && !sim.world.stats.lost) {
+        acc += dtReal * S.speed;
+        while (acc > 0.005) { sim.step(0.005); acc -= 0.005; }
+        if (!trail.length || Math.hypot(trail[trail.length - 1][0] - sim.st.x, trail[trail.length - 1][1] - sim.st.y) > 0.8) { trail.push([sim.st.x, sim.st.y]); if (trail.length > 1500) trail.shift(); }
+      }
+      draw(); uiAcc += dtReal; if (uiAcc > 0.1) { ui(); uiAcc = 0; }
+      requestAnimationFrame(frame);
+    }
+    // clic : poser ou retirer un obstacle
+    cv.addEventListener('pointerdown', (e) => {
+      const r = cv.getBoundingClientRect(), g = geom();
+      const x = (e.clientX - r.left - g.ox) / g.k, y = TR.TABLE.h - (e.clientY - r.top - g.oy) / g.k;
+      if (x < 0 || y < 0 || x > TR.TABLE.w || y > TR.TABLE.h) return;
+      const i = obstacles.findIndex((o) => x >= o.x - 2 && x <= o.x + o.w + 2 && y >= o.y - 2 && y <= o.y + o.h + 2);
+      if (i >= 0) obstacles.splice(i, 1); else obstacles.push({ x: x - 4, y: y - 4, w: 8, h: 8 });
+      sim.opt.obstacles = obstacles; runCompare();
+    });
+    $('play').addEventListener('click', () => { running = !running; ui(); });
+    $('reset').addEventListener('click', () => reset(true));
+    function renderReview() { $('review').innerHTML = T[lang].review.map(([a, b]) => '<li><b>' + a + '</b> ' + b + '</li>').join(''); }
+    function setLang(l) {
+      lang = l; document.documentElement.lang = l;
+      document.querySelectorAll('[data-t]').forEach((el) => { const v = T[l][el.dataset.t]; if (typeof v === 'string') el.textContent = v; });
+      document.querySelectorAll('.lang button').forEach((b) => b.setAttribute('aria-pressed', b.dataset.lang === l));
+      try { localStorage.setItem('lang', l); } catch (e) {}
+      renderCtl(); renderReview(); if (sim) { runCompare(); ui(); }
+    }
+    document.querySelectorAll('.lang button').forEach((b) => b.addEventListener('click', () => setLang(b.dataset.lang)));
+    setLang(lang); reset(false);
+    window.addEventListener('resize', draw);
+    requestAnimationFrame(frame);
+  })();
+  </script>
+</body>
+</html>
