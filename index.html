@@ -369,6 +369,23 @@
             </span>
           </div>
         </article>
+        <article class="project-card project-card--wide" data-tags="electronique data automatique">
+          <div class="card-media"><img src="assets/projets/supervision-cuves-truites.jpg" alt="En haut, l'écran de mon interface Processing de 2023 pendant un test ; en bas, l'écran de supervision corrigé de la démo avec les alertes de température" data-i18n-attr="alt:p35.img" width="960" height="600" loading="lazy" decoding="async"></div>
+          <div class="card-top">
+            <span class="card-type" data-i18n="tag.electronics">Électronique</span>
+            <span class="card-date" data-i18n="p35.date">Mars 2023</span>
+          </div>
+          <h3 data-i18n="p35.title">Supervision de cuves d'élevage de truites (Arduino et Processing)</h3>
+          <p data-i18n="p35.desc">Surveiller quatre bassins de truites : température (thermistance), niveau d'eau (ultrasons) et turbidité, avec une électrovanne pour remplir et une interface Processing qui reçoit les mesures par le port série. Vérifié en 2026 : remplissage calculé sur 20 m de profondeur, électrovanne jamais commandée, aucune alerte à 20 et 24 °C, formule de turbidité hors de sa plage. Les valeurs étranges de ma photo d'écran (100 / 1783,44 / 0) s'expliquent exactement : écho nul, analogRead = 311 et une trame série tronquée. La démo rejoue mon programme face à une version corrigée sur les 4 cuves.</p>
+          <ul class="tags"><li>Arduino</li><li>Processing</li><li>Capteurs</li><li>Liaison série</li><li>JavaScript</li></ul>
+          <div class="card-foot">
+            <span class="card-context" data-i18n="projects.contextSti2dTle">Projet de terminale · STI2D, option SIN</span>
+            <span class="card-links">
+              <a class="card-link card-link--secondary" href="https://github.com/Valentin-Auger-Laboratoire/supervision-cuves-truites" target="_blank" rel="noopener" data-i18n="projects.code">Voir le code ↗</a>
+              <a class="card-link" href="demos/cuves-truites/index.html" data-i18n="projects.demo">Essayer la démo ↗</a>
+            </span>
+          </div>
+        </article>
         <article class="project-card project-card--wide" data-tags="automatique sante web">
           <div class="card-media"><img src="assets/projets/regulateur-pid.jpg" alt="Régulateur PID appliqué à une couveuse : réglages, réponse en température, commande de chauffe et marges de stabilité" data-i18n-attr="alt:p27.img" width="960" height="600" loading="lazy" decoding="async"></div>
           <div class="card-top">
