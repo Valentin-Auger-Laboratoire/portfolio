@@ -1,0 +1,339 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Supervision des cuves</title>
+  <meta name="description" content="Supervision de cuves d'élevage de truites (Arduino + Processing, 2023) : programme d'origine rejoué et version corrigée.">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --bg: #0c0c0d; --panel: #161618; --border: #262628; --border-hi: #3a3a3d;
+      --text: #f2f2f2; --dim: #9b9b9f; --muted: #6c6c70; --accent: #c8102e; --line: #c9c9cc; --warn: #e0a458; --ok: #8fd18f;
+      --mono: "JetBrains Mono", ui-monospace, monospace; --sans: "Inter", system-ui, sans-serif;
+      color-scheme: dark;
+    }
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    body { background: var(--bg); color: var(--text); font-family: var(--sans); line-height: 1.55; -webkit-font-smoothing: antialiased; }
+    .wrap { max-width: 1280px; margin: 0 auto; padding: 24px 16px 48px; }
+    .top { display: flex; justify-content: space-between; align-items: center; gap: 12px; flex-wrap: wrap; margin-bottom: 24px; }
+    .back { font-size: 0.9rem; color: var(--dim); text-decoration: none; }
+    .back:hover { color: var(--accent); }
+    .lang { display: flex; border: 1px solid var(--border-hi); }
+    .lang button { font: 500 0.78rem var(--mono); letter-spacing: .05em; background: none; color: var(--dim); border: 0; padding: 5px 10px; cursor: pointer; }
+    .lang button + button { border-left: 1px solid var(--border-hi); }
+    .lang button[aria-pressed="true"] { background: var(--text); color: var(--bg); }
+    .eyebrow { font: 500 0.82rem var(--mono); color: var(--accent); letter-spacing: .04em; }
+    h1 { font-size: clamp(1.6rem, 3.4vw, 2.3rem); line-height: 1.15; margin: 6px 0 10px; text-wrap: balance; }
+    .intro { color: var(--dim); max-width: 82ch; }
+    .intro a { color: var(--line); }
+    .warnbox { border: 1px solid #4a3a20; background: #1a160f; color: var(--warn); border-radius: 6px; padding: 8px 12px; font-size: 0.84rem; margin-top: 12px; }
+    .grid { display: grid; grid-template-columns: 320px minmax(0, 1fr); gap: 20px; align-items: start; margin-top: 20px; }
+    .stack { display: grid; gap: 16px; min-width: 0; }
+    .panel { background: var(--panel); border: 1px solid var(--border); border-radius: 8px; padding: 16px; min-width: 0; }
+    h2 { font: 600 0.78rem var(--mono); letter-spacing: .12em; text-transform: uppercase; color: var(--dim); margin-bottom: 12px; }
+    h3 { font: 600 0.72rem var(--mono); letter-spacing: .08em; text-transform: uppercase; color: var(--dim); margin: 14px 0 10px; padding-top: 12px; border-top: 1px solid var(--border); }
+    button:focus-visible, input:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+    .btn { font: 500 0.82rem var(--sans); background: none; color: var(--text); border: 1px solid var(--border-hi); border-radius: 6px; padding: 6px 11px; cursor: pointer; white-space: nowrap; }
+    .btn:hover { border-color: var(--accent); color: var(--accent); }
+    .btn[aria-pressed="true"] { border-color: var(--accent); color: var(--accent); }
+    .btn.primary { background: var(--accent); border-color: var(--accent); color: #fff; }
+    .seg { display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 10px; }
+    .ctl { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 2px 10px; margin-bottom: 10px; }
+    .ctl label { font: 500 0.76rem var(--mono); color: var(--dim); }
+    .ctl output { font: 0.8rem var(--mono); font-variant-numeric: tabular-nums; text-align: right; }
+    .ctl input[type=range] { grid-column: 1 / -1; width: 100%; accent-color: var(--accent); }
+    .lab { font: 500 0.74rem var(--mono); color: var(--dim); margin: 2px 0 6px; }
+    .hint { font-size: 0.8rem; color: var(--dim); margin-top: 8px; }
+    .kpis { display: grid; grid-template-columns: repeat(6, minmax(0, 1fr)); gap: 10px; }
+    .kpi { border: 1px solid var(--border); border-radius: 6px; padding: 8px 10px; min-width: 0; }
+    .kpi dt { font: 0.66rem var(--mono); color: var(--dim); }
+    .kpi dd { font: 600 1.02rem var(--sans); font-variant-numeric: tabular-nums; margin-top: 2px; }
+    .kpi dd small { font: 400 0.7rem var(--mono); color: var(--dim); margin-left: 3px; }
+    .kpi.bad dd { color: #ff8a8a; } .kpi.good dd { color: var(--ok); }
+    canvas#table { width: 100%; aspect-ratio: 240 / 150; display: block; border: 1px solid var(--border); border-radius: 6px; background: #0a0a0b; margin-top: 12px; cursor: crosshair; touch-action: none; }
+    .controls { display: flex; gap: 8px; flex-wrap: wrap; align-items: center; margin-top: 10px; font: 0.78rem var(--mono); color: var(--dim); }
+    .row2 { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 16px; }
+    .pins { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 6px; font: 0.74rem var(--mono); }
+    .pin { border: 1px solid var(--border); border-radius: 5px; padding: 5px 7px; min-width: 0; }
+    .pin b { display: block; color: var(--dim); font-weight: 500; font-size: 0.68rem; }
+    .pin span { font-variant-numeric: tabular-nums; }
+    .pin.hi { border-color: var(--accent); } .pin.hi span { color: #ff8a8a; }
+    .serial { font: 0.74rem/1.45 var(--mono); background: #0a0a0b; border: 1px solid var(--border); border-radius: 6px; padding: 8px 10px; height: 172px; overflow: hidden; color: var(--line); white-space: pre; }
+    .serial .t { color: var(--muted); }
+    .serial .w { color: #ff8a8a; }
+    .state { font: 0.8rem var(--mono); color: var(--dim); margin-top: 8px; }
+    .state b { color: var(--text); font-weight: 500; }
+    table { width: 100%; border-collapse: collapse; font: 0.8rem var(--mono); font-variant-numeric: tabular-nums; }
+    th, td { text-align: left; padding: 6px 8px; border-bottom: 1px solid var(--border); }
+    td.n, th.n { text-align: right; }
+    th { color: var(--dim); font-weight: 500; }
+    td.bad { color: #ff8a8a; } td.good { color: var(--ok); }
+    .tablewrap { overflow-x: auto; }
+    ol.review { padding-left: 1.2em; display: grid; gap: 6px; font-size: 0.86rem; color: var(--dim); }
+    ol.review b { color: var(--text); font-weight: 600; }
+    .note { font-size: 0.82rem; color: var(--dim); }
+    .note p + p { margin-top: 6px; }
+    .tanks { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 10px; }
+    .tank { border: 1px solid var(--border); border-radius: 6px; padding: 10px; font: 0.76rem var(--mono); min-width: 0; }
+    .tank h4 { font: 600 0.82rem var(--sans); margin-bottom: 6px; padding-left: 8px; border-left: 4px solid var(--ok); }
+    .tank h4.warn { border-color: var(--warn); } .tank h4.bad { border-color: var(--accent); color: #ff8a8a; }
+    .tank .row { display: flex; justify-content: space-between; gap: 6px; color: var(--dim); padding: 2px 0; }
+    .tank .row b { color: var(--text); font-weight: 500; font-variant-numeric: tabular-nums; overflow-wrap: anywhere; text-align: right; }
+    .tank .flags { margin-top: 6px; color: #ff8a8a; font-size: 0.7rem; overflow-wrap: anywhere; }
+    canvas#scene { width: 100%; height: 230px; display: block; border: 1px solid var(--border); border-radius: 6px; background: #0a0a0b; margin-top: 12px; }
+    .charts { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px; }
+    .chart p { font: 0.72rem var(--mono); color: var(--dim); margin-bottom: 4px; display: flex; gap: 10px; flex-wrap: wrap; }
+    .chart p i { display: inline-block; width: 12px; height: 2px; vertical-align: 3px; margin-right: 5px; }
+    .chart canvas { width: 100%; height: 210px; display: block; border: 1px solid var(--border); border-radius: 6px; background: #0a0a0b; }
+    .alarms { list-style: none; font: 0.76rem var(--mono); display: grid; gap: 4px; }
+    .alarms li { border-bottom: 1px solid var(--border); padding: 4px 0; color: #ff8a8a; }
+    .alarms li.muted { color: var(--dim); }
+    .alarms .t { color: var(--muted); }
+    tr.sel td { color: var(--accent); }
+    @media (max-width: 760px) { .tanks { grid-template-columns: repeat(2, minmax(0, 1fr)); } .charts { grid-template-columns: minmax(0, 1fr); } }
+    @media (max-width: 1000px) { .grid { grid-template-columns: minmax(0, 1fr); } .main-col { order: -1; } }
+    @media (max-width: 760px) { .kpis { grid-template-columns: repeat(3, minmax(0, 1fr)); } .row2 { grid-template-columns: minmax(0, 1fr); } .pins { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+  </style>
+</head>
+<body>
+  <div class="wrap">
+    <div class="top">
+      <a class="back" href="../../index.html#projets" data-t="back">← Retour au portfolio</a>
+      <div class="lang" role="group" aria-label="Langue / Language"><button type="button" data-lang="fr">FR</button><button type="button" data-lang="en">EN</button></div>
+    </div>
+    <p class="eyebrow" data-t="eyebrow">Démo · projet de terminale STI2D, option SIN (2023)</p>
+    <h1 data-t="title">Supervision de cuves d'élevage de truites</h1>
+    <p class="intro" data-t="intro"></p>
+    <p class="warnbox" data-t="warn"></p>
+    <div class="grid">
+      <div class="stack"><div class="panel" id="ctl"></div></div>
+      <div class="stack main-col">
+        <div class="panel">
+          <h2 id="screenT"></h2>
+          <div class="tanks" id="screen"></div>
+          <canvas id="scene" aria-label="Cuves vues de côté"></canvas>
+          <div class="controls">
+            <button type="button" class="btn primary" id="play">Pause</button>
+            <button type="button" class="btn" id="reset" data-t="reset">Recommencer</button>
+            <span data-t="speedL">Vitesse</span><span class="seg" id="speeds" style="margin:0"></span><span id="clock"></span>
+          </div>
+        </div>
+        <div class="panel row2">
+          <div><h2 data-t="serialT">Liaison série (9600 bauds)</h2><div class="serial" id="serial"></div><p class="hint" id="serialHint"></p></div>
+          <div><h2 data-t="alarmT">Alertes</h2><ul class="alarms" id="alarms"></ul></div>
+        </div>
+        <div class="panel charts">
+          <div class="chart"><p><span data-t="lgT">température vraie des 4 cuves (°C)</span><span><i style="background:#8a3030"></i>20 / 24 °C</span></p><canvas id="chT"></canvas></div>
+          <div class="chart"><p><span><i style="background:var(--accent)"></i><span data-t="lgFill">cuve 1 : remplissage vrai (%)</span></span><span><i style="background:var(--line)"></i><span data-t="lgShown">affiché par l'interface</span></span></p><canvas id="chF"></canvas></div>
+        </div>
+        <div class="panel"><h2 data-t="cmpT">Les deux programmes sur chaque scénario (24 h simulées)</h2><div class="tablewrap"><table id="cmp"></table></div></div>
+        <div class="panel"><h2 data-t="revT">Ce que la simulation montre de ma vérification</h2><ol class="review" id="review"></ol></div>
+      </div>
+    </div>
+    <div class="panel note" style="margin-top:20px">
+      <p data-t="note1"></p>
+      <p><a href="https://github.com/Valentin-Auger-Laboratoire/supervision-cuves-truites" target="_blank" rel="noopener" style="color:var(--line)"><span data-t="repo">Code Arduino et Processing, schémas</span> ↗</a></p>
+    </div>
+  </div>
+  <script src="truites.js"></script>
+  <script>
+  (function () {
+    'use strict';
+    const M = window.Truites;
+    const $ = (id) => document.getElementById(id);
+    const T = {
+      fr: {
+        back: '← Retour au portfolio', eyebrow: 'Démo · projet de terminale STI2D, option SIN (2023)', title: "Supervision de cuves d'élevage de truites",
+        intro: "Quatre bassins à surveiller : température de l'eau (idéale entre 12 et 17 °C, stress à 20 °C, mortalité vers 24 °C), taux de remplissage et turbidité, avec une électrovanne pour remplir. Le programme « 2023 » rejoue mon programme Arduino (cuve 1, formules d'origine) et la lecture de mon interface Processing. Le programme « 2026 » applique ma vérification : vraies hauteurs de cuve, électrovanne commandée, alertes, mesures invalides détectées et trames vérifiées.",
+        warn: "Simulation : dimensions des cuves, débits, météo et poissons sont des hypothèses. Les formules des capteurs, la trame série et la façon dont Processing la lit viennent directement de mon code de 2023.",
+        reset: 'Recommencer', speedL: 'Vitesse', play: 'Lecture', pause: 'Pause',
+        progT: 'Programme', prog: { '2023': '2023 (portage fidèle)', '2026': '2026 (corrigé)' },
+        scT: 'Scénario', sc: { normal: 'Journée normale', chaud: 'Journée chaude', fuite: 'Fuite sur la cuve 3', mousse: 'Mousse : plus d’écho (cuve 1)', debranche: 'Thermistance débranchée (cuve 1)', nourrissage: 'Nourrissage (turbidité)', photo: 'Reconstituer l’écran de ma photo' },
+        lossL: 'Octets perdus sur la liaison série', screenT2023: "Écran de l'interface Processing (2023)", screenT2026: 'Écran de supervision (2026)',
+        tank: 'Cuve', lT: 'Température', lF: 'Taux de remplissage', lN: 'Turbidité', lV: 'Électrovanne', open: 'ouverte', closed: 'fermée', notWired: '—',
+        serialT: 'Liaison série (9600 bauds)', alarmT: 'Alertes', noAlarm2023: "Aucune : l'interface de 2023 n'a pas de seuil (cuves toujours vertes).", noAlarm: 'Aucune alerte.',
+        al: { t20: 'stress thermique (≥ 20 °C)', t24: 'température critique (≥ 24 °C)', sonde: 'thermistance débranchée', echo: 'plus d’écho ultrason', niveau: 'niveau sous 50 %', turb: 'turbidité élevée' },
+        serialHint: (f, c, e, r) => f + ' trames, ' + c + ' tronquées, ' + (e !== null ? e + ' exceptions dans Processing' : r + ' rejetées par la somme de contrôle') + '.',
+        lgT: 'température vraie des 4 cuves (°C)', lgFill: 'cuve 1 : remplissage vrai (%)', lgShown: "affiché par l'interface",
+        cmpT: 'Les deux programmes sur chaque scénario (24 h simulées)', cmpHead: ['Scénario', 'Programme', 'Niveau mini', 'Temp. maxi', 'Alertes', 'Trames perdues'],
+        revT: 'Ce que la simulation montre de ma vérification',
+        review: [
+          ['Taux de remplissage sur 20 m.', '(2000 − d)·100/2000 suppose une cuve de 20 m : cuve pleine 98,5 %, cuve vide 92,5 %. Scénario « fuite » : la cuve 3 se vide sans qu’on le voie. En 2026, le calcul part des hauteurs « vide » et « pleine ».'],
+          ['Électrovanne jamais commandée.', 'D2 est en sortie mais jamais écrite : en 2023 les cuves baissent toute la journée. En 2026, la vanne s’ouvre sous 80 % et se ferme au-dessus de 95 %.'],
+          ['Pas d’alerte.', 'Journée chaude : l’eau dépasse 20 °C sans aucun signal en 2023. En 2026, alerte à 20 °C puis à 24 °C.'],
+          ['Lecture série fragile.', 'Processing ne vérifie que values.length > 0 : une trame tronquée décale les valeurs ou lève une exception. Le scénario « photo » rejoue mon écran : écho nul (100 %), analogRead(A1) = 311 (1783,44 NTU exactement) et une trame dont le premier champ est perdu → Température 100, Remplissage 1783,44, Turbidité 0. En 2026, chaque trame porte un en-tête et une somme de contrôle.'],
+          ['Formule de turbidité hors plage.', 'Valable entre 2,5 et 4,2 V seulement : avec de l’eau claire et un léger décalage du capteur, la formule donne des NTU négatifs. 311 points (1,52 V) donnent 1783 NTU alors que le capteur est hors de sa plage. En 2026, la tension est bornée et signalée.'],
+          ['Matériel.', 'Thermistance débranchée : −273,15 °C affichés en 2023 ; en 2026, « sonde » détectée. Seule la cuve 1 était câblée : la version 2026 traite les 4.'],
+        ],
+        note1: "Modèle : cuves de 1,2 m d'eau, capteur ultrason à 1,5 m du fond, renouvellement 2,2 cm/h, électrovanne 14 cm/h d'eau à 11 °C, échange thermique avec l'air (τ = 8 h), turbidité qui revient vers son niveau de base. Capteurs : thermistance Grove B = 4275 sur un CAN 10 bits, ultrason entier en cm (0 = pas d'écho), capteur de turbidité DFRobot avec la formule du programme. En 2023, une trame représentative est simulée par minute (le vrai programme en envoie environ 30 par seconde).",
+        repo: 'Code Arduino et Processing, schémas',
+      },
+      en: {
+        back: '← Back to portfolio', eyebrow: 'Demo · STI2D final-year project, digital systems option (2023)', title: 'Trout-farm tank monitoring',
+        intro: 'Four tanks to monitor: water temperature (ideal 12 to 17 °C, stress at 20 °C, death around 24 °C), fill level and turbidity, with a solenoid valve to refill. The "2023" program replays my Arduino program (tank 1, original formulas) and the way my Processing interface reads it. The "2026" program applies my review: real tank heights, valve control, alerts, invalid readings detected and checked frames.',
+        warn: 'Simulation: tank dimensions, flows, weather and fish are assumptions. The sensor formulas, the serial frame and the way Processing reads it come straight from my 2023 code.',
+        reset: 'Restart', speedL: 'Speed', play: 'Play', pause: 'Pause',
+        progT: 'Program', prog: { '2023': '2023 (faithful port)', '2026': '2026 (fixed)' },
+        scT: 'Scenario', sc: { normal: 'Normal day', chaud: 'Hot day', fuite: 'Leak on tank 3', mousse: 'Foam: no echo (tank 1)', debranche: 'Thermistor unplugged (tank 1)', nourrissage: 'Feeding (turbidity)', photo: 'Rebuild the screen in my photo' },
+        lossL: 'Bytes lost on the serial link', screenT2023: 'Processing interface screen (2023)', screenT2026: 'Monitoring screen (2026)',
+        tank: 'Tank', lT: 'Temperature', lF: 'Fill level', lN: 'Turbidity', lV: 'Valve', open: 'open', closed: 'closed', notWired: '—',
+        serialT: 'Serial link (9600 baud)', alarmT: 'Alerts', noAlarm2023: 'None: the 2023 interface has no threshold (tanks always green).', noAlarm: 'No alert.',
+        al: { t20: 'thermal stress (≥ 20 °C)', t24: 'critical temperature (≥ 24 °C)', sonde: 'thermistor unplugged', echo: 'no ultrasonic echo', niveau: 'level below 50 %', turb: 'high turbidity' },
+        serialHint: (f, c, e, r) => f + ' frames, ' + c + ' truncated, ' + (e !== null ? e + ' exceptions in Processing' : r + ' rejected by the checksum') + '.',
+        lgT: 'true temperature of the 4 tanks (°C)', lgFill: 'tank 1: true fill level (%)', lgShown: 'shown by the interface',
+        cmpT: 'Both programs on each scenario (24 simulated hours)', cmpHead: ['Scenario', 'Program', 'Min level', 'Max temp.', 'Alerts', 'Lost frames'],
+        revT: 'What the simulation shows from my review',
+        review: [
+          ['Fill level over 20 m.', '(2000 − d)·100/2000 assumes a 20 m tank: full tank 98.5 %, empty tank 92.5 %. "Leak" scenario: tank 3 empties unnoticed. In 2026 the level uses the real "empty" and "full" heights.'],
+          ['Valve never driven.', 'D2 is set as an output but never written: in 2023 the tanks drop all day. In 2026 the valve opens below 80 % and closes above 95 %.'],
+          ['No alert.', 'Hot day: the water goes above 20 °C with no signal in 2023. In 2026, alerts at 20 °C then 24 °C.'],
+          ['Fragile serial parsing.', 'Processing only checks values.length > 0: a truncated frame shifts the values or throws an exception. The "photo" scenario replays my screen: no echo (100 %), analogRead(A1) = 311 (exactly 1783.44 NTU) and a frame whose first field is lost → Temperature 100, Fill 1783.44, Turbidity 0. In 2026 every frame has a header and a checksum.'],
+          ['Turbidity formula out of range.', 'Only valid between 2.5 and 4.2 V: with clear water and a small sensor offset the formula gives negative NTU. 311 counts (1.52 V) give 1783 NTU while the sensor is out of range. In 2026 the voltage is clamped and flagged.'],
+          ['Hardware.', 'Unplugged thermistor: −273.15 °C shown in 2023; detected as "probe" in 2026. Only tank 1 was wired: the 2026 version handles all 4.'],
+        ],
+        note1: 'Model: tanks holding 1.2 m of water, ultrasonic sensor 1.5 m above the bottom, 2.2 cm/h renewal, valve adding 14 cm/h of 11 °C water, heat exchange with the air (τ = 8 h), turbidity returning to its base level. Sensors: Grove thermistor B = 4275 on a 10-bit ADC, integer ultrasonic distance in cm (0 = no echo), DFRobot turbidity sensor with the program formula. In 2023 one representative frame is simulated per minute (the real program sends about 30 per second).',
+        repo: 'Arduino and Processing code, diagrams',
+      },
+    };
+    let lang = 'fr';
+    try { lang = localStorage.getItem('lang') || ((navigator.language || 'fr').toLowerCase().startsWith('fr') ? 'fr' : 'en'); } catch (e) {}
+    if (!T[lang]) lang = 'fr';
+    const t = (k) => T[lang][k];
+    const fmt = (v, d = 1) => (Number.isFinite(v) ? v.toLocaleString(lang === 'fr' ? 'fr-FR' : 'en-GB', { maximumFractionDigits: d, minimumFractionDigits: d }) : (Number.isNaN(v) ? 'NaN' : '—'));
+    const S = { prog: '2023', sc: 'normal', loss: 2, speed: 600 };
+    let sim = null, running = true;
+    const opts = (prog, sc) => ({ prog: prog || S.prog, scenario: sc || S.sc, loss: S.loss / 100 });
+    function reset() { sim = M.createSim(opts()); renderScreen(); drawScene(); drawCharts(); ui(); }
+    function seg(box, key, list, onChange) {
+      const s = document.createElement('div'); s.className = 'seg';
+      list.forEach(([v, label]) => { const b = document.createElement('button'); b.type = 'button'; b.className = 'btn'; b.textContent = label; b.setAttribute('aria-pressed', String(S[key]) === String(v)); b.addEventListener('click', () => { S[key] = v; s.querySelectorAll('button').forEach((x) => x.setAttribute('aria-pressed', x === b)); onChange(); }); s.appendChild(b); });
+      box.appendChild(s);
+    }
+    function head(box, txt, first) { const h = document.createElement(first ? 'h2' : 'h3'); h.textContent = txt; box.appendChild(h); }
+    function renderCtl() {
+      const box = $('ctl'); box.innerHTML = '';
+      head(box, t('progT'), true); seg(box, 'prog', Object.entries(T[lang].prog), () => { reset(); runCompare(); });
+      head(box, t('scT')); seg(box, 'sc', Object.entries(T[lang].sc), reset);
+      head(box, t('lossL'));
+      const row = document.createElement('div'); row.className = 'ctl';
+      row.innerHTML = '<label for="s-loss">' + t('lossL') + '</label><output></output><input type="range" id="s-loss" min="0" max="10" step="0.5">';
+      const r = row.querySelector('input'), o = row.querySelector('output'); r.value = S.loss; o.textContent = fmt(S.loss, 1) + ' %';
+      r.addEventListener('input', () => { S.loss = parseFloat(r.value); o.textContent = fmt(S.loss, 1) + ' %'; }); r.addEventListener('change', () => { reset(); runCompare(); }); box.appendChild(row);
+      const sp = $('speeds'); sp.innerHTML = '';
+      [[60, '×60'], [600, '×600'], [3600, '×3600']].forEach(([v, l]) => { const b = document.createElement('button'); b.type = 'button'; b.className = 'btn'; b.textContent = l; b.setAttribute('aria-pressed', S.speed === v); b.addEventListener('click', () => { S.speed = v; sp.querySelectorAll('button').forEach((x) => x.setAttribute('aria-pressed', x === b)); }); sp.appendChild(b); });
+    }
+    // ------------------------------------------------------------------ écran de supervision
+    function renderScreen() {
+      const is23 = S.prog === '2023';
+      $('screenT').textContent = is23 ? t('screenT2023') : t('screenT2026');
+      $('screen').innerHTML = [0, 1, 2, 3].map((k) => '<div class="tank" id="tk' + k + '"></div>').join('');
+    }
+    function tankHTML(k) {
+      const is23 = S.prog === '2023', L = (a, b) => '<div class="row"><span>' + a + '</span><b>' + b + '</b></div>';
+      if (is23) {
+        if (k > 0) return '<h4>' + t('tank') + ' ' + (k + 1) + '</h4>' + L(t('lT'), t('notWired')) + L(t('lN'), t('notWired')) + L(t('lF'), t('notWired')) + L(t('lV'), t('notWired'));
+        const d = sim.disp; return '<h4>' + t('tank') + ' 1</h4>' + L(t('lT'), fmt(d.v1, 3)) + L(t('lN'), fmt(d.v3, 3)) + L(t('lF'), fmt(d.v2, 3)) + L(t('lV'), t('notWired'));
+      }
+      const v = sim.view[k], fl = v.flags || '';
+      const cls = /T24|SONDE|ECHO|NIVEAU/.test(fl) ? 'bad' : /T20|TURB|NTU/.test(fl) ? 'warn' : 'ok';
+      return '<h4 class="' + cls + '">' + t('tank') + ' ' + (k + 1) + '</h4>' + L(t('lT'), v.T === null ? '—' : fmt(v.T, 1) + ' °C') + L(t('lN'), v.N === null ? '—' : fmt(v.N, 0) + ' NTU') + L(t('lF'), v.F === null ? '—' : fmt(v.F, 0) + ' %') + L(t('lV'), v.valve ? t('open') : t('closed')) + (fl && fl !== 'OK' ? '<div class="flags">' + fl + '</div>' : '');
+    }
+    // ------------------------------------------------------------------ dessin
+    function canvas(id) {
+      const cv = $(id), dpr = window.devicePixelRatio || 1, w = cv.clientWidth, h = cv.clientHeight;
+      if (cv.width !== Math.round(w * dpr) || cv.height !== Math.round(h * dpr)) { cv.width = Math.round(w * dpr); cv.height = Math.round(h * dpr); }
+      const c = cv.getContext('2d'); c.setTransform(dpr, 0, 0, dpr, 0, 0); return { c, w, h };
+    }
+    const waterCol = (Tw, N) => { const u = Math.max(0, Math.min(1, (Tw - 10) / 16)), m = Math.min(1, N / 120); return 'rgb(' + Math.round(60 + 140 * u + 50 * m) + ',' + Math.round(110 - 30 * u - 10 * m) + ',' + Math.round(100 - 50 * u - 50 * m) + ')'; };
+    function drawScene() {
+      const { c, w, h } = canvas('scene');
+      c.fillStyle = '#0a0a0b'; c.fillRect(0, 0, w, h);
+      const tw = Math.min(150, (w - 50) / 4 - 16), gap = (w - 4 * tw) / 5, top = 30, th = h - 60;
+      sim.tanks.forEach((tk, k) => {
+        const x = gap + k * (tw + gap), lvl = Math.max(0, Math.min(1.05, tk.h / M.TANK.full));
+        const wh = (th * lvl) / 1.25;
+        c.fillStyle = waterCol(tk.T, tk.N); c.globalAlpha = 0.8; c.fillRect(x + 3, top + th - wh, tw - 6, wh - 3); c.globalAlpha = 1;
+        c.strokeStyle = '#c9c9cc'; c.lineWidth = 2; c.beginPath(); c.moveTo(x, top + th * 0.05); c.lineTo(x, top + th); c.lineTo(x + tw, top + th); c.lineTo(x + tw, top + th * 0.05); c.stroke();
+        // capteur ultrason
+        c.fillStyle = '#9b9b9f'; c.fillRect(x + tw / 2 - 8, top - 6, 16, 8);
+        // électrovanne
+        const v = S.prog === '2026' ? (sim.opt.prog === '2026' ? sim.view[k].valve : 0) : 0;
+        c.strokeStyle = v ? '#8fd18f' : '#3a3a3d'; c.lineWidth = 4; c.beginPath(); c.moveTo(x - 6, top + 4); c.lineTo(x + 14, top + 4); c.lineTo(x + 14, top + 20); c.stroke();
+        if (v) { c.fillStyle = 'rgba(143,209,143,0.6)'; for (let i = 0; i < 4; i++) c.fillRect(x + 12, top + 24 + i * 10 + ((sim.t * 3) % 10), 4, 6); }
+        c.font = '600 12px Inter, sans-serif'; c.fillStyle = '#f2f2f2'; c.textAlign = 'center';
+        c.fillText(fmt(tk.T, 1) + ' °C', x + tw / 2, top + th - wh / 2);
+        c.font = '10px "JetBrains Mono", monospace'; c.fillStyle = '#9b9b9f';
+        c.fillText(t('tank') + ' ' + (k + 1) + ' · ' + fmt((tk.h / M.TANK.full) * 100, 0) + ' %', x + tw / 2, top + th + 16);
+        if (S.prog === '2023' && k > 0) { c.fillStyle = '#6c6c70'; c.fillText(lang === 'fr' ? 'non câblée' : 'not wired', x + tw / 2, top + th + 30); }
+      });
+      c.textAlign = 'left'; c.fillStyle = '#6c6c70'; c.fillText(lang === 'fr' ? 'état réel des cuves (simulé)' : 'actual state of the tanks (simulated)', 8, 14);
+    }
+    function plot(id, series, o) {
+      const { c, w, h } = canvas(id);
+      c.fillStyle = '#0a0a0b'; c.fillRect(0, 0, w, h);
+      const pl = 42, pr = 14, pt = 8, pb = 20;
+      const X = (x) => pl + ((x - o.xmin) / (o.xmax - o.xmin)) * (w - pl - pr), Y = (y) => pt + (1 - (y - o.ymin) / (o.ymax - o.ymin)) * (h - pt - pb);
+      c.font = '10px "JetBrains Mono", monospace'; c.fillStyle = '#6c6c70'; c.strokeStyle = '#1e1e21'; c.lineWidth = 1; c.textAlign = 'right'; c.textBaseline = 'middle';
+      for (let v = Math.ceil(o.ymin / o.ystep) * o.ystep; v <= o.ymax + 1e-9; v += o.ystep) { c.beginPath(); c.moveTo(pl, Y(v)); c.lineTo(w - pr, Y(v)); c.stroke(); c.fillText(fmt(v, 0), pl - 4, Y(v)); }
+      c.textAlign = 'center'; c.textBaseline = 'top';
+      for (let v = o.xmin; v <= o.xmax + 1e-9; v += o.xstep) { c.beginPath(); c.moveTo(X(v), pt); c.lineTo(X(v), h - pb); c.stroke(); c.fillText(fmt(v, 0) + ' h', X(v), h - pb + 4); }
+      (o.hlines || []).forEach((l) => { c.strokeStyle = l.color; c.setLineDash([4, 4]); c.beginPath(); c.moveTo(pl, Y(l.y)); c.lineTo(w - pr, Y(l.y)); c.stroke(); c.setLineDash([]); });
+      c.save(); c.beginPath(); c.rect(pl, pt, w - pl - pr, h - pt - pb); c.clip();
+      series.forEach((s) => { c.strokeStyle = s.color; c.lineWidth = s.width || 1.6; c.beginPath(); let pen = false; s.pts.forEach(([x, y]) => { if (!Number.isFinite(y)) { pen = false; return; } const yy = Math.max(o.ymin - 50, Math.min(o.ymax + 50, y)); if (pen) c.lineTo(X(x), Y(yy)); else { c.moveTo(X(x), Y(yy)); pen = true; } }); c.stroke(); });
+      c.restore();
+    }
+    const COLS = ['#c8102e', '#e0a458', '#c9c9cc', '#8fd18f'];
+    function drawCharts() {
+      const o = sim.out;
+      plot('chT', o.T.map((arr, k) => ({ pts: o.t.map((x, i) => [x, arr[i]]), color: COLS[k] })), { xmin: 0, xmax: 24, xstep: 4, ymin: 5, ymax: 30, ystep: 5, hlines: [{ y: 20, color: '#8a6a30' }, { y: 24, color: '#8a3030' }] });
+      plot('chF', [{ pts: o.t.map((x, i) => [x, o.h[0][i]]), color: '#c8102e', width: 2 }, { pts: o.t.map((x, i) => [x, o.shownFill[i] === null ? NaN : o.shownFill[i]]), color: '#c9c9cc' }], { xmin: 0, xmax: 24, xstep: 4, ymin: 0, ymax: 110, ystep: 20, hlines: [{ y: 80, color: '#6c6c70' }] });
+    }
+    function ui() {
+      [0, 1, 2, 3].forEach((k) => { const el = $('tk' + k); if (el) el.innerHTML = tankHTML(k); });
+      const o = sim.out;
+      $('serial').innerHTML = o.serial.slice(-9).map((l) => { const hh = Math.floor(l.t / 60), mm = l.t % 60; return '<span class="t">' + String(hh).padStart(2, '0') + ':' + String(mm).padStart(2, '0') + '  </span>' + (l.m.includes('→') ? '<span class="w">' + l.m + '</span>' : l.m); }).join('\n');
+      $('serialHint').textContent = t('serialHint')(o.frames, o.cut, S.prog === '2023' ? o.errors : null, o.rejected);
+      if (S.prog === '2023') $('alarms').innerHTML = '<li class="muted">' + t('noAlarm2023') + '</li>';
+      else $('alarms').innerHTML = o.alarms.length ? o.alarms.slice(-8).map((a) => '<li><span class="t">' + String(Math.floor(a.t / 60)).padStart(2, '0') + ':' + String(a.t % 60).padStart(2, '0') + '</span> ' + t('tank') + ' ' + (a.tank + 1) + ' · ' + T[lang].al[a.type] + '</li>').join('') : '<li class="muted">' + t('noAlarm') + '</li>';
+      $('clock').textContent = String(Math.floor(sim.t / 60)).padStart(2, '0') + ':' + String(sim.t % 60).padStart(2, '0') + ' / 24:00';
+      $('play').textContent = running ? t('pause') : t('play');
+    }
+    function runCompare() {
+      const H = t('cmpHead');
+      let h = '<thead><tr>' + H.map((c, i) => '<th' + (i > 1 ? ' class="n"' : '') + '>' + c + '</th>').join('') + '</tr></thead><tbody>';
+      Object.keys(M.SCENARIOS).forEach((sc) => ['2023', '2026'].forEach((p) => {
+        const r = M.summary(M.createSim(opts(p, sc)).run(24));
+        const al = [...new Set(r.alarms)].map((a) => T[lang].al[a]).join(', ') || '—';
+        h += '<tr' + (sc === S.sc && p === S.prog ? ' class="sel"' : '') + '><td>' + T[lang].sc[sc] + '</td><td>' + p + '</td><td class="n' + (r.minLevel < 50 ? ' bad' : '') + '">' + fmt(r.minLevel, 0) + ' %</td><td class="n' + (r.maxT >= 20 ? ' bad' : '') + '">' + fmt(r.maxT, 1) + ' °C</td><td class="n">' + al + '</td><td class="n">' + (p === '2023' ? r.errors + ' exc.' : r.rejected + ' rej.') + '</td></tr>';
+      }));
+      $('cmp').innerHTML = h + '</tbody>';
+    }
+    let last = null, acc = 0, uiAcc = 0, chAcc = 0;
+    function frame(ts) {
+      if (last === null) last = ts; const dt = Math.min(0.05, (ts - last) / 1000); last = ts;
+      if (running && sim && sim.t < 24 * 60) { acc += (dt * S.speed) / 60; let n = 0; while (acc >= 1 && n < 400) { sim.step(); acc -= 1; n++; } }
+      drawScene(); uiAcc += dt; chAcc += dt;
+      if (uiAcc > 0.15) { ui(); uiAcc = 0; } if (chAcc > 0.6) { drawCharts(); chAcc = 0; }
+      requestAnimationFrame(frame);
+    }
+    $('play').addEventListener('click', () => { running = !running; ui(); });
+    $('reset').addEventListener('click', reset);
+    function setLang(l) {
+      lang = l; document.documentElement.lang = l;
+      document.querySelectorAll('[data-t]').forEach((el) => { const v = T[l][el.dataset.t]; if (typeof v === 'string') el.textContent = v; });
+      document.querySelectorAll('.lang button').forEach((b) => b.setAttribute('aria-pressed', b.dataset.lang === l));
+      try { localStorage.setItem('lang', l); } catch (e) {}
+      $('review').innerHTML = T[l].review.map(([a, b]) => '<li><b>' + a + '</b> ' + b + '</li>').join('');
+      renderCtl(); if (sim) { renderScreen(); ui(); drawCharts(); } runCompare();
+    }
+    document.querySelectorAll('.lang button').forEach((b) => b.addEventListener('click', () => setLang(b.dataset.lang)));
+    reset(); setLang(lang);
+    window.addEventListener('resize', () => { drawScene(); drawCharts(); });
+    requestAnimationFrame(frame);
+  })();
+  </script>
+</body>
+</html>
