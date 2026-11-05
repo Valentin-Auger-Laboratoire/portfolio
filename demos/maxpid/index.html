@@ -1,0 +1,362 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>MaxPID</title>
+  <meta name="description" content="MaxPID : loi entrée-sortie du bras, démarrage du moteur à courant continu et boucle fermée sur l'angle (CPGE TSI, 2024, prolongé en 2026).">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --bg: #0c0c0d; --panel: #161618; --border: #262628; --border-hi: #3a3a3d;
+      --text: #f2f2f2; --dim: #9b9b9f; --muted: #6c6c70; --accent: #c8102e; --line: #c9c9cc; --warn: #e0a458; --ok: #8fd18f;
+      --mono: "JetBrains Mono", ui-monospace, monospace; --sans: "Inter", system-ui, sans-serif;
+      color-scheme: dark;
+    }
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    body { background: var(--bg); color: var(--text); font-family: var(--sans); line-height: 1.55; -webkit-font-smoothing: antialiased; }
+    .wrap { max-width: 1280px; margin: 0 auto; padding: 24px 16px 48px; }
+    .top { display: flex; justify-content: space-between; align-items: center; gap: 12px; flex-wrap: wrap; margin-bottom: 24px; }
+    .back { font-size: 0.9rem; color: var(--dim); text-decoration: none; }
+    .back:hover { color: var(--accent); }
+    .lang { display: flex; border: 1px solid var(--border-hi); }
+    .lang button { font: 500 0.78rem var(--mono); letter-spacing: .05em; background: none; color: var(--dim); border: 0; padding: 5px 10px; cursor: pointer; }
+    .lang button + button { border-left: 1px solid var(--border-hi); }
+    .lang button[aria-pressed="true"] { background: var(--text); color: var(--bg); }
+    .eyebrow { font: 500 0.82rem var(--mono); color: var(--accent); letter-spacing: .04em; }
+    h1 { font-size: clamp(1.6rem, 3.4vw, 2.3rem); line-height: 1.15; margin: 6px 0 10px; text-wrap: balance; }
+    .intro { color: var(--dim); max-width: 82ch; }
+    .intro a { color: var(--line); }
+    .warnbox { border: 1px solid #4a3a20; background: #1a160f; color: var(--warn); border-radius: 6px; padding: 8px 12px; font-size: 0.84rem; margin-top: 12px; }
+    .grid { display: grid; grid-template-columns: 320px minmax(0, 1fr); gap: 20px; align-items: start; margin-top: 20px; }
+    .stack { display: grid; gap: 16px; min-width: 0; }
+    .panel { background: var(--panel); border: 1px solid var(--border); border-radius: 8px; padding: 16px; min-width: 0; }
+    h2 { font: 600 0.78rem var(--mono); letter-spacing: .12em; text-transform: uppercase; color: var(--dim); margin-bottom: 12px; }
+    h3 { font: 600 0.72rem var(--mono); letter-spacing: .08em; text-transform: uppercase; color: var(--dim); margin: 14px 0 10px; padding-top: 12px; border-top: 1px solid var(--border); }
+    button:focus-visible, input:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+    .btn { font: 500 0.82rem var(--sans); background: none; color: var(--text); border: 1px solid var(--border-hi); border-radius: 6px; padding: 6px 11px; cursor: pointer; white-space: nowrap; }
+    .btn:hover { border-color: var(--accent); color: var(--accent); }
+    .btn[aria-pressed="true"] { border-color: var(--accent); color: var(--accent); }
+    .btn.primary { background: var(--accent); border-color: var(--accent); color: #fff; }
+    .seg { display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 10px; }
+    .ctl { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 2px 10px; margin-bottom: 10px; }
+    .ctl label { font: 500 0.76rem var(--mono); color: var(--dim); }
+    .ctl output { font: 0.8rem var(--mono); font-variant-numeric: tabular-nums; text-align: right; }
+    .ctl input[type=range] { grid-column: 1 / -1; width: 100%; accent-color: var(--accent); }
+    .lab { font: 500 0.74rem var(--mono); color: var(--dim); margin: 2px 0 6px; }
+    .hint { font-size: 0.8rem; color: var(--dim); margin-top: 8px; }
+    .kpis { display: grid; grid-template-columns: repeat(6, minmax(0, 1fr)); gap: 10px; }
+    .kpi { border: 1px solid var(--border); border-radius: 6px; padding: 8px 10px; min-width: 0; }
+    .kpi dt { font: 0.66rem var(--mono); color: var(--dim); }
+    .kpi dd { font: 600 1.02rem var(--sans); font-variant-numeric: tabular-nums; margin-top: 2px; }
+    .kpi dd small { font: 400 0.7rem var(--mono); color: var(--dim); margin-left: 3px; }
+    .kpi.bad dd { color: #ff8a8a; } .kpi.good dd { color: var(--ok); }
+    canvas#table { width: 100%; aspect-ratio: 240 / 150; display: block; border: 1px solid var(--border); border-radius: 6px; background: #0a0a0b; margin-top: 12px; cursor: crosshair; touch-action: none; }
+    .controls { display: flex; gap: 8px; flex-wrap: wrap; align-items: center; margin-top: 10px; font: 0.78rem var(--mono); color: var(--dim); }
+    .row2 { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 16px; }
+    .pins { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 6px; font: 0.74rem var(--mono); }
+    .pin { border: 1px solid var(--border); border-radius: 5px; padding: 5px 7px; min-width: 0; }
+    .pin b { display: block; color: var(--dim); font-weight: 500; font-size: 0.68rem; }
+    .pin span { font-variant-numeric: tabular-nums; }
+    .pin.hi { border-color: var(--accent); } .pin.hi span { color: #ff8a8a; }
+    .serial { font: 0.74rem/1.45 var(--mono); background: #0a0a0b; border: 1px solid var(--border); border-radius: 6px; padding: 8px 10px; height: 172px; overflow: hidden; color: var(--line); white-space: pre; }
+    .serial .t { color: var(--muted); }
+    .serial .w { color: #ff8a8a; }
+    .state { font: 0.8rem var(--mono); color: var(--dim); margin-top: 8px; }
+    .state b { color: var(--text); font-weight: 500; }
+    table { width: 100%; border-collapse: collapse; font: 0.8rem var(--mono); font-variant-numeric: tabular-nums; }
+    th, td { text-align: left; padding: 6px 8px; border-bottom: 1px solid var(--border); }
+    td.n, th.n { text-align: right; }
+    th { color: var(--dim); font-weight: 500; }
+    td.bad { color: #ff8a8a; } td.good { color: var(--ok); }
+    .tablewrap { overflow-x: auto; }
+    ol.review { padding-left: 1.2em; display: grid; gap: 6px; font-size: 0.86rem; color: var(--dim); }
+    ol.review b { color: var(--text); font-weight: 600; }
+    .note { font-size: 0.82rem; color: var(--dim); }
+    .note p + p { margin-top: 6px; }
+    .sec { margin-top: 20px; }
+    .two { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1.25fr); gap: 16px; align-items: start; }
+    .grid2 { display: grid; grid-template-columns: 280px minmax(0, 1fr); gap: 20px; align-items: start; }
+    canvas.mech { width: 100%; height: 300px; display: block; border: 1px solid var(--border); border-radius: 6px; background: #0a0a0b; margin-bottom: 10px; }
+    .chart p { font: 0.72rem var(--mono); color: var(--dim); margin-bottom: 4px; display: flex; gap: 10px; flex-wrap: wrap; }
+    .chart p i { display: inline-block; width: 12px; height: 2px; vertical-align: 3px; margin-right: 5px; }
+    .chart canvas { width: 100%; height: 260px; display: block; border: 1px solid var(--border); border-radius: 6px; background: #0a0a0b; }
+    .charts { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px; }
+    .charts .chart canvas { height: 210px; }
+    .kpis.k3 { grid-template-columns: repeat(3, minmax(0, 1fr)); } .kpis.k2 { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+    .issues { list-style: none; display: grid; gap: 6px; margin-top: 12px; }
+    .issues li { font-size: 0.85rem; display: grid; grid-template-columns: auto minmax(0, 1fr); gap: 10px; align-items: baseline; padding: 7px 10px; border: 1px solid var(--border); border-radius: 6px; }
+    .issues .lv { font: 600 0.68rem var(--mono); padding: 1px 6px; border-radius: 3px; border: 1px solid var(--warn); color: var(--warn); }
+    .issues .err .lv { background: var(--accent); border-color: var(--accent); color: #fff; }
+    .issues .good { display: block; color: var(--ok); border-color: #2e4a2e; }
+    @media (max-width: 900px) { .two, .grid2, .charts { grid-template-columns: minmax(0, 1fr); } }
+    @media (max-width: 1000px) { .grid { grid-template-columns: minmax(0, 1fr); } .main-col { order: -1; } }
+    @media (max-width: 760px) { .kpis { grid-template-columns: repeat(3, minmax(0, 1fr)); } .row2 { grid-template-columns: minmax(0, 1fr); } .pins { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+  </style>
+</head>
+<body>
+  <div class="wrap">
+    <div class="top">
+      <a class="back" href="../../index.html#projets" data-t="back">← Retour au portfolio</a>
+      <div class="lang" role="group" aria-label="Langue / Language"><button type="button" data-lang="fr">FR</button><button type="button" data-lang="en">EN</button></div>
+    </div>
+    <p class="eyebrow" data-t="eyebrow">Démo · CPGE TSI, sciences de l'ingénieur (2024)</p>
+    <h1 data-t="title">MaxPID : modélisation d'un axe asservi</h1>
+    <p class="intro" data-t="intro"></p>
+    <p class="warnbox" data-t="warn"></p>
+
+    <div class="panel sec">
+      <h2 data-t="s1T">1. Loi entrée-sortie du bras</h2>
+      <div class="two">
+        <div><canvas class="mech" id="mech1" aria-label="Schéma cinématique"></canvas>
+          <div class="ctl"><label for="s-beta" data-t="betaL">Rotation de la vis β</label><output id="o-beta"></output><input type="range" id="s-beta" min="0" max="26" step="0.1" value="10"></div>
+          <dl class="kpis k3" id="k1"></dl></div>
+        <div class="chart"><p><span><i style="background:var(--accent)"></i><span data-t="lgExact">loi exacte θ(β)</span></span><span><i style="background:var(--line)"></i><span data-t="lgRound">formule arrondie (tableau du TP)</span></span><span><i style="background:#8a8a90"></i><span data-t="lgFit">droite des moindres carrés</span></span><span><i style="background:var(--warn)"></i><span data-t="lgExcel">ma droite de tableur 2024</span></span></p><canvas id="ch1"></canvas><p class="hint" id="h1"></p></div>
+      </div>
+    </div>
+
+    <div class="panel sec">
+      <h2 data-t="s2T">2. Démarrage du moteur à courant continu</h2>
+      <div class="grid2">
+        <div><div class="ctl"><label for="s-J" data-t="JL">Inertie J (supposée)</label><output id="o-J"></output><input type="range" id="s-J" min="0.3" max="5" step="0.1" value="1"></div>
+          <div class="ctl"><label for="s-U" data-t="UL">Tension U</label><output id="o-U"></output><input type="range" id="s-U" min="3" max="12" step="0.5" value="12"></div>
+          <dl class="kpis k2" id="k2"></dl></div>
+        <div class="charts">
+          <div class="chart"><p><span><i style="background:var(--accent)"></i><span data-t="lgW">vitesse Ω (rad/s)</span></span><span><i style="background:var(--warn)"></i><span data-t="lgI">courant i (mA)</span></span><span data-t="lg05">0 à 0,5 s, valeurs de la fiche</span></p><canvas id="ch2a"></canvas></div>
+          <div class="chart"><p><span><i style="background:var(--accent)"></i><span data-t="lgFiche">fiche du moteur</span></span><span><i style="background:var(--line)"></i><span data-t="lg2024">mon modèle Simscape de 2024</span></span><span data-t="lg10">vitesse sur 10 s</span></p><canvas id="ch2b"></canvas></div>
+        </div>
+      </div>
+      <p class="hint" id="h2"></p>
+    </div>
+
+    <div class="panel sec">
+      <h2 data-t="s3T">3. Boucle fermée sur l'angle du bras (ajout 2026)</h2>
+      <div class="grid2">
+        <div id="ctl3"></div>
+        <div>
+          <dl class="kpis" id="k3"></dl>
+          <div class="two" style="margin-top:12px">
+            <div><canvas class="mech" id="mech3" aria-label="Bras asservi"></canvas><div class="controls"><button type="button" class="btn" id="replay" data-t="replay">Rejouer</button><span id="clk"></span></div></div>
+            <div class="chart"><p><span><i style="background:var(--accent)"></i><span data-t="lgTh">angle θ (°)</span></span><span><i style="background:var(--line)"></i><span data-t="lgRef">consigne</span></span><span><i style="background:var(--warn)"></i><span data-t="lgU">tension U (V ×5)</span></span></p><canvas id="ch3"></canvas></div>
+          </div>
+          <ul class="issues" id="iss3"></ul>
+        </div>
+      </div>
+    </div>
+
+    <div class="panel note" style="margin-top:20px">
+      <p data-t="note1"></p>
+      <p><a href="https://github.com/Valentin-Auger-Laboratoire/maxpid-asservissement" target="_blank" rel="noopener" style="color:var(--line)"><span data-t="repo">Dépôt : calculs, captures et scripts</span> ↗</a></p>
+    </div>
+  </div>
+  <script src="maxpid.js"></script>
+  <script>
+  (function () {
+    'use strict';
+    const M = window.MaxPID;
+    const $ = (id) => document.getElementById(id);
+    const T = {
+      fr: {
+        back: '← Retour au portfolio', eyebrow: "Démo · CPGE TSI, sciences de l'ingénieur (2024)", title: "MaxPID : modélisation d'un axe asservi",
+        intro: "Le MaxPID est un bras motorisé : un moteur à courant continu fait tourner une vis, l'écrou pousse le bras. En 2024, j'ai écrit la loi entrée-sortie du mécanisme (fermeture géométrique + vis-écrou) et modélisé le moteur sous Simscape. Cette page rejoue ces deux modèles avec mes valeurs, puis ajoute ce qui manquait : la boucle fermée sur l'angle du bras.",
+        warn: "Les longueurs, le pas de la vis et les valeurs du moteur viennent de mon travail de 2024. L'inertie du moteur, la masse et la longueur du bras, le rendement de la vis et le potentiomètre sont des hypothèses de 2026 : la partie 3 est un ajout, pas une mesure du banc.",
+        s1T: '1. Loi entrée-sortie du bras', betaL: 'Rotation de la vis β',
+        kTh: 'Angle du bras θ', kX: 'Longueur BC = x', kSlope: 'Pente locale',
+        lgExact: 'loi exacte θ(β)', lgRound: 'formule arrondie (tableau du TP)', lgFit: 'droite des moindres carrés', lgExcel: 'ma droite de tableur 2024',
+        h1: (f, d, e1, e2) => 'Droite des moindres carrés : θ = ' + f + ' ; écart maximal à la droite ' + d + '° : la loi n’est pas linéaire. Ma pente de 2024 (3,4121 °/tour) est juste ; son ordonnée à l’origine (3,91°) est décalée d’une pente parce que le tableur numérotait les points de 1 à 27. Le tableau du sujet arrondit a² + b² + c² à 18 000 (au lieu de 17 954,25) et x(0) à 170 mm : écart de ' + e1 + ' à ' + e2 + '° avec la loi exacte.',
+        s2T: '2. Démarrage du moteur à courant continu', JL: 'Inertie J (supposée)', UL: 'Tension U',
+        kImax: 'Courant de pointe', kT63: 'Ω à 63 %', kWend: 'Vitesse finale', kTau: 'τm = J·R / (Ke·Kt)',
+        lgW: 'vitesse Ω (rad/s)', lgI: 'courant i (mA)', lg05: '0 à 0,5 s, valeurs de la fiche', lgFiche: 'fiche du moteur', lg2024: 'mon modèle Simscape de 2024', lg10: 'vitesse sur 10 s',
+        h2: (r, j) => 'Avec les valeurs de la fiche, le courant monte d’un coup à U/R puis retombe pendant que la vitesse monte en exponentielle (constante de temps τm). Mon Simscape de 2024 montrait une rampe droite et 0,63 A constants : cela correspond à R ≈ ' + r + ' Ω et J ≈ ' + j + ' kg·m², sans doute les valeurs par défaut des blocs. La vitesse à vide du modèle (≈ 11 200 tr/min) dépasse les 8 700 tr/min de la fiche : il manque des frottements.',
+        s3T: "3. Boucle fermée sur l'angle du bras (ajout 2026)",
+        modeL: 'Correcteur', mode: { P: 'Proportionnel (P)', PI: 'Proportionnel intégral (PI)' }, KpL: 'Gain Kp', KiL: 'Gain intégral Ki', massL: 'Masse ajoutée au bras', th0L: 'Angle de départ', refL: 'Consigne',
+        kErr: 'Erreur finale', kOver: 'Dépassement', kT5: 'Réponse à 5 %', kImax3: 'Courant max', kHold: 'Courant de maintien', kCap: 'Le moteur peut fournir',
+        lgTh: 'angle θ (°)', lgRef: 'consigne', lgU: 'tension U (V ×5)', replay: 'Rejouer',
+        iP: (e) => 'Correcteur P : il reste une erreur de ' + e + '°. Pour tenir le bras contre la pesanteur, il faut du courant, donc une erreur non nulle.',
+        iPI: "Le correcteur PI annule l'erreur : l'intégrale fournit la tension nécessaire pour tenir le bras.",
+        iFall: (h) => 'Le moteur de la fiche ne peut pas tenir ce bras : il faudrait ' + h + ' A, plus que son courant de démarrage (1,26 A). Encore un indice que la fiche ne décrit pas le moteur du banc.',
+        iOver: 'Dépassement important : baisser Kp ou Ki.', iOk: 'Réponse correcte.', iSat: 'La tension sature à ±12 V pendant le mouvement : la vitesse est limitée par le moteur, pas par le correcteur.',
+        note1: "Modèle de l'axe : le moteur entraîne directement la vis (pas 4 mm/tour) ; la réduction dθ/dβ se déduit de la loi exacte et varie avec l'angle ; J_éq = J_moteur + (J_bras + m·L²)·(dθ/dβ)² ; le couple de pesanteur m·g·L·cos θ est ramené au moteur avec un rendement de 0,5 ; mesure de θ sur 10 bits ; correcteur échantillonné à 1 ms avec anti-emballement. Moteur : U = R·i + L·di/dt + Ke·Ω et J·dΩ/dt = Kt·i − f·Ω − C, valeurs de la fiche.",
+        repo: 'Dépôt : calculs, captures et scripts',
+      },
+      en: {
+        back: '← Back to portfolio', eyebrow: 'Demo · CPGE TSI, engineering science (2024)', title: 'MaxPID: modelling a servo axis',
+        intro: 'The MaxPID is a motorised arm: a DC motor turns a lead screw and the nut pushes the arm. In 2024 I derived the input-output law of the mechanism (loop closure + screw and nut) and modelled the motor in Simscape. This page replays both models with my values, then adds what was missing: closed-loop control of the arm angle.',
+        warn: 'Lengths, screw pitch and motor values come from my 2024 work. Motor inertia, arm mass and length, screw efficiency and the potentiometer are 2026 assumptions: part 3 is an addition, not a measurement of the bench.',
+        s1T: '1. Input-output law of the arm', betaL: 'Screw rotation β',
+        kTh: 'Arm angle θ', kX: 'Length BC = x', kSlope: 'Local slope',
+        lgExact: 'exact law θ(β)', lgRound: 'rounded formula (lab table)', lgFit: 'least-squares line', lgExcel: 'my 2024 spreadsheet line',
+        h1: (f, d, e1, e2) => 'Least-squares line: θ = ' + f + '; maximum deviation from the line ' + d + '°: the law is not linear. My 2024 slope (3.4121 °/turn) is right; its intercept (3.91°) is offset by one slope because the spreadsheet numbered the points 1 to 27. The lab table rounds a² + b² + c² to 18,000 (instead of 17,954.25) and x(0) to 170 mm: a difference of ' + e1 + ' to ' + e2 + '° from the exact law.',
+        s2T: '2. DC motor start-up', JL: 'Inertia J (assumed)', UL: 'Voltage U',
+        kImax: 'Peak current', kT63: 'Ω at 63 %', kWend: 'Final speed', kTau: 'τm = J·R / (Ke·Kt)',
+        lgW: 'speed Ω (rad/s)', lgI: 'current i (mA)', lg05: '0 to 0.5 s, datasheet values', lgFiche: 'motor datasheet', lg2024: 'my 2024 Simscape model', lg10: 'speed over 10 s',
+        h2: (r, j) => 'With the datasheet values, the current jumps to U/R then falls while the speed rises exponentially (time constant τm). My 2024 Simscape model showed a straight ramp and a constant 0.63 A: that matches R ≈ ' + r + ' Ω and J ≈ ' + j + ' kg·m², probably the blocks’ default values. The model’s no-load speed (≈ 11,200 rpm) exceeds the datasheet’s 8,700 rpm: friction is missing.',
+        s3T: '3. Closed-loop control of the arm angle (2026 addition)',
+        modeL: 'Controller', mode: { P: 'Proportional (P)', PI: 'Proportional-integral (PI)' }, KpL: 'Gain Kp', KiL: 'Integral gain Ki', massL: 'Mass added to the arm', th0L: 'Start angle', refL: 'Set point',
+        kErr: 'Final error', kOver: 'Overshoot', kT5: '5 % settling', kImax3: 'Max current', kHold: 'Holding current', kCap: 'Motor can supply',
+        lgTh: 'angle θ (°)', lgRef: 'set point', lgU: 'voltage U (V ×5)', replay: 'Replay',
+        iP: (e) => 'P controller: an error of ' + e + '° remains. Holding the arm against gravity needs current, hence a non-zero error.',
+        iPI: 'The PI controller cancels the error: the integral supplies the voltage needed to hold the arm.',
+        iFall: (h) => 'The datasheet motor cannot hold this arm: it would need ' + h + ' A, more than its stall current (1.26 A). Another hint that the datasheet does not describe the bench motor.',
+        iOver: 'Large overshoot: lower Kp or Ki.', iOk: 'Good response.', iSat: 'The voltage saturates at ±12 V during the move: speed is limited by the motor, not the controller.',
+        note1: 'Axis model: the motor drives the screw directly (4 mm/turn pitch); the ratio dθ/dβ follows from the exact law and varies with the angle; J_eq = J_motor + (J_arm + m·L²)·(dθ/dβ)²; the gravity torque m·g·L·cos θ is reflected to the motor with 0.5 efficiency; 10-bit angle measurement; controller sampled at 1 ms with anti-windup. Motor: U = R·i + L·di/dt + Ke·Ω and J·dΩ/dt = Kt·i − f·Ω − C, datasheet values.',
+        repo: 'Repository: calculations, captures and scripts',
+      },
+    };
+    let lang = 'fr';
+    try { lang = localStorage.getItem('lang') || ((navigator.language || 'fr').toLowerCase().startsWith('fr') ? 'fr' : 'en'); } catch (e) {}
+    if (!T[lang]) lang = 'fr';
+    const t = (k) => T[lang][k];
+    const fmt = (v, d = 1) => (Number.isFinite(v) ? v.toLocaleString(lang === 'fr' ? 'fr-FR' : 'en-GB', { maximumFractionDigits: d, minimumFractionDigits: d }) : '—');
+    const kpi = (k, v, u, cls) => '<div class="kpi' + (cls ? ' ' + cls : '') + '"><dt>' + k + '</dt><dd>' + v + (u ? '<small>' + u + '</small>' : '') + '</dd></div>';
+
+    function canvas(id) {
+      const cv = $(id), dpr = window.devicePixelRatio || 1, w = cv.clientWidth, h = cv.clientHeight;
+      if (cv.width !== Math.round(w * dpr) || cv.height !== Math.round(h * dpr)) { cv.width = Math.round(w * dpr); cv.height = Math.round(h * dpr); }
+      const c = cv.getContext('2d'); c.setTransform(dpr, 0, 0, dpr, 0, 0); return { c, w, h };
+    }
+    // ------------------------------------------------------------------ schéma cinématique (dessiné, pas copié)
+    function drawMech(id, thDeg, refDeg) {
+      const { c, w, h } = canvas(id), th = M.rad(thDeg), P = M.points(th);
+      c.fillStyle = '#0a0a0b'; c.fillRect(0, 0, w, h);
+      const k = Math.min((w - 50) / 160, (h - 60) / 100), ox = 30, oy = h - 28;
+      const X = (p) => ox + p[0] * k, Y = (p) => oy - p[1] * k;
+      // bâti
+      c.strokeStyle = '#3a3a3d'; c.lineWidth = 1; for (let i = -1; i < 18; i++) { c.beginPath(); c.moveTo(ox - 10 + i * 10, oy + 14); c.lineTo(ox + i * 10, oy + 4); c.stroke(); }
+      c.strokeStyle = '#6c6c70'; c.lineWidth = 2; c.beginPath(); c.moveTo(ox - 10, oy + 4); c.lineTo(ox + 170 * k, oy + 4); c.stroke();
+      c.beginPath(); c.moveTo(X(P.O), oy + 4); c.lineTo(X(P.B), Y(P.B)); c.stroke();
+      // consigne (fantôme)
+      if (refDeg !== undefined) { const R = M.points(M.rad(refDeg)); c.setLineDash([4, 4]); c.strokeStyle = 'rgba(201,201,204,0.45)'; c.lineWidth = 2; c.beginPath(); c.moveTo(X(R.A), Y(R.A)); c.lineTo(X(R.C), Y(R.C)); c.stroke(); c.setLineDash([]); }
+      // vis BC (corps moteur + vis) : corps de longueur fixe depuis B, la vis coulisse
+      const dx = P.C[0] - P.B[0], dy = P.C[1] - P.B[1], L = Math.hypot(dx, dy), ux = dx / L, uy = dy / L;
+      const body = 48; const E = [P.B[0] + ux * body, P.B[1] + uy * body];
+      c.lineCap = 'round';
+      c.strokeStyle = '#4a4a50'; c.lineWidth = 14; c.beginPath(); c.moveTo(X(P.B), Y(P.B)); c.lineTo(X(E), Y(E)); c.stroke();
+      c.strokeStyle = '#c9c9cc'; c.lineWidth = 3; c.setLineDash([3, 2]); c.beginPath(); c.moveTo(X(E), Y(E)); c.lineTo(X(P.C), Y(P.C)); c.stroke(); c.setLineDash([]);
+      // bras AC
+      c.strokeStyle = '#c8102e'; c.lineWidth = 7; c.beginPath(); c.moveTo(X(P.A), Y(P.A)); c.lineTo(X(P.C), Y(P.C)); c.stroke();
+      // arc θ
+      c.strokeStyle = '#e0a458'; c.lineWidth = 1.5; c.beginPath(); c.arc(X(P.A), Y(P.A), 22, -th, 0); c.stroke();
+      // pivots
+      [['O', P.O], ['A', P.A], ['B', P.B], ['C', P.C]].forEach(([n, p]) => { c.fillStyle = '#0a0a0b'; c.beginPath(); c.arc(X(p), Y(p), 5, 0, 7); c.fill(); c.strokeStyle = '#f2f2f2'; c.lineWidth = 1.5; c.stroke(); c.fillStyle = '#9b9b9f'; c.font = '11px "JetBrains Mono", monospace'; c.fillText(n, X(p) + 8, Y(p) - 8); });
+      c.fillStyle = '#e0a458'; c.fillText('θ = ' + fmt(thDeg, 1) + '°', X(P.A) + 26, Y(P.A) - 6);
+      c.fillStyle = '#9b9b9f'; c.fillText(lang === 'fr' ? 'moteur + vis' : 'motor + screw', X(P.B) + 10, Y(P.B) - 16);
+    }
+    // ------------------------------------------------------------------ graphiques
+    function plot(id, series, o) {
+      const { c, w, h } = canvas(id);
+      c.fillStyle = '#0a0a0b'; c.fillRect(0, 0, w, h);
+      const pl = 42, pr = 14, pt = 8, pb = 20;
+      const X = (x) => pl + ((x - o.xmin) / (o.xmax - o.xmin)) * (w - pl - pr), Y = (y) => pt + (1 - (y - o.ymin) / (o.ymax - o.ymin)) * (h - pt - pb);
+      c.font = '10px "JetBrains Mono", monospace'; c.fillStyle = '#6c6c70'; c.strokeStyle = '#1e1e21'; c.lineWidth = 1; c.textAlign = 'right'; c.textBaseline = 'middle';
+      for (let v = Math.ceil(o.ymin / o.ystep) * o.ystep; v <= o.ymax + 1e-9; v += o.ystep) { c.beginPath(); c.moveTo(pl, Y(v)); c.lineTo(w - pr, Y(v)); c.stroke(); c.fillText(fmt(v, o.yd || 0), pl - 4, Y(v)); }
+      c.textAlign = 'center'; c.textBaseline = 'top';
+      for (let v = Math.ceil(o.xmin / o.xstep) * o.xstep; v <= o.xmax + 1e-9; v += o.xstep) { c.beginPath(); c.moveTo(X(v), pt); c.lineTo(X(v), h - pb); c.stroke(); c.fillText(o.xfmt(v), X(v), h - pb + 4); }
+      c.save(); c.beginPath(); c.rect(pl, pt, w - pl - pr, h - pt - pb); c.clip();
+      series.forEach((s) => {
+        c.strokeStyle = s.color; c.fillStyle = s.color; c.lineWidth = s.width || 1.6; c.setLineDash(s.dash || []);
+        if (s.dots) s.pts.forEach(([x, y]) => { c.beginPath(); c.arc(X(x), Y(y), 2.4, 0, 7); c.fill(); });
+        else { c.beginPath(); s.pts.forEach(([x, y], i) => (i ? c.lineTo(X(x), Y(y)) : c.moveTo(X(x), Y(y)))); c.stroke(); }
+        c.setLineDash([]);
+      });
+      (o.marker || []).forEach(([x, y]) => { c.fillStyle = '#f2f2f2'; c.beginPath(); c.arc(X(x), Y(y), 4, 0, 7); c.fill(); });
+      c.restore();
+    }
+    // ------------------------------------------------------------------ partie 1
+    const TB = M.table();
+    function part1() {
+      const beta = parseFloat($('s-beta').value), th = M.thetaOf(beta), thD = M.deg(th);
+      $('o-beta').textContent = fmt(beta, 1) + (lang === 'fr' ? ' tours' : ' turns');
+      drawMech('mech1', thD);
+      $('k1').innerHTML = kpi(t('kTh'), fmt(thD, 2), '°') + kpi(t('kX'), fmt(M.xOf(th), 2), 'mm') + kpi(t('kSlope'), fmt(M.deg(1 / M.dbetadth(th)), 2), '°/' + (lang === 'fr' ? 'tour' : 'turn'));
+      const fine = []; for (let b = 0; b <= 26.001; b += 0.25) fine.push([b, M.deg(M.thetaOf(b))]);
+      plot('ch1', [
+        { pts: fine, color: '#c8102e', width: 2 },
+        { pts: TB.betas.map((b, i) => [b, TB.rounded[i]]), color: '#c9c9cc', dots: true },
+        { pts: [[0, TB.fit.icpt], [26, TB.fit.slope * 26 + TB.fit.icpt]], color: '#8a8a90', dash: [5, 4], width: 1.2 },
+        { pts: [[0, TB.excel.icpt], [26, TB.excel.slope * 26 + TB.excel.icpt]], color: '#e0a458', dash: [2, 3], width: 1.2 },
+      ], { xmin: 0, xmax: 26, xstep: 2, xfmt: (v) => fmt(v, 0), ymin: 0, ymax: 100, ystep: 20, marker: [[beta, thD]] });
+      const diffs = TB.exact.map((e, i) => Math.abs(e - TB.rounded[i]));
+      $('h1').textContent = t('h1')(fmt(TB.fit.slope, 4) + '·β + ' + fmt(TB.fit.icpt, 2), fmt(TB.maxDev, 1), fmt(Math.min(...diffs), 2), fmt(Math.max(...diffs), 2));
+    }
+    // ------------------------------------------------------------------ partie 2
+    function part2() {
+      const J = parseFloat($('s-J').value) * 1e-6, U = parseFloat($('s-U').value);
+      $('o-J').textContent = fmt(J * 1e6, 1) + '·10⁻⁶ kg·m²'; $('o-U').textContent = fmt(U, 1) + ' V';
+      const a = M.motorStep({ J, U, T: 0.5 }), wmax = Math.max(...a.w);
+      $('k2').innerHTML = kpi(t('kImax'), fmt(a.iMax, 2), 'A') + kpi(t('kT63'), a.t63 ? fmt(a.t63 * 1000, 0) : '—', 'ms') + kpi(t('kWend'), fmt((a.wEnd * 60) / (2 * Math.PI), 0), (lang === 'fr' ? 'tr/min' : 'rpm')) + kpi(t('kTau'), fmt(a.tau * 1000, 0), 'ms');
+      const ymax = Math.ceil(Math.max(1300, wmax * 1.05, a.iMax * 1000 * 1.05) / 200) * 200;
+      plot('ch2a', [{ pts: a.t.map((x, i) => [x, a.w[i]]), color: '#c8102e', width: 2 }, { pts: a.t.map((x, i) => [x, a.i[i] * 1000]), color: '#e0a458' }], { xmin: 0, xmax: 0.5, xstep: 0.1, xfmt: (v) => fmt(v, 1) + ' s', ymin: 0, ymax, ystep: ymax / 4 });
+      const f10 = M.motorStep({ J, U, T: 10, sample: 0.02, dt: 5e-5 }), s24 = M.motorStep(Object.assign({}, M.SIMSCAPE_2024, { U, T: 10, sample: 0.02, dt: 2e-4 }));
+      plot('ch2b', [{ pts: f10.t.map((x, i) => [x, f10.w[i]]), color: '#c8102e', width: 2 }, { pts: s24.t.map((x, i) => [x, s24.w[i]]), color: '#c9c9cc', width: 2 }], { xmin: 0, xmax: 10, xstep: 2, xfmt: (v) => fmt(v, 0) + ' s', ymin: 0, ymax: 1300, ystep: 300 });
+      $('h2').textContent = t('h2')(fmt(M.SIMSCAPE_2024.R, 0), M.SIMSCAPE_2024.J.toExponential(0).replace('e-', '·10⁻').replace('3', '³'));
+    }
+    // ------------------------------------------------------------------ partie 3
+    const S = { mode: 'PI', Kp: 0.15, Ki: 0.15, mass: 0.1, th0: 20, ref: 60 };
+    let res = null, t0 = null;
+    function seg(box, key, list, onChange) {
+      const s = document.createElement('div'); s.className = 'seg';
+      list.forEach(([v, label]) => { const b = document.createElement('button'); b.type = 'button'; b.className = 'btn'; b.textContent = label; b.setAttribute('aria-pressed', String(S[key]) === String(v)); b.addEventListener('click', () => { S[key] = v; s.querySelectorAll('button').forEach((x) => x.setAttribute('aria-pressed', x === b)); onChange(); }); s.appendChild(b); });
+      box.appendChild(s);
+    }
+    function slider(box, key, label, min, max, step, show) {
+      const row = document.createElement('div'); row.className = 'ctl';
+      row.innerHTML = '<label for="s3-' + key + '">' + label + '</label><output></output><input type="range" id="s3-' + key + '">';
+      const r = row.querySelector('input'), o = row.querySelector('output');
+      Object.assign(r, { min, max, step }); r.value = S[key]; o.textContent = show(S[key]);
+      r.addEventListener('input', () => { S[key] = parseFloat(r.value); o.textContent = show(S[key]); });
+      r.addEventListener('change', part3); box.appendChild(row);
+    }
+    function renderCtl3() {
+      const box = $('ctl3'); box.innerHTML = '';
+      const p = document.createElement('p'); p.className = 'lab'; p.textContent = t('modeL'); box.appendChild(p);
+      seg(box, 'mode', Object.entries(T[lang].mode), part3);
+      slider(box, 'Kp', t('KpL'), 0.02, 0.5, 0.01, (v) => fmt(v, 2) + ' V/°');
+      slider(box, 'Ki', t('KiL'), 0, 0.6, 0.01, (v) => fmt(v, 2) + ' V/(°·s)');
+      slider(box, 'mass', t('massL'), 0, 0.35, 0.01, (v) => fmt(v * 1000, 0) + ' g');
+      slider(box, 'th0', t('th0L'), 0, 90, 1, (v) => fmt(v, 0) + '°');
+      slider(box, 'ref', t('refL'), 0, 90, 1, (v) => fmt(v, 0) + '°');
+    }
+    function part3() {
+      res = M.axisSim({ ref: S.ref, th0: S.th0, T: 3, ctl: { mode: S.mode, Kp: S.Kp, Ki: S.mode === 'PI' ? S.Ki : 0 }, arm: { m: S.mass } });
+      const s = M.stepInfo(res, S.ref, S.th0), hold = M.holdCurrent(S.ref, { m: S.mass }), cap = M.MOTOR.U / M.MOTOR.R;
+      $('k3').innerHTML = kpi(t('kErr'), fmt(s.err, 2), '°', Math.abs(s.err) < 0.5 ? 'good' : 'bad') + kpi(t('kOver'), fmt(s.overshoot, 0), '%', s.overshoot > 20 ? 'bad' : '') + kpi(t('kT5'), fmt(s.t5, 2), 's') + kpi(t('kImax3'), fmt(s.iMax, 2), 'A') + kpi(t('kHold'), fmt(hold, 2), 'A', hold > cap ? 'bad' : '') + kpi(t('kCap'), fmt(cap, 2), 'A');
+      const L = [];
+      if (hold > cap) L.push(['err', t('iFall')(fmt(hold, 2))]);
+      else if (S.mode === 'P' && Math.abs(s.err) > 0.5) L.push(['warn', t('iP')(fmt(s.err, 1))]);
+      else if (S.mode === 'PI' && Math.abs(s.err) < 0.5) L.push(['good', t('iPI')]);
+      if (hold <= cap && s.overshoot > 20) L.push(['warn', t('iOver')]);
+      if (res.u.some((v) => Math.abs(v) >= 11.99)) L.push(['warn', t('iSat')]);
+      if (!L.length) L.push(['good', t('iOk')]);
+      $('iss3').innerHTML = L.map(([lv, m]) => (lv === 'good' ? '<li class="good">' + m + '</li>' : '<li class="' + lv + '"><span class="lv">!</span><span>' + m + '</span></li>')).join('');
+      plot('ch3', [{ pts: res.t.map((x, i) => [x, res.ref[i]]), color: '#c9c9cc', dash: [5, 4], width: 1.2 }, { pts: res.t.map((x, i) => [x, res.u[i] * 5]), color: '#e0a458', width: 1.2 }, { pts: res.t.map((x, i) => [x, res.th[i]]), color: '#c8102e', width: 2 }], { xmin: 0, xmax: 3, xstep: 0.5, xfmt: (v) => fmt(v, 1) + ' s', ymin: -60, ymax: 100, ystep: 20 });
+      t0 = null;
+    }
+    function frame(ts) {
+      if (res) {
+        if (t0 === null) t0 = ts;
+        const tt = Math.min(3, ((ts - t0) / 1000) * 0.5); // ralenti ×0,5
+        const k = Math.min(res.t.length - 1, Math.round(tt / 0.002));
+        drawMech('mech3', res.th[k], S.ref); $('clk').textContent = 't = ' + fmt(res.t[k], 2) + ' s (×0,5)';
+      }
+      requestAnimationFrame(frame);
+    }
+    $('replay').addEventListener('click', () => (t0 = null));
+    $('s-beta').addEventListener('input', part1); $('s-J').addEventListener('input', part2); $('s-U').addEventListener('input', part2);
+    function setLang(l) {
+      lang = l; document.documentElement.lang = l;
+      document.querySelectorAll('[data-t]').forEach((el) => { const v = T[l][el.dataset.t]; if (typeof v === 'string') el.textContent = v; });
+      document.querySelectorAll('.lang button').forEach((b) => b.setAttribute('aria-pressed', b.dataset.lang === l));
+      try { localStorage.setItem('lang', l); } catch (e) {}
+      renderCtl3(); part1(); part2(); part3();
+    }
+    document.querySelectorAll('.lang button').forEach((b) => b.addEventListener('click', () => setLang(b.dataset.lang)));
+    setLang(lang);
+    window.addEventListener('resize', () => { part1(); part2(); part3(); });
+    requestAnimationFrame(frame);
+  })();
+  </script>
+</body>
+</html>

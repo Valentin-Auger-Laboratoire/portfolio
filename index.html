@@ -352,6 +352,23 @@
             </span>
           </div>
         </article>
+        <article class="project-card project-card--wide" data-tags="automatique mecanique electronique">
+          <div class="card-media"><img src="assets/projets/maxpid-asservissement.jpg" alt="Modèle Simscape du moteur à courant continu du MaxPID, schéma cinématique du bras et réponse de la boucle fermée sur l'angle" data-i18n-attr="alt:p34.img" width="960" height="600" loading="lazy" decoding="async"></div>
+          <div class="card-top">
+            <span class="card-type" data-i18n="tag.control">Automatique</span>
+            <span class="card-date" data-i18n="p34.date">2024</span>
+          </div>
+          <h3 data-i18n="p34.title">MaxPID : modélisation d'un axe asservi (cinématique et moteur)</h3>
+          <p data-i18n="p34.desc">Bras motorisé du MaxPID : un moteur à courant continu tourne une vis, l'écrou pousse le bras. J'ai écrit la loi entrée-sortie par fermeture géométrique et vis-écrou, puis modélisé le moteur sous Simscape. Vérifié en 2026 avec des scripts Python : la loi n'est pas linéaire (jusqu'à 6,4° d'écart à la droite), le tableau du sujet arrondit deux fois, et ma simulation de 2024 montrait une rampe au lieu de l'exponentielle attendue (τm ≈ 97 ms avec les valeurs de la fiche). La démo rejoue les deux modèles et ajoute la boucle fermée sur l'angle du bras (P et PI).</p>
+          <ul class="tags"><li>Cinématique</li><li>Moteur CC</li><li>Simscape</li><li>Python</li><li>JavaScript</li></ul>
+          <div class="card-foot">
+            <span class="card-context" data-i18n="projects.contextTsi">Sciences de l'ingénieur · CPGE TSI</span>
+            <span class="card-links">
+              <a class="card-link card-link--secondary" href="https://github.com/Valentin-Auger-Laboratoire/maxpid-asservissement" target="_blank" rel="noopener" data-i18n="projects.code">Voir le code ↗</a>
+              <a class="card-link" href="demos/maxpid/index.html" data-i18n="projects.demo">Essayer la démo ↗</a>
+            </span>
+          </div>
+        </article>
         <article class="project-card project-card--wide" data-tags="automatique sante web">
           <div class="card-media"><img src="assets/projets/regulateur-pid.jpg" alt="Régulateur PID appliqué à une couveuse : réglages, réponse en température, commande de chauffe et marges de stabilité" data-i18n-attr="alt:p27.img" width="960" height="600" loading="lazy" decoding="async"></div>
           <div class="card-top">
