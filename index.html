@@ -504,6 +504,23 @@
             </span>
           </div>
         </article>
+        <article class="project-card project-card--wide" data-tags="imagerie sante signal web">
+          <div class="card-media"><img src="assets/projets/simulateur-irm.jpg" alt="Simulateur d'IRM : coupe de cerveau en T2 reconstruite depuis l'espace k, espace k, images FLAIR et T2* avec un clip en titane, signal des tissus selon le temps d'inversion" data-i18n-attr="alt:p39.img" width="960" height="600" loading="lazy" decoding="async"></div>
+          <div class="card-top">
+            <span class="card-type" data-i18n="tag.imaging">Imagerie médicale</span>
+            <span class="card-date" data-i18n="p39.date">Nov. 2026</span>
+          </div>
+          <h3 data-i18n="p39.title">Simulateur d'IRM : de l'aimantation à l'image</h3>
+          <p data-i18n="p39.desc">Une IRM ne prend pas de photo : elle mesure un signal radio et calcule l'image. J'ai refait toute la chaîne à la main. Équations de Bloch résolues exactement (écho de spin, turbo, écho de gradient, FLAIR, STIR) avec des valeurs de tissus publiées ; espace k rempli avec le signal exact du patient virtuel (transformée de Fourier analytique des ellipses) ; reconstruction par FFT. Les artefacts ne sont pas dessinés, ils viennent de leur cause : repliement, déplacement de la graisse, fantômes de respiration, phénomène de Gibbs, distorsion autour d'un clip en titane. Un onglet compare avec mon simulateur de scanner sur le même patient. 422 tests (Bloch = formules à 10⁻⁹ près, Gibbs à 9 %, lois du bruit). Outil pédagogique, pas un logiciel d'imagerie médicale.</p>
+          <ul class="tags"><li>Équations de Bloch</li><li>Espace k</li><li>FFT</li><li>Artefacts</li><li>JavaScript</li></ul>
+          <div class="card-foot">
+            <span class="card-context" data-i18n="projects.contextTool">Outil web · projet personnel</span>
+            <span class="card-links">
+              <a class="card-link card-link--secondary" href="https://github.com/Valentin-Auger-Laboratoire/simulateur-irm" target="_blank" rel="noopener" data-i18n="projects.code">Voir le code ↗</a>
+              <a class="card-link" href="outils/irm/index.html" data-i18n="projects.tool">Essayer l'outil ↗</a>
+            </span>
+          </div>
+        </article>
         <article class="project-card project-card--wide" data-tags="dispositifs sante automatique mecanique web">
           <div class="card-media"><img src="assets/projets/dispositifs-medicaux.jpg" alt="Simulateur de dispositifs médicaux : chaîne du pousse-seringue, glycémie d'un patient virtuel sous pompe à insuline et poche de sang sur le plateau de l'hémomixeur" data-i18n-attr="alt:p31.img" width="960" height="600" loading="lazy" decoding="async"></div>
           <div class="card-top">
