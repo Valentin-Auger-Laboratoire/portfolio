@@ -71,6 +71,7 @@ main { max-width: var(--maxw); margin: 0 auto; padding: 0 16px; }
 }
 .section-title span { font-family: var(--mono); font-size: 0.9rem; color: var(--accent); }
 .section-title::after { content: ""; flex: 1; height: 1px; background: var(--border); align-self: center; }
+.section-title--count::before { content: attr(data-count); order: 3; align-self: center; font-family: var(--mono); font-size: 0.8rem; font-weight: 400; color: var(--text-dim); }
 
 /* ---------- Accueil (écran scindé) ---------- */
 .hero {

@@ -44,6 +44,7 @@ window.I18N_EN = {
   'tag.network': 'Networks',
   'tag.health': 'Health app',
   'tag.data': 'Data',
+  'tag.embedded': 'Embedded',
   'tag.web': 'Web',
   'tag.ai': 'AI',
   'projects.contextVision': 'Computer vision · gesture interaction',
