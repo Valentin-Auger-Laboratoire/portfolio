@@ -107,7 +107,7 @@ window.I18N_EN = {
   'p25.date': 'Aug 2025',
   'p25.title': 'Pendulum simulator: from the simple pendulum to the pendulum clock',
   'p25.desc': "Real-time simulation with a hand-written 4th-order Runge-Kutta. Simple pendulum at large angles, compared with the small-angle formula, with friction, driving and resonance. Double pendulum and chaos: pendulums started one thousandth of a degree apart diverge within seconds. Coupled pendulums and beats. Pendulum clock with dial, anchor escapement and gear train: how many seconds per day it gains or loses from rod expansion, temperature, bob adjustment and latitude, measured on the simulation. A tab compares the methods of my numerical physics course on the same pendulum: Euler, Heun, Verlet, RK4, measured order of convergence, Simpson and trapezoids, Gaussian elimination and least squares. 71 tests.",
-  'p26.date': 'Nov 2026',
+  'p26.date': 'Jun 2025',
   'p26.title': 'Three-axis robot arm: kinematics, trajectories and motor torques',
   'p26.desc': "Simulation of a planar arm (shoulder, elbow, wrist). Drive it joint by joint or by clicking where the tool should go. Inverse kinematics is computed in two ways: exact formula (elbow up or elbow down) and a numerical method on the Jacobian. Workspace, joint limits, manipulability and singularity warnings. Joint-space or straight-line trajectories with a trapezoidal velocity profile (pick and place, circle, zigzag suture). Motor torques from masses and payload, and tool accuracy from encoder resolution. About 32,000 automated checks.",
   'tag.robotics': 'Robotics',
