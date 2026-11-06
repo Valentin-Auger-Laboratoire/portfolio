@@ -99,5 +99,27 @@ const base = { type: 'slit', a: 100, lnm: 632.8, D: 2000, model: 'exact' };
 { const m = O.hairMeasure(25.3, 2000, 632.8, 1, 5); near(m.a, 2 * 632.8e-6 * 2000 / 25.3 * 1000, 1e-9, 'cheveu : a = 2λD/L'); ok(m.ua > 0 && m.ua / m.a < 0.05, 'cheveu : incertitude'); }
 ok(O.rgbOf(632.8)[0] === 255 && O.rgbOf(532)[1] === 255, 'couleurs des lasers');
 
+// interférences : formule de Fresnel, facteur de contraste, trous de Young
+{ const base2 = { type: 'young', a: 1e-6, b: 200, lnm: 632.8, D: 2000, model: 'small' }, i = 632.8e-6 * 2000 / 0.2;
+  [1, 0.25, 0.04].forEach((r) => { const o = Object.assign({}, base2, { r }), Imax = O.intensity(0, o), Imin = O.intensity(i / 2, o); near((Imax - Imin) / (Imax + Imin), O.contrast(r), 1e-9, 'contraste Γ mesuré = 2√r/(1 + r), r = ' + r); });
+  near(O.contrast(1), 1, 1e-15, 'I1 = I2 : Γ = 1');
+  const o = Object.assign({}, base2, { r: 0.36 }), I1 = 1, I2 = 0.36, x = 0.37 * i, phi = 2 * Math.PI * 0.2 * x / 2000 / 632.8e-6;
+  near(O.intensity(x, o) * (1 + Math.sqrt(I2)) ** 2, I1 + I2 + 2 * Math.sqrt(I1 * I2) * Math.cos(phi), 1e-9, 'formule de Fresnel I = I1 + I2 + 2√(I1I2) cos φ');
+  const h = { type: 'youngHoles', a: 100, b: 500, lnm: 532, D: 2000, model: 'exact' }, cw = O.centralWidth({ type: 'hole', a: 100, lnm: 532, D: 2000 }); near(O.intensity(cw.exact / 2, h), 0, 1e-12, 'trous de Young : enveloppe d’Airy');
+  const ws = O.whiteSpectrum(31); near(ws.reduce((s, q) => s + q[1], 0), 1, 1e-12, 'spectre blanc normalisé'); near(ws[0][0], 400, 0, 'spectre blanc 400 nm'); near(ws[30][0], 700, 1e-9, 'spectre blanc 700 nm');
+  const am = O.apparent(6800, 56e6), aM = O.apparent(6800, 160e6); near(am, 1.2143e-4, 1e-7, 'Mars au plus près : 1,21·10⁻⁴ rad'); near(aM / Math.PI * 180 * 3600, 8.77, 0.01, 'Mars au plus loin : 8,8″'); }
+// réfraction : Fresnel, angle limite, Brewster, prisme, fibre
+{ const f0 = O.fresnelRT(1, 1.5, 0); near(f0.R, 0.04, 1e-12, 'incidence normale air/verre : R = ((n1 − n2)/(n1 + n2))² = 4 %');
+  for (let k = 0; k < 100; k++) { const n1 = U(1, 2), n2 = U(1, 2), th = U(0, 1.5), f = O.fresnelRT(n1, n2, th); if (!f.tir) { ok(f.R >= 0 && f.R <= 1, 'R entre 0 et 1'); near(n1 * Math.sin(th), n2 * Math.sin(f.th2), 1e-12, 'dioptre : Snell'); } else ok(n1 * Math.sin(th) >= n2, 'réflexion totale seulement au-delà de l’angle limite'); }
+  near(O.fresnelRT(1, 1.5, O.brewster(1, 1.5)).Rp, 0, 1e-15, 'Brewster : Rp = 0'); near(O.criticalAngle(1.5, 1) * 180 / Math.PI, 41.81, 0.01, 'angle limite verre/air 41,8°'); ok(O.fresnelRT(1.5, 1, 0.75).tir, 'verre → air à 43° : réflexion totale'); ok(isNaN(O.criticalAngle(1, 1.5)), 'pas d’angle limite vers un milieu plus réfringent');
+  const A = 60 * Math.PI / 180, n = O.nGlass('BK7', 589.3), dm = O.prismDmin(A, n); near(O.prismN(A, dm), n, 1e-12, 'prisme : indice retrouvé au minimum de déviation');
+  let best = 1e9; for (let i = 0.3; i < 1.5; i += 0.0005) { const p = O.prism(A, n, i); if (p.ok) best = Math.min(best, p.D); } near(best, dm, 1e-6, 'prisme : minimum numérique = formule');
+  const pm = O.prism(A, n, (dm + A) / 2); near(pm.i2, (dm + A) / 2, 1e-9, 'au minimum de déviation : trajet symétrique (i = i′)'); near(pm.r1, A / 2, 1e-9, 'au minimum de déviation : r = A/2');
+  ok(O.prismDmin(A, O.nGlass('BK7', 405)) > O.prismDmin(A, O.nGlass('BK7', 650)), 'prisme : le violet est plus dévié que le rouge'); ok(!O.prism(A, n, 0.05).ok, 'prisme : émergence impossible sous faible incidence (réflexion totale)');
+  const fb = O.fiber(1.48, 1.46, 1); near(fb.NA, Math.sqrt(1.48 ** 2 - 1.46 ** 2), 1e-15, 'fibre : ouverture numérique'); near(Math.sin(fb.acc), fb.NA, 1e-12, 'fibre : sin θa = ON');
+  near(fb.dtPerM * 1000 * 1e9, 1.48 * 0.02 / (299792458 * 1.46) * 1e12, 1e-6, 'fibre : dispersion modale (ns/km)');
+  const pin = O.fiberPath(1.48, 1.46, 1, fb.acc * 0.9, 25e-6, 0.01), pout = O.fiberPath(1.48, 1.46, 1, fb.acc * 1.1, 25e-6, 0.01);
+  near(pin.P, 1, 1e-12, 'fibre : rayon dans le cône d’acceptance guidé sans perte'); ok(pout.P < 0.01, 'fibre : rayon hors du cône perdu à travers la gaine'); ok(pin.pts.every((q) => Math.abs(q[1]) <= 25e-6 + 1e-15), 'fibre : le rayon reste dans le cœur');
+  const th1 = Math.asin(Math.sin(fb.acc * 0.9) / 1.48), geo = 0.01 / Math.cos(th1); ok(Math.abs(pin.pts.reduce((s2, q, k) => (k ? s2 + Math.hypot(q[0] - pin.pts[k - 1][0], q[1] - pin.pts[k - 1][1]) : 0), 0) - geo) < 1e-9, 'fibre : longueur du zigzag = L / cos θ'); }
 console.log(n + ' vérifications, ' + bad + ' échec(s)');
 process.exit(bad ? 1 : 0);

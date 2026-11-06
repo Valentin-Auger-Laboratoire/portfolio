@@ -90,6 +90,7 @@
     #cvScreen { aspect-ratio: 1 / 1; max-width: 340px; background: #050505; }
     #cvGauss { aspect-ratio: 25 / 10; }
     #cvDiff { aspect-ratio: 25 / 6; background: #000; }
+    #cvRefr { aspect-ratio: 25 / 11; }
     .screenrow { display: grid; grid-template-columns: minmax(0, 340px) minmax(0, 1fr); gap: 16px; align-items: start; }
     .chart p { font: 0.72rem var(--mono); color: var(--dim); margin-bottom: 4px; display: flex; gap: 10px; flex-wrap: wrap; }
     .chart p i { display: inline-block; width: 12px; height: 2px; vertical-align: 3px; margin-right: 5px; }
@@ -117,8 +118,9 @@
     <div class="tabs" role="tablist">
       <button type="button" role="tab" data-tab="bench" data-t="tabBench">1 · Banc d'optique</button>
       <button type="button" role="tab" data-tab="gauss" data-t="tabGauss">2 · Conditions de Gauss</button>
-      <button type="button" role="tab" data-tab="diff" data-t="tabDiff">3 · Laser et diffraction</button>
-      <button type="button" role="tab" data-tab="check" data-t="tabCheck">4 · Vérifications</button>
+      <button type="button" role="tab" data-tab="refr" data-t="tabRefr">3 · Réfraction, prisme, fibre</button>
+      <button type="button" role="tab" data-tab="diff" data-t="tabDiff">4 · Laser, interférences, diffraction</button>
+      <button type="button" role="tab" data-tab="check" data-t="tabCheck">5 · Vérifications</button>
     </div>
 
     <section class="tab" id="tab-bench">
@@ -183,6 +185,23 @@
       </div>
     </section>
 
+    <section class="tab" id="tab-refr" hidden>
+      <div class="grid">
+        <div class="stack"><div class="panel" id="ctlR"></div></div>
+        <div class="stack main-col">
+          <div class="panel">
+            <dl class="kpis" id="kpiR"></dl>
+            <canvas class="view" id="cvRefr" aria-label="Réfraction : dioptre, prisme ou fibre optique"></canvas>
+            <ul class="issues" id="issR"></ul>
+          </div>
+          <div class="panel">
+            <div class="chart"><p id="lgR"></p><canvas id="cvRchart"></canvas></div>
+            <p class="hint" id="hintR"></p>
+          </div>
+        </div>
+      </div>
+    </section>
+
     <section class="tab" id="tab-diff" hidden>
       <div class="grid">
         <div class="stack"><div class="panel" id="ctlD"></div></div>
@@ -228,9 +247,9 @@
     const T = {
       fr: {
         back: '← Retour au portfolio', eyebrow: "Démo · refaite de zéro en 2026, d'après un TP d'optique (banc, lentilles, laser)", title: "Banc d'optique : lentilles, conditions de Gauss et diffraction d'un laser",
-        intro: "En TP d'optique, on travaillait sur un banc : une lampe et un objet, des lentilles convergentes et divergentes qu'on déplace, un écran, puis un laser et des fentes pour la diffraction, toujours « dans l'approximation des petits angles ». Je n'ai plus les photos ni les mesures, alors j'ai refait le banc de zéro et je suis allé plus loin : flou réel sur l'écran, œil qui accommode, faisceau laser gaussien, mesure de focale avec incertitudes, tracé de rayons exact pour voir où s'arrêtent les conditions de Gauss, chromatisme et doublet achromatique, diffraction avec angles exacts et écran proche (Fresnel).",
+        intro: "En TP d'optique, on travaillait sur un banc : une lampe et un objet, des lentilles convergentes et divergentes qu'on déplace, un écran, puis un laser et des fentes pour la diffraction, toujours « dans l'approximation des petits angles ». Je n'ai plus les photos ni les mesures, alors j'ai refait le banc de zéro et je suis allé plus loin : flou réel sur l'écran, œil qui accommode, faisceau laser gaussien, mesure de focale avec incertitudes, tracé de rayons exact pour voir où s'arrêtent les conditions de Gauss, chromatisme et doublet achromatique, diffraction avec angles exacts et écran proche (Fresnel). J'ai ajouté ce qu'on voyait en cours autour du TP : réfraction et réflexion totale, prisme, fibre optique, interférences (formule de Fresnel, contraste, lumière blanche) et la lunette astronomique.",
         warn: "Simulation refaite en 2026 : aucune photo ni mesure d'origine. Lentilles et lasers du commerce (N-BK7, F2, lasers 405 à 650 nm), indices calculés par la formule de Sellmeier. Ce n'est ni le sujet ni le compte rendu du TP.",
-        tabBench: "1 · Banc d'optique", tabGauss: '2 · Conditions de Gauss', tabDiff: '3 · Laser et diffraction', tabCheck: '4 · Vérifications',
+        tabBench: "1 · Banc d'optique", tabGauss: '2 · Conditions de Gauss', tabRefr: '3 · Réfraction, prisme, fibre', tabDiff: '4 · Laser, interférences, diffraction', tabCheck: '5 · Vérifications',
         benchHint: "Fais glisser la source, les lentilles ou l'écran directement sur le banc (ou utilise les curseurs). Optique paraxiale : lentilles minces, matrices de transfert. Avec une seule lentille, les 3 rayons particuliers (rouge : parallèle à l'axe puis par F′ ; gris : par le centre ; vert : par F puis parallèle) construisent l'image ; « faisceau réel » montre les rayons que laissent passer les montures. Pointillés : plans focaux objet (F) et image (F′) ; un objet à l'infini donne son image dans le plan focal image. Les montures limitent les rayons (flou, vignettage). L'échelle verticale est agrandie pour lire les rayons.",
         scrT: "Ce qu'on voit sur l'écran", scrEye: "Ce que voit l'œil (champ ±12°)",
         measT: 'Mesurer une focale comme en TP', bFocus: "Placer l'écran au point", bRead: 'Relever (OA, OA′)', bClear: 'Effacer', bBessel: 'Méthode de Bessel (2 000 essais)',
@@ -244,7 +263,7 @@
         smallT: "Jusqu'où marche L = 2λD/a ?", smallHint: "Pour une fente de largeur a, le premier minimum est à sin θ = λ/a. Tant que a est grand devant λ, θ est petit et L = 2λD/a est excellent. Pour des fentes de quelques µm, il faut l'angle exact : L = 2D tan(asin(λ/a)).",
         hairT: "Mesurer le diamètre d'un cheveu", bHair: 'Nouveau cheveu (diamètre caché)', bHairM: 'Mesurer la tache à la règle',
         hairHint: "Principe de Babinet : un cheveu diffracte comme une fente de même largeur (en dehors du faisceau direct). On mesure la largeur L de la tache centrale, puis a = 2λD/L, avec l'incertitude de lecture (règle au mm) et celle de D (±5 mm).",
-        checkT: 'Vérifications calculées en direct dans ton navigateur', checkHint: "Le dépôt contient en plus un fichier de tests (node tests/test.js) : environ 2 300 vérifications sur le moteur.",
+        checkT: 'Vérifications calculées en direct dans ton navigateur', checkHint: "Le moteur a en plus un fichier de tests (node tests/test.js) : environ 2 500 vérifications.",
         note1: "Ce que je retiens : les formules du TP (Descartes, grandissement, L = 2λD/a) sont des approximations de petits angles. Le tracé exact montre précisément quand elles cessent d'être vraies, et pourquoi on diaphragme les lentilles ou on choisit leur sens.",
         note2: "Modèle : lentilles minces paraxiales sur le banc ; tracé exact (loi de Snell-Descartes vectorielle) dans des lentilles épaisses à faces sphériques, dans le plan méridien seulement ; œil réduit (lentille de 17 mm, accommodation de 25 cm à l'infini, pupille 4 mm) ; faisceau laser gaussien idéal (M² = 1) ; diffraction de Fraunhofer (et Fresnel pour la fente), éclairage cohérent.",
         note3: "Sources des données : coefficients de Sellmeier du catalogue Schott (N-BK7, F2, N-SF11) et de Malitson (1965) pour la silice. Pas un logiciel de conception optique.",
@@ -252,7 +271,7 @@
         srcObj: 'Lampe + objet « F »', srcLaser: 'Laser', srcInf: "Objet à l'infini (étoiles)",
         pos: 'position', focal: 'focale f′', diam: 'diamètre des montures', objH: "hauteur de l'objet", alpha: "angle de l'étoile hors axe", w0: 'rayon du faisceau laser',
         add: '+ lentille', rem: 'retirer', fpOn: 'plans focaux affichés', fpOff: 'masqués', rThree: '3 rayons particuliers', rFan: 'faisceau réel (montures)', screen: 'Écran', eye: 'Œil',
-        exp: { sharp: 'Image nette, γ = −1 (2f′ – 2f′)', proj: 'Projecteur : grande image, moins lumineuse', loupe: "Loupe : image virtuelle, vue à l'œil", div: 'Lentille divergente seule', assoc: 'Mesurer une divergente (accolée à une convergente)', kepler: 'Lunette de Kepler (afocale)', laserF: 'Focaliser un laser', expand: 'Élargir un faisceau laser (×4)', bessel: 'Méthode de Bessel (D = 600 mm)' },
+        exp: { sharp: 'Image nette, γ = −1 (2f′ – 2f′)', proj: 'Projecteur : grande image, moins lumineuse', loupe: "Loupe : image virtuelle, vue à l'œil", div: 'Lentille divergente seule', assoc: 'Mesurer une divergente (accolée à une convergente)', kepler: 'Lunette de Kepler (afocale)', mars: 'Observer Mars : lunette f′ = 100 mm et 25 mm', marsRev: 'La même lunette tenue à l’envers', laserF: 'Focaliser un laser', expand: 'Élargir un faisceau laser (×4)', bessel: 'Méthode de Bessel (D = 600 mm)' },
         k: { wpos: 'position du col', img: 'image', oa: 'OA′ (dern. lentille)', g: 'grandissement γ', nat: 'nature', blur: 'flou sur l’écran', lum: 'éclairement', spot: 'rayon du spot (1/e²)', waist: 'col (waist)', zr: 'longueur de Rayleigh', acc: 'accommodation', fe: 'focale de l’œil', G: 'grossissement' },
         real: 'réelle', virt: 'virtuelle', inf: "à l'infini", none: '—',
         iss: {
@@ -261,6 +280,8 @@
           laserEye: "Jamais de laser dans l'œil : en mode laser, seul l'écran est disponible.", eyeOk: "L'œil accommode et voit net.", eyeNear: "Image trop proche de l'œil (moins de 25 cm) : il ne peut pas accommoder, il voit flou.", eyeBehind: "Les rayons convergent derrière l'œil : il ne peut pas voir net (il faudrait un œil hypermétrope corrigé).",
           afocal: 'Système afocal : un faisceau parallèle ressort parallèle ; grossissement G = −f′1/f′2.', laserWaist: "Le faisceau ne se concentre pas en un point : la diffraction impose un col de rayon λf′/(πw).",
         },
+        mars: (a1, a2, G, b1, b2, v) => 'Exemple de Mars (6 800 km, entre 56 et 160 millions de km) : diamètre apparent α de ' + a1 + ' à ' + a2 + ' à l’œil nu. Avec G = ' + G + ', l’angle vu en sortie α′ = |G|·α va de ' + b1 + ' à ' + b2 + ' (image renversée si G < 0). L’œil sépare environ 1′ : ' + v,
+        marsAll: 'Mars apparaît toujours comme un disque.', marsSome: 'disque seulement quand Mars est proche, point lumineux sinon.', marsNone: 'Mars reste un point lumineux.', marsRevT: 'Tenue à l’envers, la lunette RÉDUIT les angles (|G| < 1) : on voit plus petit qu’à l’œil nu.',
         msg: { notSharp: "Image floue (flou > 0,5 mm) : mets d'abord l'écran au point.", oneLens: 'Relevé possible avec une seule lentille et la lampe.', notReal: "Pas d'image réelle sur l'écran.", bessel4f: 'Bessel impossible : il faut D ≥ 4f′ (éloigne l’écran).', besselOne: 'Bessel : une seule lentille convergente et la lampe.' },
         mCols: ['OA (mm)', 'OA′ (mm)', 'γ = OA′/OA'], fitRes: (f, u, n) => 'f′ = ' + f + ' ± ' + u + ' mm (' + n + ' points, ordonnée à l’origine de la droite)',
         bes: (p1, p2, l1, l2, m, s, f) => 'Positions nettes de la lentille : ' + p1 + ' mm et ' + p2 + ' mm (depuis l’objet). Latitude de mise au point : ' + l1 + ' mm et ' + l2 + ' mm. Sur 2 000 essais simulés : f′ = ' + m + ' ± ' + s + ' mm (vraie valeur ' + f + ' mm).',
@@ -268,19 +289,27 @@
         kg: { f: 'focale f′ (paraxiale)', bfl: 'tirage', la: 'aberration marginale', rms: 'tache RMS (meilleur plan)', airy: 'rayon d’Airy', inc: 'incidence max' },
         issG: { diff: 'Limité par la diffraction : la tache géométrique est plus petite que la tache d’Airy. Les conditions de Gauss sont respectées.', aber: 'Limité par les aberrations : la tache géométrique dépasse la tache d’Airy. Diaphragme ou retourne la lentille.', far: 'Hors conditions de Gauss : incidence de plus de 20° sur une face, sin θ ≈ θ se trompe de plus de 2 %.', field: 'Faisceau incliné : les rayons ne convergent plus en un point (coma, astigmatisme) même près de l’axe.', chrom: 'Lumière blanche : le bleu et le rouge ne focalisent pas au même endroit.' },
         sinCols: ['θ', 'sin θ', 'tan θ', 'erreur de sin θ ≈ θ', 'erreur de tan θ ≈ θ'],
-        d: { laser1: 'Laser', lfree: 'ou n’importe quelle longueur d’onde λ', laser2: 'Deuxième laser (superposé)', none: 'aucun', type: 'Obstacle', slit: 'fente', hair: 'cheveu / fil', hole: 'trou circulaire', young: "fentes d'Young", grating: 'réseau', a: 'largeur a (diamètre pour le trou)', b: 'distance entre les fentes b', lpmm: 'traits par mm', N: 'traits éclairés', Dd: 'distance à l’écran D', model: 'Modèle', exact: 'angles exacts', small: 'petits angles', fresnel: 'Fresnel (fente)' },
-        kd: { Lex: 'tache centrale (exacte)', Lsm: 'tache 2λD/a', err: 'écart', th: 'angle θ₁', nf: 'nombre de Fresnel', reg: 'régime', o1: 'ordre 1 (exact)', o1s: 'ordre 1 (petits angles)', nord: 'ordres visibles', i: 'interfrange λD/b' },
+        d: { srcT: 'Source', srcL: 'Laser(s)', srcW: 'Lampe blanche', youngHoles: 'trous d’Young', r: 'rapport des intensités I₂/I₁', laser1: 'Laser', lfree: 'ou n’importe quelle longueur d’onde λ', laser2: 'Deuxième laser (superposé)', none: 'aucun', type: 'Obstacle', slit: 'fente', hair: 'cheveu / fil', hole: 'trou circulaire', young: "fentes d'Young", grating: 'réseau', a: 'largeur a (diamètre pour le trou)', b: 'distance entre les fentes b', lpmm: 'traits par mm', N: 'traits éclairés', Dd: 'distance à l’écran D', model: 'Modèle', exact: 'angles exacts', small: 'petits angles', fresnel: 'Fresnel (fente)' },
+        kd: { gam: 'contraste Γ', Lex: 'tache centrale (exacte)', Lsm: 'tache 2λD/a', err: 'écart', th: 'angle θ₁', nf: 'nombre de Fresnel', reg: 'régime', o1: 'ordre 1 (exact)', o1s: 'ordre 1 (petits angles)', nord: 'ordres visibles', i: 'interfrange λD/b' },
         regF: 'Fraunhofer', regN: 'Fresnel (écran trop proche)', regM: 'intermédiaire',
-        issD: { fresnelNeeded: 'Nombre de Fresnel ≥ 0,3 : l’écran est trop proche pour la formule de Fraunhofer. Choisis le modèle « Fresnel ».', smallBad: 'Grand angle : la formule des petits angles se trompe de plus de 2 %.', noMin: 'a < λ : la lumière est diffractée dans toutes les directions, pas de premier minimum.', grating: 'Réseau : les ordres sont à sin θ = kλ/p ; avec des traits de largeur p/2, les ordres pairs sont éteints.', young: 'Fentes d’Young : franges espacées de λD/b, dans l’enveloppe de diffraction d’une fente.', two: 'Deux lasers : le bleu ou le vert diffractent moins que le rouge (taches plus étroites, ∝ λ).', babinet: 'Cheveu : même figure qu’une fente de même largeur, plus le faisceau direct au centre (principe de Babinet).' },
+        issD: { contrast: 'Intensités différentes (I₂ = r·I₁) : les franges sombres ne sont plus noires, Γ = (Imax − Imin)/(Imax + Imin) = 2√r/(1 + r) < 1.', white: 'Lumière blanche : chaque couleur donne ses franges, d’interfrange ∝ λ ; seule la frange centrale (ordre 0) est blanche, puis les couleurs se brouillent : la lumière blanche est peu cohérente.', whiteG: 'Lumière blanche : le réseau étale chaque ordre en spectre (violet près du centre, rouge plus loin) ; seul l’ordre 0 reste blanc.', fresnelNeeded: 'Nombre de Fresnel ≥ 0,3 : l’écran est trop proche pour la formule de Fraunhofer. Choisis le modèle « Fresnel ».', smallBad: 'Grand angle : la formule des petits angles se trompe de plus de 2 %.', noMin: 'a < λ : la lumière est diffractée dans toutes les directions, pas de premier minimum.', grating: 'Réseau : les ordres sont à sin θ = kλ/p ; avec des traits de largeur p/2, les ordres pairs sont éteints.', young: 'Fentes d’Young : franges espacées de λD/b, dans l’enveloppe de diffraction d’une fente.', two: 'Deux lasers : le bleu ou le vert diffractent moins que le rouge (taches plus étroites, ∝ λ).', babinet: 'Cheveu : même figure qu’une fente de même largeur, plus le faisceau direct au centre (principe de Babinet).' },
         smCols: ['a (µm)', 'θ₁', 'L exacte (mm)', 'L = 2λD/a (mm)', 'écart'],
         hair1: 'Un cheveu de diamètre inconnu est placé dans le faisceau (λ = 632,8 nm). Mesure la tache centrale.', hair2: (L, a, u, tr, ok) => 'Lecture : L = ' + L + ' mm (±1 mm). Diamètre : a = 2λD/L = ' + a + ' ± ' + u + ' µm. Vraie valeur : ' + tr + ' µm ' + (ok ? '(dans l’incertitude).' : '(hors de l’incertitude : refais la lecture).'),
+        r: { mode: 'Expérience', mD: 'Dioptre plan (Snell-Descartes)', mP: 'Prisme (dispersion)', mF: 'Fibre optique', n1: 'Milieu 1 (incidence)', n2: 'Milieu 2', inc: 'Incidence', med: { air: 'air', eau: 'eau', verre: 'verre', diamant: 'diamant' }, glass: 'Verre du prisme', A: 'angle au sommet A', i: 'incidence i', toMin: 'Se placer au minimum de déviation', light: 'Lumière', white: 'blanche',
+          fn1: 'indice du cœur n₁', fn2: 'indice de la gaine n₂', core: 'diamètre du cœur', th0: 'angle d’entrée θ₀ (dans l’air)', L: 'longueur de la liaison',
+          kR: 'réfléchi R', kT: 'transmis T', kLim: 'angle limite', kD: 'déviation D', kiMin: 'i au minimum', kDisp: 'D(405) − D(650)', kNA: 'ouverture numérique', kAcc: 'demi-angle d’acceptance', kThc: 'angle limite cœur/gaine', kDt: 'dispersion modale Δt', kRate: 'débit max (saut d’indice)', kRateG: 'débit max (gradient d’indice)',
+          tir: 'réflexion totale', unpol: 'lumière non polarisée', clad: 'gaine', coreL: 'cœur', air: 'air', lgD: 'déviation D (°) en fonction de l’incidence i ; le minimum donne l’indice : n = sin((A + Dmin)/2) / sin(A/2)', lgStep: 'fibre à saut d’indice', lgGrad: 'fibre à gradient d’indice', rateAx: 'débit max (Mbit/s)',
+          iSnell: 'Loi de Snell-Descartes : n₁ sin θ₁ = n₂ sin θ₂ ; une partie de la lumière est toujours réfléchie (coefficients de Fresnel).', iTir: 'Réflexion totale : n₁ sin θ₁ > n₂, aucune lumière ne passe dans le milieu 2. C’est le principe de la fibre optique.', iBrew: 'Incidence de Brewster : la lumière polarisée p n’est plus réfléchie (Rp = 0), le reflet est polarisé.', iLim: (a) => 'Vers un milieu moins réfringent : au-delà de ' + a + '°, réflexion totale.', iNoLim: 'Vers un milieu plus réfringent : le rayon se rapproche de la normale, pas de réflexion totale possible.',
+          iPr: 'Deux réfractions : r₁ + r₂ = A et D = i + i′ − A.', iPrTir: 'Pas d’émergence : réflexion totale sur la deuxième face (incidence trop faible).', iMin: 'Minimum de déviation : trajet symétrique dans le prisme (r₁ = r₂ = A/2) ; c’est là qu’on mesure l’indice en TP.', iWhite: 'Lumière blanche : l’indice dépend de λ (Sellmeier), le violet est plus dévié que le rouge : le prisme étale le spectre.',
+          iGuided: 'Rayon dans le cône d’acceptance : réflexion totale à chaque rebond, il est guidé sans perte.', iLost: (p) => 'Hors du cône d’acceptance : à chaque rebond une partie sort par la gaine ; il reste ' + p + ' % de la puissance après ce tronçon.', iNet: 'Réseaux : les rayons plus inclinés font plus de chemin et arrivent en retard (dispersion modale), ce qui étale les impulsions et limite le débit d’une fibre multimode ; le gradient d’indice compense en grande partie, la fibre monomode supprime le problème. Modèle des rayons : ordres de grandeur.',
+          hintdioptre: 'Fais varier θ₁ et les milieux : angle limite (verre → air 41,8°), réflexion totale, incidence de Brewster. L’épaisseur des rayons suit les intensités réfléchie et transmise.', hintprisme: 'Courbe D(i) : la déviation passe par un minimum ; en TP on tourne le prisme jusqu’à ce que la raie « rebrousse chemin », on mesure Dmin et on en déduit n.', hintfibre: 'Débit maximal ≈ 1/(2Δt) avec Δt = L·n₁(n₁ − n₂)/(c·n₂) pour le saut d’indice, et ≈ L·n₁Δ²/(8c) pour un gradient d’indice parabolique (Δ = (n₁ − n₂)/n₁). Ordres de grandeur du modèle des rayons, sans dispersion chromatique.' },
         chk: ['Vérification', 'Calcul', 'Attendu', ''],
       },
       en: {
         back: '← Back to portfolio', eyebrow: 'Demo · rebuilt from scratch in 2026, after an optics lab (bench, lenses, laser)', title: 'Optical bench: lenses, paraxial (Gauss) conditions and laser diffraction',
-        intro: "In the optics lab we worked on a bench: a lamp and an object, converging and diverging lenses we moved around, a screen, then a laser and slits for diffraction, always \"in the small-angle approximation\". I no longer have the photos or the measurements, so I rebuilt the bench from scratch and went further: real blur on the screen, an eye that accommodates, a Gaussian laser beam, focal-length measurement with uncertainties, exact ray tracing to see where the paraxial conditions stop, chromatic aberration and an achromatic doublet, diffraction with exact angles and a close screen (Fresnel).",
+        intro: "In the optics lab we worked on a bench: a lamp and an object, converging and diverging lenses we moved around, a screen, then a laser and slits for diffraction, always \"in the small-angle approximation\". I no longer have the photos or the measurements, so I rebuilt the bench from scratch and went further: real blur on the screen, an eye that accommodates, a Gaussian laser beam, focal-length measurement with uncertainties, exact ray tracing to see where the paraxial conditions stop, chromatic aberration and an achromatic doublet, diffraction with exact angles and a close screen (Fresnel). I added what the course covered around the lab: refraction and total internal reflection, prism, optical fibre, interference (Fresnel formula, contrast, white light) and the astronomical telescope.",
         warn: 'Simulation rebuilt in 2026: no original photo or measurement. Off-the-shelf lenses and lasers (N-BK7, F2, 405 to 650 nm lasers), refractive indices from the Sellmeier formula. This is neither the lab handout nor the report.',
-        tabBench: '1 · Optical bench', tabGauss: '2 · Paraxial conditions', tabDiff: '3 · Laser and diffraction', tabCheck: '4 · Checks',
+        tabBench: '1 · Optical bench', tabGauss: '2 · Paraxial conditions', tabRefr: '3 · Refraction, prism, fibre', tabDiff: '4 · Laser, interference, diffraction', tabCheck: '5 · Checks',
         benchHint: 'Drag the source, the lenses or the screen directly on the bench (or use the sliders). Paraxial optics: thin lenses, transfer matrices. With a single lens, the 3 principal rays (red: parallel to the axis then through F′; grey: through the centre; green: through F then parallel) construct the image; "real beam" shows the rays the mounts let through. Dotted lines: object (F) and image (F′) focal planes; an object at infinity is imaged in the image focal plane. Lens mounts limit the rays (blur, vignetting). The vertical scale is enlarged so the rays can be read.',
         scrT: 'What the screen shows', scrEye: 'What the eye sees (±12° field)',
         measT: 'Measuring a focal length like in the lab', bFocus: 'Focus the screen', bRead: 'Record (OA, OA′)', bClear: 'Clear', bBessel: 'Bessel method (2,000 trials)',
@@ -294,7 +323,7 @@
         smallT: 'How far does L = 2λD/a work?', smallHint: 'For a slit of width a, the first minimum is at sin θ = λ/a. As long as a is large compared with λ, θ is small and L = 2λD/a is excellent. For slits of a few µm the exact angle is needed: L = 2D tan(asin(λ/a)).',
         hairT: 'Measuring the diameter of a hair', bHair: 'New hair (hidden diameter)', bHairM: 'Measure the spot with a ruler',
         hairHint: "Babinet's principle: a hair diffracts like a slit of the same width (outside the direct beam). We measure the width L of the central spot, then a = 2λD/L, with the reading uncertainty (ruler to the mm) and that of D (±5 mm).",
-        checkT: 'Checks computed live in your browser', checkHint: 'The repository also contains a test file (node tests/test.js): about 2,300 checks on the engine.',
+        checkT: 'Checks computed live in your browser', checkHint: 'The engine also has a test file (node tests/test.js): about 2,500 checks.',
         note1: 'What I take away: the lab formulas (Descartes, magnification, L = 2λD/a) are small-angle approximations. Exact ray tracing shows precisely when they stop being true, and why lenses are stopped down or turned the right way.',
         note2: 'Model: paraxial thin lenses on the bench; exact ray tracing (vector Snell law) in thick spherical lenses, meridional plane only; reduced eye (17 mm lens, accommodation from 25 cm to infinity, 4 mm pupil); ideal Gaussian laser beam (M² = 1); Fraunhofer diffraction (and Fresnel for the slit), coherent illumination.',
         note3: 'Data sources: Sellmeier coefficients from the Schott catalogue (N-BK7, F2, N-SF11) and Malitson (1965) for fused silica. Not optical design software.',
@@ -302,7 +331,7 @@
         srcObj: 'Lamp + "F" object', srcLaser: 'Laser', srcInf: 'Object at infinity (stars)',
         pos: 'position', focal: 'focal length f′', diam: 'mount diameter', objH: 'object height', alpha: 'off-axis star angle', w0: 'laser beam radius',
         add: '+ lens', rem: 'remove', fpOn: 'focal planes shown', fpOff: 'hidden', rThree: '3 principal rays', rFan: 'real beam (mounts)', screen: 'Screen', eye: 'Eye',
-        exp: { sharp: 'Sharp image, m = −1 (2f′ – 2f′)', proj: 'Projector: large image, dimmer', loupe: 'Magnifier: virtual image, seen by eye', div: 'Diverging lens alone', assoc: 'Measuring a diverging lens (with a converging one)', kepler: 'Keplerian telescope (afocal)', laserF: 'Focusing a laser', expand: 'Expanding a laser beam (×4)', bessel: 'Bessel method (D = 600 mm)' },
+        exp: { sharp: 'Sharp image, m = −1 (2f′ – 2f′)', proj: 'Projector: large image, dimmer', loupe: 'Magnifier: virtual image, seen by eye', div: 'Diverging lens alone', assoc: 'Measuring a diverging lens (with a converging one)', kepler: 'Keplerian telescope (afocal)', mars: 'Observing Mars: telescope f′ = 100 mm and 25 mm', marsRev: 'The same telescope held the wrong way round', laserF: 'Focusing a laser', expand: 'Expanding a laser beam (×4)', bessel: 'Bessel method (D = 600 mm)' },
         k: { wpos: 'position du col', img: 'image', oa: 'OA′ (last lens)', g: 'magnification m', nat: 'nature', blur: 'blur on screen', lum: 'illuminance', spot: 'spot radius (1/e²)', waist: 'waist', zr: 'Rayleigh length', acc: 'accommodation', fe: 'eye focal length', G: 'angular magnification' },
         real: 'real', virt: 'virtual', inf: 'at infinity', none: '—',
         iss: {
@@ -311,6 +340,8 @@
           laserEye: 'Never a laser into the eye: in laser mode only the screen is available.', eyeOk: 'The eye accommodates and sees sharply.', eyeNear: 'Image too close to the eye (under 25 cm): it cannot accommodate and sees a blur.', eyeBehind: 'The rays converge behind the eye: it cannot focus (it would take a corrected long-sighted eye).',
           afocal: 'Afocal system: a parallel beam comes out parallel; angular magnification G = −f′1/f′2.', laserWaist: 'The beam does not focus to a point: diffraction sets a waist of radius λf′/(πw).',
         },
+        mars: (a1, a2, G, b1, b2, v) => 'Mars example (6,800 km, between 56 and 160 million km): apparent diameter α from ' + a1 + ' to ' + a2 + ' with the naked eye. With G = ' + G + ', the output angle α′ = |G|·α goes from ' + b1 + ' to ' + b2 + ' (inverted image if G < 0). The eye resolves about 1′: ' + v,
+        marsAll: 'Mars always appears as a disc.', marsSome: 'a disc only when Mars is close, a point of light otherwise.', marsNone: 'Mars stays a point of light.', marsRevT: 'Held the wrong way round, the telescope REDUCES angles (|G| < 1): things look smaller than with the naked eye.',
         msg: { notSharp: 'Blurred image (blur > 0.5 mm): focus the screen first.', oneLens: 'Recording needs a single lens and the lamp.', notReal: 'No real image on the screen.', bessel4f: 'Bessel impossible: D ≥ 4f′ is needed (move the screen away).', besselOne: 'Bessel: a single converging lens and the lamp.' },
         mCols: ['OA (mm)', 'OA′ (mm)', 'm = OA′/OA'], fitRes: (f, u, n) => 'f′ = ' + f + ' ± ' + u + ' mm (' + n + ' points, intercept of the line)',
         bes: (p1, p2, l1, l2, m, s, f) => 'Sharp lens positions: ' + p1 + ' mm and ' + p2 + ' mm (from the object). Depth of focus: ' + l1 + ' mm and ' + l2 + ' mm. Over 2,000 simulated trials: f′ = ' + m + ' ± ' + s + ' mm (true value ' + f + ' mm).',
@@ -318,12 +349,20 @@
         kg: { f: 'focal length f′ (paraxial)', bfl: 'back focal length', la: 'marginal aberration', rms: 'RMS spot (best plane)', airy: 'Airy radius', inc: 'max incidence' },
         issG: { diff: 'Diffraction-limited: the geometric spot is smaller than the Airy disc. Paraxial conditions hold.', aber: 'Aberration-limited: the geometric spot is larger than the Airy disc. Stop down or turn the lens around.', far: 'Outside paraxial conditions: incidence above 20° on a surface, sin θ ≈ θ is off by more than 2%.', field: 'Tilted beam: rays no longer converge to a point (coma, astigmatism) even close to the axis.', chrom: 'White light: blue and red do not focus at the same place.' },
         sinCols: ['θ', 'sin θ', 'tan θ', 'error of sin θ ≈ θ', 'error of tan θ ≈ θ'],
-        d: { laser1: 'Laser', lfree: 'or any wavelength λ', laser2: 'Second laser (superimposed)', none: 'none', type: 'Obstacle', slit: 'slit', hair: 'hair / wire', hole: 'circular hole', young: "Young's slits", grating: 'grating', a: 'width a (diameter for the hole)', b: 'slit spacing b', lpmm: 'lines per mm', N: 'illuminated lines', Dd: 'distance to screen D', model: 'Model', exact: 'exact angles', small: 'small angles', fresnel: 'Fresnel (slit)' },
-        kd: { Lex: 'central spot (exact)', Lsm: 'spot 2λD/a', err: 'error', th: 'angle θ₁', nf: 'Fresnel number', reg: 'regime', o1: 'order 1 (exact)', o1s: 'order 1 (small angles)', nord: 'visible orders', i: 'fringe spacing λD/b' },
+        d: { srcT: 'Source', srcL: 'Laser(s)', srcW: 'Lampe blanche', youngHoles: 'trous d’Young', r: 'rapport des intensités I₂/I₁', laser1: 'Laser', lfree: 'or any wavelength λ', laser2: 'Second laser (superimposed)', none: 'none', type: 'Obstacle', slit: 'slit', hair: 'hair / wire', hole: 'circular hole', young: "Young's slits", grating: 'grating', a: 'width a (diameter for the hole)', b: 'slit spacing b', lpmm: 'lines per mm', N: 'illuminated lines', Dd: 'distance to screen D', model: 'Model', exact: 'exact angles', small: 'small angles', fresnel: 'Fresnel (slit)' },
+        kd: { gam: 'contrast Γ', Lex: 'central spot (exact)', Lsm: 'spot 2λD/a', err: 'error', th: 'angle θ₁', nf: 'Fresnel number', reg: 'regime', o1: 'order 1 (exact)', o1s: 'order 1 (small angles)', nord: 'visible orders', i: 'fringe spacing λD/b' },
         regF: 'Fraunhofer', regN: 'Fresnel (screen too close)', regM: 'intermediate',
-        issD: { fresnelNeeded: 'Fresnel number ≥ 0.3: the screen is too close for the Fraunhofer formula. Choose the "Fresnel" model.', smallBad: 'Large angle: the small-angle formula is off by more than 2%.', noMin: 'a < λ: light is diffracted in every direction, no first minimum.', grating: 'Grating: orders at sin θ = kλ/p; with lines of width p/2, even orders vanish.', young: "Young's slits: fringes spaced by λD/b, inside the single-slit diffraction envelope.", two: 'Two lasers: blue or green diffract less than red (narrower spots, ∝ λ).', babinet: "Hair: same pattern as a slit of the same width, plus the direct beam in the centre (Babinet's principle)." },
+        issD: { contrast: 'Intensités différentes (I₂ = r·I₁) : les franges sombres ne sont plus noires, Γ = (Imax − Imin)/(Imax + Imin) = 2√r/(1 + r) < 1.', white: 'Lumière blanche : chaque couleur donne ses franges, d’interfrange ∝ λ ; seule la frange centrale (ordre 0) est blanche, puis les couleurs se brouillent : la lumière blanche est peu cohérente.', whiteG: 'Lumière blanche : le réseau étale chaque ordre en spectre (violet près du centre, rouge plus loin) ; seul l’ordre 0 reste blanc.', fresnelNeeded: 'Fresnel number ≥ 0.3: the screen is too close for the Fraunhofer formula. Choose the "Fresnel" model.', smallBad: 'Large angle: the small-angle formula is off by more than 2%.', noMin: 'a < λ: light is diffracted in every direction, no first minimum.', grating: 'Grating: orders at sin θ = kλ/p; with lines of width p/2, even orders vanish.', young: "Young's slits: fringes spaced by λD/b, inside the single-slit diffraction envelope.", two: 'Two lasers: blue or green diffract less than red (narrower spots, ∝ λ).', babinet: "Hair: same pattern as a slit of the same width, plus the direct beam in the centre (Babinet's principle)." },
         smCols: ['a (µm)', 'θ₁', 'exact L (mm)', 'L = 2λD/a (mm)', 'error'],
         hair1: 'A hair of unknown diameter is placed in the beam (λ = 632.8 nm). Measure the central spot.', hair2: (L, a, u, tr, ok) => 'Reading: L = ' + L + ' mm (±1 mm). Diameter: a = 2λD/L = ' + a + ' ± ' + u + ' µm. True value: ' + tr + ' µm ' + (ok ? '(within the uncertainty).' : '(outside the uncertainty: read again).'),
+        r: { mode: 'Experiment', mD: 'Plane interface (Snell)', mP: 'Prism (dispersion)', mF: 'Optical fibre', n1: 'Medium 1 (incidence)', n2: 'Medium 2', inc: 'Incidence', med: { air: 'air', eau: 'water', verre: 'glass', diamant: 'diamond' }, glass: 'Prism glass', A: 'apex angle A', i: 'incidence i', toMin: 'Go to minimum deviation', light: 'Light', white: 'white',
+          fn1: 'core index n₁', fn2: 'cladding index n₂', core: 'core diameter', th0: 'entry angle θ₀ (in air)', L: 'link length',
+          kR: 'reflected R', kT: 'transmitted T', kLim: 'critical angle', kD: 'deviation D', kiMin: 'i at minimum', kDisp: 'D(405) − D(650)', kNA: 'numerical aperture', kAcc: 'acceptance half-angle', kThc: 'core/cladding critical angle', kDt: 'modal dispersion Δt', kRate: 'max rate (step index)', kRateG: 'max rate (graded index)',
+          tir: 'total internal reflection', unpol: 'unpolarised light', clad: 'cladding', coreL: 'core', air: 'air', lgD: 'deviation D (°) versus incidence i; the minimum gives the index: n = sin((A + Dmin)/2) / sin(A/2)', lgStep: 'step-index fibre', lgGrad: 'graded-index fibre', rateAx: 'max rate (Mbit/s)',
+          iSnell: "Snell's law: n₁ sin θ₁ = n₂ sin θ₂; part of the light is always reflected (Fresnel coefficients).", iTir: 'Total internal reflection: n₁ sin θ₁ > n₂, no light enters medium 2. This is how an optical fibre works.', iBrew: "Brewster's angle: p-polarised light is no longer reflected (Rp = 0), the reflection is polarised.", iLim: (a) => 'Towards a less refractive medium: beyond ' + a + '°, total internal reflection.', iNoLim: 'Towards a more refractive medium: the ray bends towards the normal, no total internal reflection possible.',
+          iPr: 'Two refractions: r₁ + r₂ = A and D = i + i′ − A.', iPrTir: 'No emergence: total internal reflection on the second face (incidence too small).', iMin: 'Minimum deviation: symmetric path in the prism (r₁ = r₂ = A/2); this is where the index is measured in the lab.', iWhite: 'White light: the index depends on λ (Sellmeier), violet is deviated more than red: the prism spreads the spectrum.',
+          iGuided: 'Ray inside the acceptance cone: total internal reflection at every bounce, guided without loss.', iLost: (p) => 'Outside the acceptance cone: at every bounce part of it leaks through the cladding; ' + p + ' % of the power is left after this section.', iNet: 'Networks: more inclined rays travel further and arrive late (modal dispersion), which spreads pulses and limits the rate of a multimode fibre; graded index largely compensates, single-mode fibre removes the problem. Ray model: orders of magnitude.',
+          hintdioptre: 'Vary θ₁ and the media: critical angle (glass → air 41.8°), total internal reflection, Brewster incidence. Ray thickness follows the reflected and transmitted intensities.', hintprisme: 'D(i) curve: the deviation goes through a minimum; in the lab the prism is turned until the line "turns back", Dmin is measured and n deduced.', hintfibre: 'Maximum rate ≈ 1/(2Δt) with Δt = L·n₁(n₁ − n₂)/(c·n₂) for step index, and ≈ L·n₁Δ²/(8c) for a parabolic graded index (Δ = (n₁ − n₂)/n₁). Ray-model orders of magnitude, no chromatic dispersion.' },
         chk: ['Check', 'Computed', 'Expected', ''],
       },
     };
@@ -338,7 +377,7 @@
     const lasName = (l) => fmt(l, l % 1 ? 1 : 0) + ' nm';
 
     // =========================================================== 1. BANC
-    const FOCALS = [-300, -200, -100, -50, 50, 100, 150, 200, 300, 500], RAIL = 1000, EYE_F = 17, EYE_PP = 250, EYE_PUP = 4;
+    const FOCALS = [-300, -200, -100, -50, 25, 50, 100, 150, 200, 300, 500], RAIL = 1000, EYE_F = 17, EYE_PP = 250, EYE_PUP = 4;
     const B = { rays: 'three', showFP: true, src: 'obj', xo: 50, H: 20, lnm: 632.8, w0: 0.5, alpha: 1, D: 40, lenses: [{ x: 250, f: 100 }], xs: 450, scr: 'screen', zoom: 1, pts: [] };
     const PRE = {
       sharp: { src: 'obj', xo: 50, H: 20, lenses: [{ x: 250, f: 100 }], xs: 450, scr: 'screen', zoom: 1 },
@@ -347,6 +386,8 @@
       div: { src: 'obj', xo: 50, H: 20, lenses: [{ x: 250, f: -100 }], xs: 500, scr: 'screen', zoom: 1 },
       assoc: { src: 'obj', xo: 50, H: 20, lenses: [{ x: 200, f: 100 }, { x: 330, f: -300 }], xs: 722, scr: 'screen', zoom: 1 },
       kepler: { src: 'inf', alpha: 1, lenses: [{ x: 150, f: 200 }, { x: 400, f: 50 }], xs: 420, scr: 'eye', zoom: 1 },
+      mars: { src: 'inf', alpha: 1, lenses: [{ x: 150, f: 100 }, { x: 275, f: 25 }], xs: 290, scr: 'eye', zoom: 1 },
+      marsRev: { src: 'inf', alpha: 1, lenses: [{ x: 150, f: 25 }, { x: 275, f: 100 }], xs: 380, scr: 'eye', zoom: 1 },
       laserF: { src: 'laser', xo: 40, w0: 0.5, lnm: 632.8, lenses: [{ x: 300, f: 100 }], xs: 400, scr: 'screen', zoom: 5 },
       expand: { src: 'laser', xo: 40, w0: 0.5, lnm: 532, lenses: [{ x: 200, f: -50 }, { x: 350, f: 200 }], xs: 950, scr: 'screen', zoom: 5 },
       bessel: { src: 'obj', xo: 50, H: 20, lenses: [{ x: 50 + (600 - Math.sqrt(600 * 600 - 4 * 600 * 100)) / 2, f: 100 }], xs: 650, scr: 'screen', zoom: 1 },
@@ -392,10 +433,16 @@
       }
       $('kpiB').innerHTML = h;
     }
+    // exemple de Mars (diamètre 6 800 km, entre 56 et 160 millions de km) à travers une lunette afocale de grossissement G
+    function marsText(G) {
+      const sec = (a) => a / DEG * 3600, f = (a) => (sec(a) >= 60 ? Math.floor(sec(a) / 60) + '′' + fmt(sec(a) % 60, 0).padStart(2, '0') + '″' : fmt(sec(a), 1) + '″');
+      const a1 = O.apparent(6800, 160e6), a2 = O.apparent(6800, 56e6), b1 = Math.abs(G) * a1, b2 = Math.abs(G) * a2;
+      return t('mars')(f(a1), f(a2), fmt(G, 2), f(b1), f(b2), b2 > 2.909e-4 ? (b1 > 2.909e-4 ? t('marsAll') : t('marsSome')) : t('marsNone')) + (G > -1 && G < 0 ? ' ' + t('marsRevT') : '');
+    }
     function issuesB() {
       const R = RB, L = [];
       if (B.src === 'laser') { if (B._eyeAsked) L.push(['bad', t('iss').laserEye]); if (R.act.length) L.push(['ok', t('iss').laserWaist]); }
-      else if (B.scr === 'eye') { L.push(R.eyeState === 'ok' ? ['ok', t('iss').eyeOk] : ['bad', R.eyeState === 'near' ? t('iss').eyeNear : t('iss').eyeBehind]); if (B.src === 'inf' && R.im && R.im.afocal) L.push(['ok', t('iss').afocal]); }
+      else if (B.scr === 'eye') { L.push(R.eyeState === 'ok' ? ['ok', t('iss').eyeOk] : ['bad', R.eyeState === 'near' ? t('iss').eyeNear : t('iss').eyeBehind]); if (B.src === 'inf' && R.im && R.im.afocal) { L.push(['ok', t('iss').afocal]); L.push(['', marsText(R.im.G)]); } }
       else if (B.src === 'obj') {
         if (!R.scr.lit) L.push(['bad', t('iss').noLight]);
         else if (R.im && !R.im.real) L.push(['bad', t('iss').virtual]);
@@ -648,17 +695,17 @@
     }
 
     // =========================================================== 3. DIFFRACTION
-    const F = { l1: 632.8, l2: 0, type: 'slit', a: 100, b: 300, lpmm: 300, N: 30, D: 2000, model: 'exact', hair: null, hairRead: null };
-    const optD = (l, model) => ({ type: F.type, a: F.hair ? F.hair : F.a, b: F.b, lpmm: F.lpmm, N: F.N, lnm: l, D: F.D, model: model || F.model });
+    const F = { white: false, r: 1, l1: 632.8, l2: 0, type: 'slit', a: 100, b: 300, lpmm: 300, N: 30, D: 2000, model: 'exact', hair: null, hairRead: null };
+    const optD = (l, model) => ({ type: F.type, r: F.r, a: F.hair ? F.hair : F.a, b: F.b, lpmm: F.lpmm, N: F.N, lnm: l, D: F.D, model: model || F.model });
     let RD = null;
     function spanD() {
-      const o = optD(F.l1, 'exact'); let half;
+      const o = Object.assign(optD(F.l1, 'exact'), F.type === 'youngHoles' ? { type: 'hole' } : {}); let half;
       if (F.type === 'grating') { const s = Math.min(0.95, (3.3 * F.l1 * 1e-6) * F.lpmm); half = F.D * Math.tan(Math.asin(s)) * 1.1; if (F.lpmm * F.l1 * 1e-6 >= 1) half = F.D * 2; }
-      else { const cw = O.centralWidth(o); half = isFinite(cw.exact) ? cw.exact * (F.type === 'young' ? 1.4 : 2.2) : F.D * 2; if (F.type === 'young') half = Math.max(half, (6 * F.l1 * 1e-6 * F.D) / (F.b * 1e-3)); }
+      else { const cw = O.centralWidth(o); half = isFinite(cw.exact) ? cw.exact * (F.type === 'young' ? 1.4 : 2.2) : F.D * 2; if (F.type === 'young' || F.type === 'youngHoles') half = Math.max(half * (F.type === 'youngHoles' ? 0.8 : 1), (6 * F.l1 * 1e-6 * F.D) / (F.b * 1e-3)); }
       return Math.max(2, Math.min(half, F.D * 4));
     }
     function computeD() {
-      const half = spanD(), o = optD(F.l1, 'exact'), cw = O.centralWidth(o), nf = O.fresnelNumber(o);
+      const half = spanD(), o = optD(F.l1, 'exact'), cw = O.centralWidth(F.type === 'youngHoles' ? Object.assign({}, o, { type: 'hole' }) : o), nf = O.fresnelNumber(o);
       RD = { half, cw, nf, o }; kpisD(); issuesD(); drawDiff(); drawProf(); drawSmall(); renderHair();
     }
     function kpisD() {
@@ -667,8 +714,8 @@
       else {
         const e = (R.cw.approx / R.cw.exact - 1) * 100;
         h = kpi(k.Lex, hidden ? '?' : fmt(R.cw.exact, R.cw.exact < 10 ? 2 : 1), hidden ? '' : 'mm') + kpi(k.Lsm, hidden ? '?' : fmt(R.cw.approx, R.cw.approx < 10 ? 2 : 1), hidden ? '' : 'mm') + kpi(k.err, hidden ? '?' : fmt(e, 2), hidden ? '' : '%', !hidden && Math.abs(e) > 2 ? 'bad' : '') + kpi(k.th, hidden ? '?' : fmt(R.cw.theta / DEG, 3), hidden ? '' : '°');
-        h += F.type === 'young' ? kpi(k.i, fmt((F.l1 * 1e-6 * F.D) / (F.b * 1e-3), 2), 'mm') : kpi(k.nf, fmt(R.nf, R.nf < 0.01 ? 4 : 2), '', R.nf >= 0.3 && F.model !== 'fresnel' ? 'bad' : '');
-        h += kpi(k.reg, R.nf < 0.1 ? t('regF') : R.nf < 1 ? t('regM') : t('regN'), '');
+        h += F.type === 'young' || F.type === 'youngHoles' ? kpi(k.i, fmt((F.l1 * 1e-6 * F.D) / (F.b * 1e-3), 2), 'mm') + kpi(k.gam, fmt(O.contrast(F.r), 3), '', F.r < 1 ? 'bad' : 'good') : kpi(k.nf, fmt(R.nf, R.nf < 0.01 ? 4 : 2), '', R.nf >= 0.3 && F.model !== 'fresnel' ? 'bad' : '');
+        if (!(F.type === 'young' || F.type === 'youngHoles')) h += kpi(k.reg, R.nf < 0.1 ? t('regF') : R.nf < 1 ? t('regM') : t('regN'), '');
       }
       $('kpiD').innerHTML = h;
     }
@@ -676,25 +723,42 @@
       const R = RD, L = [], d = t('issD');
       if (F.type === 'grating') L.push(['', d.grating]);
       else { if (!isFinite(R.cw.exact)) L.push(['bad', d.noMin]); else if (Math.abs(R.cw.approx / R.cw.exact - 1) > 0.02) L.push(['bad', d.smallBad]); if ((F.type === 'slit' || F.type === 'hair') && R.nf >= 0.3 && F.model !== 'fresnel') L.push(['bad', d.fresnelNeeded]); }
-      if (F.type === 'young') L.push(['', d.young]); if (F.type === 'hair') L.push(['', d.babinet]); if (F.l2) L.push(['', d.two]);
+      if (F.type === 'young' || F.type === 'youngHoles') L.push(['', d.young]); if ((F.type === 'young' || F.type === 'youngHoles') && F.r < 1) L.push(['bad', d.contrast]); if (F.white) L.push(['', F.type === 'grating' ? d.whiteG : d.white]); if (F.type === 'hair') L.push(['', d.babinet]); if (F.l2 && !F.white) L.push(['', d.two]);
       $('issD').innerHTML = L.map(([c, x]) => '<li class="' + c + '">' + x + '</li>').join('');
     }
+    // longueurs d'onde affichées : un ou deux lasers, ou lampe blanche (31 raies de 400 à 700 nm)
+    const specD = () => (F.white ? O.whiteSpectrum(31) : [[F.l1, 1]].concat(F.l2 ? [[F.l2, 1]] : []));
+    const is2D = () => F.type === 'hole' || F.type === 'youngHoles';
     function drawDiff() {
       const cv = $('cvDiff'), { c, w, h, dpr } = setup(cv), R = RD, W = cv.width, Hh = cv.height, img = c.createImageData(W, Hh), half = R.half, mmpp = (2 * half) / W, beam = Math.max(1, 7 * mmpp * dpr);
-      const lams = [F.l1].concat(F.l2 ? [F.l2] : []), model = F.model === 'fresnel' && !(F.type === 'slit' || F.type === 'hair') ? 'exact' : F.model;
-      const cols = lams.map((l) => O.rgbOf(l)), prof = lams.map((l) => { const o = optD(l, model), arr = new Float64Array(W); let mx = 0; for (let i = 0; i < W; i++) { const x = (i + 0.5) * mmpp - half; arr[i] = F.type === 'hole' ? 0 : O.intensity(x, o); mx = Math.max(mx, arr[i]); } if (mx > 0) for (let i = 0; i < W; i++) arr[i] /= mx; return arr; });
-      const holeO = lams.map((l) => optD(l, model));
+      const sp = specD(), model = F.model === 'fresnel' && !(F.type === 'slit' || F.type === 'hair') ? 'exact' : F.model, rmax = Math.hypot(W, Hh) / 2 + 2;
+      // tables : par colonne (figure 1D ou facteur d'interférence) et par rayon (enveloppe d'un trou)
+      const tabs = sp.map(([l]) => {
+        const o = optD(l, model), col = new Float64Array(W), rad = is2D() ? new Float64Array(Math.ceil(rmax) + 1) : null;
+        for (let i = 0; i < W; i++) { const x = (i + 0.5) * mmpp - half; col[i] = F.type === 'hole' ? 1 : F.type === 'youngHoles' ? O.intensity(x, Object.assign({}, o, { type: 'young', a: 1e-9 })) : O.intensity(x, o); }
+        if (rad) { const oh = Object.assign({}, o, { type: 'hole' }); for (let k = 0; k < rad.length; k++) rad[k] = O.intensity(k * mmpp, oh); }
+        return { col, rad, rgb: O.rgbOf(l) };
+      });
+      // normalisation : pour un laser, le maximum de chaque figure vaut 1 ; en lumière blanche, on normalise la somme
+      let nr = 0, ng = 0, nb = 0; sp.forEach(([, wt], k) => { const q = tabs[k].rgb; nr += q[0] * wt; ng += q[1] * wt; nb += q[2] * wt; });
+      const mx = tabs.map((tb) => { let m = 0; for (let i = 0; i < W; i++) m = Math.max(m, tb.col[i]); return m || 1; });
       for (let j = 0; j < Hh; j++) {
         const y = (Hh / 2 - j - 0.5) * mmpp, gy = Math.exp((-2 * y * y) / (beam * beam));
         for (let i = 0; i < W; i++) {
-          let r = 0, g = 0, b = 0; const x = (i + 0.5) * mmpp - half;
-          lams.forEach((l, k) => { let I; if (F.type === 'hole') { const rr = Math.hypot(x, y); I = O.intensity(rr, holeO[k]); } else I = prof[k][i] * gy; if (F.type === 'hair') I += Math.exp((-2 * (x * x + y * y)) / (beam * beam)) * 1.5; const v = Math.pow(Math.min(1, I), 0.42); r += cols[k][0] * v; g += cols[k][1] * v; b += cols[k][2] * v; });
+          let r = 0, g = 0, b = 0; const x = (i + 0.5) * mmpp - half, rr = is2D() ? Math.hypot(x, y) / mmpp : 0, ri = Math.floor(rr), fr = rr - ri;
+          for (let k = 0; k < sp.length; k++) {
+            const tb = tabs[k]; let I = tb.col[i] / (F.white ? 1 : mx[k]);
+            I *= is2D() ? tb.rad[ri] * (1 - fr) + tb.rad[Math.min(tb.rad.length - 1, ri + 1)] * fr : gy;
+            if (F.type === 'hair') I += Math.exp((-2 * (x * x + y * y)) / (beam * beam)) * 1.5;
+            if (F.white) { const wt = sp[k][1]; r += tb.rgb[0] * wt * I; g += tb.rgb[1] * wt * I; b += tb.rgb[2] * wt * I; }
+            else { const v = Math.pow(Math.min(1, I), 0.42); r += tb.rgb[0] * v; g += tb.rgb[1] * v; b += tb.rgb[2] * v; }
+          }
+          if (F.white) { r = 255 * Math.pow(Math.min(1, r / nr), 0.42); g = 255 * Math.pow(Math.min(1, g / ng), 0.42); b = 255 * Math.pow(Math.min(1, b / nb), 0.42); }
           const p = (j * W + i) * 4; img.data[p] = Math.min(255, r); img.data[p + 1] = Math.min(255, g); img.data[p + 2] = Math.min(255, b); img.data[p + 3] = 255;
         }
       }
       c.setTransform(1, 0, 0, 1, 0, 0); c.putImageData(img, 0, 0); c.setTransform(dpr, 0, 0, dpr, 0, 0);
-      // règle
-      const nice = [0.1, 0.2, 0.5, 1, 2, 5, 10, 20, 50, 100, 200, 500, 1000, 2000], step = nice.find((s) => (half * 2) / s <= 12) || 5000;
+      const nice = [0.1, 0.2, 0.5, 1, 2, 5, 10, 20, 50, 100, 200, 500, 1000, 2000], step = nice.find((s2) => (half * 2) / s2 <= 12) || 5000;
       c.fillStyle = 'rgba(201,201,204,0.75)'; c.font = '10px "JetBrains Mono", monospace'; c.textAlign = 'center';
       for (let v = -Math.floor(half / step) * step; v <= half; v += step) { const px = ((v + half) / (2 * half)) * w; c.fillRect(px, h - 10, 1, 10); if (!F.hair) c.fillText(fmt(v, step < 1 ? 1 : 0), px, h - 13); }
       c.textAlign = 'left'; c.fillText('mm', 4, h - 13);
@@ -702,7 +766,8 @@
     function drawProf() {
       const R = RD, n = 600, xs = [], ex = [], sm = [], fr = []; let mfr = 0;
       const slitLike = F.type === 'slit' || F.type === 'hair', oE = optD(F.l1, 'exact'), oS = optD(F.l1, 'small'), oF = optD(F.l1, 'fresnel');
-      for (let k = 0; k <= n; k++) { const x = -R.half + (2 * R.half * k) / n; xs.push(x); ex.push(O.intensity(x, oE)); sm.push(O.intensity(x, oS)); if (slitLike) { const v = O.intensity(x, oF); fr.push(v); mfr = Math.max(mfr, v); } }
+      const spw = F.white ? O.whiteSpectrum(31) : [[F.l1, 1]], I = (x, model) => spw.reduce((acc, [l, wt]) => acc + wt * O.intensity(x, Object.assign(optD(l, model))), 0);
+      for (let k = 0; k <= n; k++) { const x = -R.half + (2 * R.half * k) / n; xs.push(x); ex.push(F.white ? I(x, 'exact') : O.intensity(x, oE)); sm.push(F.white ? I(x, 'small') : O.intensity(x, oS)); if (slitLike) { const v = O.intensity(x, oF); fr.push(v); mfr = Math.max(mfr, v); } }
       const ser = [[xs, sm, '#9b9b9f', 1.2, [5, 4]], [xs, ex, '#c8102e', 1.8]];
       $('lgFrW').style.display = slitLike && F.model === 'fresnel' ? '' : 'none';
       if (slitLike && F.model === 'fresnel') ser.push([xs, fr.map((v) => v / mfr), '#4fb3a9', 1.6]);
@@ -717,20 +782,119 @@
       if (!F.hairRead) { box.innerHTML = '<p>' + t('hair1') + '</p>'; return; }
       const r = F.hairRead; box.innerHTML = '<p>' + t('hair2')(fmt(r.L, 0), fmt(r.a, 0), fmt(r.ua, 0), fmt(F.hair, 0), Math.abs(r.a - F.hair) <= 2 * r.ua) + '</p>';
     }
-    $('bHair').addEventListener('click', () => { F.hair = Math.round(50 + Math.random() * 60); F.hairRead = null; F.type = 'hair'; F.l1 = 632.8; F.l2 = 0; F.model = 'exact'; renderCtlD(); computeD(); });
-    $('bHairM').addEventListener('click', () => { if (!F.hair) { F.hair = Math.round(50 + Math.random() * 60); F.type = 'hair'; F.l1 = 632.8; F.l2 = 0; renderCtlD(); } const cw = O.centralWidth({ type: 'slit', a: F.hair, lnm: 632.8, D: F.D }), L = Math.round(cw.exact + (Math.random() + Math.random() - 1) * 0.8), m = O.hairMeasure(L, F.D, 632.8, 1, 5); F.hairRead = { L, a: m.a, ua: m.ua }; computeD(); });
+    $('bHair').addEventListener('click', () => { F.white = false; F.hair = Math.round(50 + Math.random() * 60); F.hairRead = null; F.type = 'hair'; F.l1 = 632.8; F.l2 = 0; F.model = 'exact'; renderCtlD(); computeD(); });
+    $('bHairM').addEventListener('click', () => { F.white = false; if (!F.hair) { F.hair = Math.round(50 + Math.random() * 60); F.type = 'hair'; F.l1 = 632.8; F.l2 = 0; renderCtlD(); } const cw = O.centralWidth({ type: 'slit', a: F.hair, lnm: 632.8, D: F.D }), L = Math.round(cw.exact + (Math.random() + Math.random() - 1) * 0.8), m = O.hairMeasure(L, F.D, 632.8, 1, 5); F.hairRead = { L, a: m.a, ua: m.ua }; computeD(); });
     function renderCtlD() {
       const box = $('ctlD'); box.innerHTML = ''; const d = t('d');
       const lasSeg = (cur, withNone, onPick) => { const s = document.createElement('div'); s.className = 'seg'; (withNone ? [0] : []).concat(O.LASERS.map((L) => L.nm)).forEach((nm) => { const b = document.createElement('button'); b.type = 'button'; b.className = 'btn'; b.textContent = nm ? lasName(nm) : d.none; if (nm) b.style.borderColor = rgb(nm, 0.7); b.setAttribute('aria-pressed', cur === nm); b.addEventListener('click', () => onPick(nm)); s.appendChild(b); }); box.appendChild(s); };
-      h3(box, d.laser1, true); lasSeg(F.l1, false, (v) => { F.l1 = v; if (F.hair) { F.hair = null; F.hairRead = null; } renderCtlD(); computeD(); });
+      h3(box, d.srcT, true); seg(box, [[0, d.srcL], [1, d.srcW]], F.white ? 1 : 0, (v) => { F.white = !!v; if (F.white) { F.hair = null; F.hairRead = null; } renderCtlD(); computeD(); });
+      if (!F.white) { h3(box, d.laser1); lasSeg(F.l1, false, (v) => { F.l1 = v; if (F.hair) { F.hair = null; F.hairRead = null; } renderCtlD(); computeD(); });
       slider(box, d.lfree, F.l1, 380, 750, 1, (v) => fmt(v, 0) + ' nm', (v) => { F.l1 = v; if (F.hair) { F.hair = null; F.hairRead = null; } computeD(); });
-      h3(box, d.laser2); lasSeg(F.l2, true, (v) => { F.l2 = v; renderCtlD(); computeD(); });
-      h3(box, d.type); seg(box, ['slit', 'hair', 'hole', 'young', 'grating'].map((k) => [k, d[k]]), F.type, (v) => { F.type = v; F.hair = null; F.hairRead = null; renderCtlD(); computeD(); });
+      h3(box, d.laser2); lasSeg(F.l2, true, (v) => { F.l2 = v; renderCtlD(); computeD(); }); }
+      h3(box, d.type); seg(box, ['slit', 'hair', 'hole', 'young', 'youngHoles', 'grating'].map((k) => [k, d[k]]), F.type, (v) => { F.type = v; F.hair = null; F.hairRead = null; renderCtlD(); computeD(); });
       if (F.type !== 'grating' && !F.hair) slider(box, d.a, Math.log10(F.a), Math.log10(0.8), Math.log10(500), 0.005, (v) => fmt(Math.pow(10, v), Math.pow(10, v) < 10 ? 1 : 0) + ' µm', (v) => { F.a = Math.round(Math.pow(10, v) * 10) / 10; computeD(); });
-      if (F.type === 'young') slider(box, d.b, F.b, 50, 1000, 10, (v) => fmt(v, 0) + ' µm', (v) => { F.b = Math.max(v, F.a + 5); computeD(); });
+      if (F.type === 'young' || F.type === 'youngHoles') slider(box, d.r, F.r, 0.01, 1, 0.01, (v) => fmt(v, 2), (v) => { F.r = v; computeD(); });
+      if (F.type === 'young' || F.type === 'youngHoles') slider(box, d.b, F.b, 50, 1000, 10, (v) => fmt(v, 0) + ' µm', (v) => { F.b = Math.max(v, F.a + 5); computeD(); });
       if (F.type === 'grating') { slider(box, d.lpmm, F.lpmm, 50, 1200, 10, (v) => fmt(v, 0), (v) => { F.lpmm = v; computeD(); }); slider(box, d.N, F.N, 2, 80, 1, (v) => fmt(v, 0), (v) => { F.N = v; computeD(); }); }
       slider(box, d.Dd, F.D, 50, 5000, 10, (v) => (v < 1000 ? fmt(v / 10, 0) + ' cm' : fmt(v / 1000, 2) + ' m'), (v) => { F.D = v; computeD(); });
       h3(box, d.model); seg(box, [['exact', d.exact], ['small', d.small]].concat(F.type === 'slit' || F.type === 'hair' ? [['fresnel', d.fresnel]] : []), F.model, (v) => { F.model = v; renderCtlD(); computeD(); });
+    }
+
+    // =========================================================== 3. RÉFRACTION : dioptre, prisme, fibre
+    const MEDIA = [['air', 1.0003], ['eau', 1.333], ['verre', 1.5168], ['diamant', 2.417]];
+    const Rf = { mode: 'dioptre', n1: 1.0003, n2: 1.5168, th: 40, A: 60, glass: 'BK7', i: 50, light: 589.3, fn1: 1.48, fn2: 1.46, th0: 8, L: 1, core: 50 };
+    function renderCtlR() {
+      const box = $('ctlR'), r = t('r'); box.innerHTML = '';
+      h3(box, r.mode, true); seg(box, [['dioptre', r.mD], ['prisme', r.mP], ['fibre', r.mF]], Rf.mode, (v) => { Rf.mode = v; renderCtlR(); computeR(); });
+      if (Rf.mode === 'dioptre') {
+        const med = (k, lab) => { h3(box, lab); seg(box, MEDIA.map(([nm, n]) => [n, r.med[nm] + ' ' + fmt(n, 3)]), Rf[k], (v) => { Rf[k] = v; renderCtlR(); computeR(); }); slider(box, 'n', Rf[k], 1, 2.5, 0.001, (v) => fmt(v, 3), (v) => { Rf[k] = v; computeR(); }); };
+        med('n1', r.n1); med('n2', r.n2); h3(box, r.inc); slider(box, 'θ₁', Rf.th, 0, 89.5, 0.5, (v) => fmt(v, 1) + '°', (v) => { Rf.th = v; computeR(); });
+      } else if (Rf.mode === 'prisme') {
+        h3(box, r.glass); seg(box, Object.keys(O.GLASS).map((k) => [k, O.GLASS[k].name]), Rf.glass, (v) => { Rf.glass = v; renderCtlR(); computeR(); });
+        slider(box, r.A, Rf.A, 20, 75, 1, (v) => fmt(v, 0) + '°', (v) => { Rf.A = v; computeR(); });
+        slider(box, r.i, Rf.i, 0, 89, 0.5, (v) => fmt(v, 1) + '°', (v) => { Rf.i = v; computeR(); });
+        const bm = document.createElement('button'); bm.type = 'button'; bm.className = 'btn'; bm.textContent = r.toMin; bm.addEventListener('click', () => { const n = O.nGlass(Rf.glass, Rf.light === 'white' ? 589.3 : Rf.light), dm = O.prismDmin(Rf.A * DEG, n); Rf.i = Math.round(((dm + Rf.A * DEG) / 2 / DEG) * 10) / 10; renderCtlR(); computeR(); }); box.appendChild(bm);
+        h3(box, r.light); const ls = document.createElement('div'); ls.className = 'seg'; O.LASERS.map((L) => L.nm).concat(['white']).forEach((v) => { const b = document.createElement('button'); b.type = 'button'; b.className = 'btn'; b.textContent = v === 'white' ? r.white : lasName(v); if (v !== 'white') b.style.borderColor = rgb(v, 0.7); b.setAttribute('aria-pressed', Rf.light === v); b.addEventListener('click', () => { Rf.light = v; renderCtlR(); computeR(); }); ls.appendChild(b); }); box.appendChild(ls);
+      } else {
+        slider(box, r.fn1, Rf.fn1, 1.4, 1.6, 0.001, (v) => fmt(v, 3), (v) => { Rf.fn1 = Math.max(v, Rf.fn2 + 0.001); computeR(); });
+        slider(box, r.fn2, Rf.fn2, 1.4, 1.6, 0.001, (v) => fmt(v, 3), (v) => { Rf.fn2 = Math.min(v, Rf.fn1 - 0.001); computeR(); });
+        slider(box, r.core, Rf.core, 8, 200, 1, (v) => fmt(v, 0) + ' µm', (v) => { Rf.core = v; computeR(); });
+        slider(box, r.th0, Rf.th0, 0, 40, 0.1, (v) => fmt(v, 1) + '°', (v) => { Rf.th0 = v; computeR(); });
+        slider(box, r.L, Math.log10(Rf.L), -2, 1.3, 0.01, (v) => (Math.pow(10, v) < 1 ? fmt(Math.pow(10, v) * 1000, 0) + ' m' : fmt(Math.pow(10, v), 2) + ' km'), (v) => { Rf.L = Math.pow(10, v); computeR(); });
+      }
+    }
+    function computeR() { const r = t('r'); $('hintR').textContent = r['hint' + Rf.mode]; if (Rf.mode === 'dioptre') drawDioptre(); else if (Rf.mode === 'prisme') drawPrism(); else drawFiber(); }
+    const issR = (L) => { $('issR').innerHTML = L.map(([c, x]) => '<li class="' + c + '">' + x + '</li>').join(''); };
+    function drawDioptre() {
+      const { c, w, h } = setup($('cvRefr')), r = t('r'), th = Rf.th * DEG, f = O.fresnelRT(Rf.n1, Rf.n2, th), tc = O.criticalAngle(Rf.n1, Rf.n2), tb = O.brewster(Rf.n1, Rf.n2);
+      c.fillStyle = '#0a0a0b'; c.fillRect(0, 0, w, h); const cx = w / 2, cy = h / 2, L = Math.min(w, h) * 0.46;
+      c.fillStyle = 'rgba(120,160,190,' + Math.min(0.35, (Rf.n2 - 1) * 0.25) + ')'; c.fillRect(0, cy, w, h - cy); c.fillStyle = 'rgba(120,160,190,' + Math.min(0.35, (Rf.n1 - 1) * 0.25) + ')'; c.fillRect(0, 0, w, cy);
+      c.strokeStyle = '#9b9b9f'; c.lineWidth = 1; c.beginPath(); c.moveTo(0, cy); c.lineTo(w, cy); c.stroke(); c.setLineDash([4, 4]); c.beginPath(); c.moveTo(cx, 10); c.lineTo(cx, h - 10); c.stroke(); c.setLineDash([]);
+      const ray = (ang, up, side, a, col, lw) => { const x = cx + side * Math.sin(ang) * L, y = cy + (up ? -1 : 1) * Math.cos(ang) * L; c.strokeStyle = col.replace('A', String(a)); c.lineWidth = lw; c.beginPath(); c.moveTo(cx, cy); c.lineTo(x, y); c.stroke(); return [x, y]; };
+      const p = ray(th, true, -1, 1, 'rgba(200,16,46,A)', 3); ray(th, true, 1, Math.max(0.12, f.R), 'rgba(200,16,46,A)', 1 + 3 * f.R); if (!f.tir) ray(f.th2, false, 1, Math.max(0.12, f.T), 'rgba(200,16,46,A)', 1 + 3 * f.T);
+      c.fillStyle = '#c8102e'; const ah = Math.atan2(cy - p[1], cx - p[0]); c.beginPath(); const mx = (p[0] + cx) / 2, my = (p[1] + cy) / 2; c.moveTo(mx + 8 * Math.cos(ah), my + 8 * Math.sin(ah)); c.lineTo(mx + 8 * Math.cos(ah + 2.5), my + 8 * Math.sin(ah + 2.5)); c.lineTo(mx + 8 * Math.cos(ah - 2.5), my + 8 * Math.sin(ah - 2.5)); c.fill();
+      c.font = '11px "JetBrains Mono", monospace'; c.fillStyle = '#c9c9cc'; c.textAlign = 'left'; c.fillText('n₁ = ' + fmt(Rf.n1, 3), 10, 18); c.fillText('n₂ = ' + fmt(Rf.n2, 3), 10, h - 10);
+      c.fillText('θ₁ = ' + fmt(Rf.th, 1) + '°', cx - 90, cy - 12); c.fillText('R = ' + fmt(f.R * 100, 1) + ' %', cx + 30, cy - 12); if (!f.tir) c.fillText('θ₂ = ' + fmt(f.th2 / DEG, 1) + '°  T = ' + fmt(f.T * 100, 1) + ' %', cx + 12, cy + 22); else { c.fillStyle = '#ff8a8a'; c.fillText(r.tir, cx + 12, cy + 22); }
+      $('kpiR').innerHTML = kpi('θ₂', f.tir ? '—' : fmt(f.th2 / DEG, 2), f.tir ? '' : '°') + kpi(r.kR, fmt(f.R * 100, 2), '%') + kpi('Rs / Rp', fmt(f.Rs * 100, 1) + ' / ' + fmt(f.Rp * 100, 1), '%') + kpi(r.kT, fmt(f.T * 100, 2), '%') + kpi(r.kLim, isFinite(tc) ? fmt(tc / DEG, 2) : '—', isFinite(tc) ? '°' : '') + kpi('Brewster', fmt(tb / DEG, 2), '°');
+      const L2 = [[f.tir ? 'bad' : 'ok', f.tir ? r.iTir : r.iSnell]]; if (Math.abs(th - tb) < 1 * DEG && !f.tir) L2.push(['', r.iBrew]); if (Rf.n1 > Rf.n2 && !f.tir) L2.push(['', r.iLim(fmt(tc / DEG, 1))]); if (Rf.n1 < Rf.n2) L2.push(['', r.iNoLim]); issR(L2);
+      const ths = [], Rs = [], Rp = [], Ra = []; for (let k = 0; k <= 180; k++) { const a = (k / 180) * 89.9, q = O.fresnelRT(Rf.n1, Rf.n2, a * DEG); ths.push(a); Rs.push(q.Rs * 100); Rp.push(q.Rp * 100); Ra.push(q.R * 100); }
+      $('lgR').innerHTML = '<span><i style="background:#c8102e"></i>R (%) ' + r.unpol + '</span><span><i style="background:#e0a458"></i>Rs</span><span><i style="background:#4fb3a9"></i>Rp</span>';
+      const g = lineChart($('cvRchart'), [[ths, Rs, '#e0a458', 1.2], [ths, Rp, '#4fb3a9', 1.2], [ths, Ra, '#c8102e', 1.8]], 0, 90, 0, 100, 'θ₁ (°)', 'R (%)', [0, 0]);
+      g.c.strokeStyle = 'rgba(242,242,242,0.6)'; g.c.beginPath(); g.c.moveTo(g.X(Rf.th), g.Y(0)); g.c.lineTo(g.X(Rf.th), g.Y(100)); g.c.stroke();
+    }
+    function drawPrism() {
+      const { c, w, h } = setup($('cvRefr')), r = t('r'), A = Rf.A * DEG, i = Rf.i * DEG, lams = Rf.light === 'white' ? [400, 450, 500, 550, 600, 650, 700] : [Rf.light];
+      c.fillStyle = '#0a0a0b'; c.fillRect(0, 0, w, h);
+      const H = h * 0.78, sc = 1, ax = w * 0.42, ay = h * 0.1, hs = Math.sin(A / 2), hc = Math.cos(A / 2), side = H / hc; // côté du prisme
+      const P0 = [ax, ay], PL = [ax - side * hs, ay + side * hc], PR = [ax + side * hs, ay + side * hc]; void sc;
+      c.fillStyle = 'rgba(120,160,190,0.18)'; c.strokeStyle = 'rgba(201,201,204,0.6)'; c.beginPath(); c.moveTo(...P0); c.lineTo(...PL); c.lineTo(...PR); c.closePath(); c.fill(); c.stroke();
+      // repère écran (y vers le bas) : normale extérieure de la face gauche = (−cos(A/2), −sin(A/2)) ; droite = (cos(A/2), −sin(A/2))
+      const nL = [-hc, -hs], nR = [hc, -hs], Q = [ax - side * 0.55 * hs, ay + side * 0.55 * hc];
+      const din = [Math.cos(i - A / 2 + 0), 0]; // direction : normale intérieure (hc, hs) tournée de −i (vers le haut à l'écran)
+      const nin = [hc, hs], ca = Math.cos(-i), sa = Math.sin(-i), d0 = [nin[0] * ca - nin[1] * sa, nin[0] * sa + nin[1] * ca]; void din;
+      c.strokeStyle = 'rgba(242,242,242,0.85)'; c.lineWidth = 2; c.beginPath(); c.moveTo(Q[0] - d0[0] * w, Q[1] - d0[1] * w); c.lineTo(...Q); c.stroke();
+      c.setLineDash([3, 3]); c.strokeStyle = 'rgba(155,155,159,0.5)'; c.lineWidth = 1; c.beginPath(); c.moveTo(Q[0] + nL[0] * 60, Q[1] + nL[1] * 60); c.lineTo(Q[0] - nL[0] * 60, Q[1] - nL[1] * 60); c.stroke(); c.setLineDash([]);
+      const res = lams.map((l) => {
+        const n = O.nGlass(Rf.glass, l), d1 = O.refract(d0, nL, 1, n); if (!d1) return null;
+        // intersection avec la face droite (droite P0 + s·(PR − P0))
+        const ex = PR[0] - P0[0], ey = PR[1] - P0[1], det = d1[0] * -ey - d1[1] * -ex, tt = ((P0[0] - Q[0]) * -ey - (P0[1] - Q[1]) * -ex) / det, ss = (d1[0] * (P0[1] - Q[1]) - d1[1] * (P0[0] - Q[0])) / det;
+        const E = [Q[0] + tt * d1[0], Q[1] + tt * d1[1]]; if (ss < 0 || ss > 1) return { l, n, Q, E: null };
+        const d2 = O.refract(d1, [-nR[0], -nR[1]], n, 1); return { l, n, E, d1, d2 };
+      });
+      res.forEach((q) => { if (!q) return; const col = rgb(q.l, 0.9); c.strokeStyle = col; c.lineWidth = 1.6; if (q.E) { c.beginPath(); c.moveTo(...Q); c.lineTo(...q.E); c.stroke(); if (q.d2) { c.beginPath(); c.moveTo(...q.E); c.lineTo(q.E[0] + q.d2[0] * w, q.E[1] + q.d2[1] * w); c.stroke(); } } });
+      const l0 = Rf.light === 'white' ? 589.3 : Rf.light, n0 = O.nGlass(Rf.glass, l0), pr = O.prism(A, n0, i), dm = O.prismDmin(A, n0);
+      const dv = O.prism(A, O.nGlass(Rf.glass, 405), i), dr = O.prism(A, O.nGlass(Rf.glass, 650), i);
+      $('kpiR').innerHTML = kpi('n (' + lasName(l0) + ')', fmt(n0, 4), '') + kpi(r.kD, pr.ok ? fmt(pr.D / DEG, 2) : '—', pr.ok ? '°' : '') + kpi('D min', fmt(dm / DEG, 2), '°') + kpi(r.kiMin, fmt((dm + A) / 2 / DEG, 2), '°') + kpi('r₁ + r₂', pr.ok ? fmt((pr.r1 + pr.r2) / DEG, 2) : '—', pr.ok ? '°' : '') + kpi(r.kDisp, dv.ok && dr.ok ? fmt((dv.D - dr.D) / DEG, 2) : '—', dv.ok && dr.ok ? '°' : '');
+      const L2 = []; if (!pr.ok) L2.push(['bad', r.iPrTir]); else { L2.push(['ok', r.iPr]); if (Math.abs(pr.D - dm) < 0.05 * DEG) L2.push(['ok', r.iMin]); } if (Rf.light === 'white') L2.push(['', r.iWhite]); issR(L2);
+      const is = [], series = []; for (let k = 0; k <= 180; k++) is.push((k / 180) * 89.5);
+      const curves = Rf.light === 'white' ? [405, 589.3, 650] : [l0]; let lo = 1e9, hi = -1e9;
+      curves.forEach((l) => { const n = O.nGlass(Rf.glass, l), ds = is.map((a) => { const q = O.prism(A, n, a * DEG); return q.ok ? q.D / DEG : NaN; }); ds.forEach((v) => { if (isFinite(v)) { lo = Math.min(lo, v); hi = Math.max(hi, v); } }); series.push([is, ds, rgb(l), 1.8]); });
+      $('lgR').innerHTML = '<span>' + r.lgD + '</span>';
+      const g = lineChart($('cvRchart'), series, 0, 90, Math.floor(lo - 2), Math.ceil(Math.min(hi, lo + 60) + 2), 'i (°)', 'D (°)', [0, 0]);
+      g.c.strokeStyle = 'rgba(242,242,242,0.6)'; g.c.beginPath(); g.c.moveTo(g.X(Rf.i), 8); g.c.lineTo(g.X(Rf.i), 1e4); g.c.stroke();
+    }
+    function drawFiber() {
+      const { c, w, h } = setup($('cvRefr')), r = t('r'), fb = O.fiber(Rf.fn1, Rf.fn2, 1), rc = (Rf.core / 2) * 1e-6, th0 = Rf.th0 * DEG, Ld = rc * 2 * 40;
+      const pth = O.fiberPath(Rf.fn1, Rf.fn2, 1, th0, rc, Ld, 400); c.fillStyle = '#0a0a0b'; c.fillRect(0, 0, w, h);
+      const x0 = w * 0.16, X = (x) => x0 + (x / Ld) * (w - x0 - 10), Y = (y) => h / 2 - (y / rc) * (h * 0.22);
+      c.fillStyle = 'rgba(190,150,110,0.14)'; c.fillRect(x0, Y(rc * 1.9), w - x0, Y(-rc * 1.9) - Y(rc * 1.9)); c.fillStyle = 'rgba(120,160,190,0.25)'; c.fillRect(x0, Y(rc), w - x0, Y(-rc) - Y(rc));
+      c.font = '10px "JetBrains Mono", monospace'; c.fillStyle = '#9b9b9f'; c.textAlign = 'left'; c.fillText(r.clad + ' n₂ = ' + fmt(Rf.fn2, 3), x0 + 6, Y(rc * 1.9) + 12); c.fillText(r.coreL + ' n₁ = ' + fmt(Rf.fn1, 3), x0 + 6, Y(rc) + 12); c.fillText(r.air, 6, 14);
+      // cône d'acceptance
+      c.fillStyle = 'rgba(79,179,169,0.12)'; c.beginPath(); c.moveTo(x0, Y(0)); c.lineTo(x0 - x0 * 0.95, Y(0) - Math.tan(fb.acc) * x0 * 0.95); c.lineTo(x0 - x0 * 0.95, Y(0) + Math.tan(fb.acc) * x0 * 0.95); c.closePath(); c.fill();
+      c.strokeStyle = 'rgba(242,242,242,0.9)'; c.lineWidth = 1.8; c.beginPath(); c.moveTo(x0 - x0 * 0.95, Y(0) + Math.tan(th0) * x0 * 0.95); c.lineTo(x0, Y(0)); c.stroke();
+      // zigzag : l'opacité suit la puissance restante (réflexions partielles hors du cône)
+      const fr = O.fresnelRT(Rf.fn1, Rf.fn2, pth.inc); let P = 1;
+      for (let k = 1; k < pth.pts.length; k++) { const a = pth.pts[k - 1], b = pth.pts[k]; c.strokeStyle = 'rgba(200,16,46,' + Math.max(0.04, P) + ')'; c.lineWidth = 1.6; c.beginPath(); c.moveTo(X(a[0]), Y(a[1])); c.lineTo(X(b[0]), Y(b[1])); c.stroke();
+        if (!fr.tir && k < pth.pts.length - 1) { const tr = O.refract([Math.cos(Math.PI / 2 - pth.inc), (b[1] > a[1] ? 1 : -1) * Math.sin(Math.PI / 2 - pth.inc)], [0, b[1] > 0 ? -1 : 1], Rf.fn1, Rf.fn2); if (tr) { c.strokeStyle = 'rgba(200,16,46,' + Math.max(0.04, P * (1 - fr.R)) + ')'; c.lineWidth = 1; c.beginPath(); c.moveTo(X(b[0]), Y(b[1])); const sx = (rc * 0.9) * tr[0] / Math.abs(tr[1]); c.lineTo(X(b[0] + sx), Y(b[1] + Math.sign(b[1]) * rc * 0.9)); c.stroke(); } P *= fr.R; } }
+      const dt = fb.dtPerM * Rf.L * 1000, rate = fb.rate(Rf.L * 1000), Dl = (Rf.fn1 - Rf.fn2) / Rf.fn1, dtg = (Rf.fn1 * Dl * Dl) / (8 * 299792458) * Rf.L * 1000;
+      const rateS = (v) => (v >= 1e9 ? fmt(v / 1e9, 2) + ' Gbit/s' : fmt(v / 1e6, v < 1e7 ? 1 : 0) + ' Mbit/s');
+      $('kpiR').innerHTML = kpi(r.kNA, fmt(fb.NA, 3), '') + kpi(r.kAcc, fmt(fb.acc / DEG, 2), '°') + kpi(r.kThc, fmt(fb.thc / DEG, 2), '°') + kpi(r.kDt, dt < 1e-9 ? fmt(dt * 1e12, 0) + ' ps' : fmt(dt * 1e9, 1) + ' ns', '') + kpi(r.kRate, rateS(rate), '') + kpi(r.kRateG, rateS(1 / (2 * dtg)), '');
+      const L2 = [[th0 <= fb.acc ? 'ok' : 'bad', th0 <= fb.acc ? r.iGuided : r.iLost(fmt(pth.P * 100, pth.P < 0.01 ? 3 : 1))], ['', r.iNet]]; issR(L2);
+      const Ls = [], a = [], b = []; for (let k = 0; k <= 60; k++) { const L = Math.pow(10, -2 + (k / 60) * 3.3) * 1000; Ls.push(Math.log10(L / 1000)); a.push(Math.log10(fb.rate(L) / 1e6)); b.push(Math.log10(1 / (2 * (Rf.fn1 * Dl * Dl / (8 * 299792458)) * L) / 1e6)); }
+      $('lgR').innerHTML = '<span><i style="background:#c8102e"></i>' + r.lgStep + '</span><span><i style="background:#4fb3a9"></i>' + r.lgGrad + '</span>';
+      const g = lineChart($('cvRchart'), [[Ls, a, '#c8102e', 1.8], [Ls, b, '#4fb3a9', 1.8]], -2, 1.3, Math.floor(Math.min(...a)) , Math.ceil(Math.max(...b)), 'log₁₀ L (km)', 'log₁₀ ' + r.rateAx, [1, 0]);
+      g.c.strokeStyle = 'rgba(242,242,242,0.5)'; g.c.setLineDash([4, 3]); const y1 = g.Y(3); g.c.beginPath(); g.c.moveTo(g.X(-2), y1); g.c.lineTo(g.X(1.3), y1); g.c.stroke(); g.c.setLineDash([]); g.c.fillStyle = '#9b9b9f'; g.c.textAlign = 'left'; g.c.fillText('1 Gbit/s', g.X(-1.95), y1 - 4);
+      g.c.strokeStyle = 'rgba(242,242,242,0.6)'; g.c.beginPath(); g.c.moveTo(g.X(Math.log10(Rf.L)), 8); g.c.lineTo(g.X(Math.log10(Rf.L)), 1e4); g.c.stroke();
     }
 
     // =========================================================== 4. VÉRIFICATIONS EN DIRECT
@@ -753,13 +917,17 @@
       const w = { type: 'slit', a: 20000, lnm: 632.8, D: 1000, model: 'fresnel' }; add(lang === 'fr' ? 'Fresnel : bord d’ombre (demi-plan) = 1/4' : 'Fresnel: shadow edge (half-plane) = 1/4', fmt(O.intensity(10, w), 4), '0,25', Math.abs(O.intensity(10, w) - 0.25) < 0.02);
       const fa = { type: 'slit', a: 50, lnm: 632.8, D: 20000, model: 'fresnel' }, kk = (0.05 ** 2) / (632.8e-6 * 20000); add(lang === 'fr' ? 'Fresnel → Fraunhofer loin de la fente' : 'Fresnel → Fraunhofer far from the slit', fmt(O.intensity(120, fa) / kk, 4), fmt(O.intensity(120, Object.assign({}, fa, { model: 'exact' })), 4), Math.abs(O.intensity(120, fa) / kk - O.intensity(120, Object.assign({}, fa, { model: 'exact' }))) < 0.01);
       const q = O.gaussBeam([{ x: 0.0001, f: 100, D: 40 }], 0, 1, 632.8, 400); add(lang === 'fr' ? 'laser : col au foyer ≈ λf′/(πw)' : 'laser: waist ≈ λf′/(πw)', fmt(q.waistW * 1000, 3) + ' µm', fmt((632.8e-6 * 100) / Math.PI * 1000, 3) + ' µm', Math.abs(q.waistW - 632.8e-6 * 100 / Math.PI) < 1e-5);
+      add(lang === 'fr' ? 'Brewster verre : Rp' : 'Brewster on glass: Rp', fmt(O.fresnelRT(1, 1.5, O.brewster(1, 1.5)).Rp, 15), '0', O.fresnelRT(1, 1.5, O.brewster(1, 1.5)).Rp < 1e-15);
+      { const A = 60 * DEG, n = O.nGlass('BK7', 589.3); add(lang === 'fr' ? 'prisme : indice retrouvé par Dmin' : 'prism: index recovered from Dmin', fmt(O.prismN(A, O.prismDmin(A, n)), 6), fmt(n, 6), Math.abs(O.prismN(A, O.prismDmin(A, n)) - n) < 1e-12); }
+      { const r = 0.25, o = { type: 'young', a: 1e-6, b: 200, lnm: 632.8, D: 2000, model: 'small', r }, i = 632.8e-6 * 2000 / 0.2, M = O.intensity(0, o), m = O.intensity(i / 2, o); add(lang === 'fr' ? 'contraste mesuré (I₂ = I₁/4)' : 'measured contrast (I₂ = I₁/4)', fmt((M - m) / (M + m), 6), fmt(O.contrast(r), 6), Math.abs((M - m) / (M + m) - O.contrast(r)) < 1e-9); }
+      { const fb = O.fiber(1.48, 1.46, 1); add(lang === 'fr' ? 'fibre : sin(angle d’acceptance) = ON' : 'fibre: sin(acceptance angle) = NA', fmt(Math.sin(fb.acc), 6), fmt(fb.NA, 6), Math.abs(Math.sin(fb.acc) - fb.NA) < 1e-12); }
       $('tabCheck').innerHTML = '<thead><tr>' + t('chk').map((x, j) => '<th' + (j && j < 3 ? ' class="n"' : '') + '>' + x + '</th>').join('') + '</tr></thead><tbody>' + rows.map(([a, b, c2, ok]) => '<tr><td>' + a + '</td><td class="n">' + b + '</td><td class="n">' + c2 + '</td><td class="' + (ok ? 'good' : 'bad') + '">' + (ok ? '✓' : '✗') + '</td></tr>').join('') + '</tbody>';
     }
 
     // =========================================================== onglets, langue
     let tab = 'bench';
-    function showTab(k) { tab = k; document.querySelectorAll('[role=tab]').forEach((b) => b.setAttribute('aria-selected', b.dataset.tab === k)); ['bench', 'gauss', 'diff', 'check'].forEach((x) => { $('tab-' + x).hidden = x !== k; }); try { history.replaceState(null, '', '#' + k); } catch (e) {} redraw(); }
-    function redraw() { if (tab === 'bench') { renderCtlB(); computeB(); } else if (tab === 'gauss') { renderCtlG(); computeG(); } else if (tab === 'diff') { renderCtlD(); computeD(); } else runChecks(); }
+    function showTab(k) { tab = k; document.querySelectorAll('[role=tab]').forEach((b) => b.setAttribute('aria-selected', b.dataset.tab === k)); ['bench', 'gauss', 'refr', 'diff', 'check'].forEach((x) => { $('tab-' + x).hidden = x !== k; }); try { history.replaceState(null, '', '#' + k); } catch (e) {} redraw(); }
+    function redraw() { if (tab === 'bench') { renderCtlB(); computeB(); } else if (tab === 'gauss') { renderCtlG(); computeG(); } else if (tab === 'diff') { renderCtlD(); computeD(); } else if (tab === 'refr') { renderCtlR(); computeR(); } else runChecks(); }
     document.querySelectorAll('[role=tab]').forEach((b) => b.addEventListener('click', () => showTab(b.dataset.tab)));
     function setLang(l) {
       lang = l; document.documentElement.lang = l;
@@ -770,7 +938,7 @@
     }
     document.querySelectorAll('.lang button').forEach((b) => b.addEventListener('click', () => setLang(b.dataset.lang)));
     let rz = null; window.addEventListener('resize', () => { clearTimeout(rz); rz = setTimeout(redraw, 120); });
-    const h0 = (location.hash || '').slice(1); tab = ['bench', 'gauss', 'diff', 'check'].includes(h0) ? h0 : 'bench';
+    const h0 = (location.hash || '').slice(1); tab = ['bench', 'gauss', 'refr', 'diff', 'check'].includes(h0) ? h0 : 'bench';
     setLang(lang); showTab(tab);
   })();
   </script>
