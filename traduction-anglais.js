@@ -83,7 +83,7 @@ window.I18N_EN = {
   'p17.date': 'Oct 2026',
   'p17.title': 'Tesla coil design tool',
   'p17.desc': 'Web tool to size a Tesla coil: from the former, winding height, wire and top sphere, it computes the number of turns, inductance (Wheeler), self-capacitance (Medhurst) and sphere capacitance, the resonant frequency, then the primary tuning: flat spiral turns for a spark gap coil, or drive frequency for a solid state coil. Drawing to scale, frequency vs height chart and design warnings. Formulas checked by tests against hand-computed values. Calculation tool only, no coil built.',
-  'p18.date': 'Nov 2026',
+  'p18.date': 'Oct 2026',
   'p18.title': 'Slider-crank simulator: animation and input-output law',
   'p18.desc': 'Simulator of the mechanism that turns the rotation of a crank into the translation of a piston. From the crank radius, rod length, offset and speed, it animates the mechanism, plots piston position, velocity and acceleration over one turn, and gives the stroke, maximum values, rod angle and dead centres. It flags a rod that is too short, a high side load on the piston and the quick-return effect of the offset. Velocity and acceleration checked by numerical differentiation on 2,000 random cases.',
   'p19.date': 'Nov 2026',
