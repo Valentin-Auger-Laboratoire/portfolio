@@ -1,0 +1,528 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Ski et snowboard</title>
+  <meta name="description" content="Ski et snowboard : physique de la glisse et du virage coupé, fixation et torsion du genou, chute sur le poignet, casque et critère HIC, recherche de victimes d’avalanche au DVA, refroidissement éolien. Modèles calculés et vérifiés.">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --bg: #0c0c0d; --panel: #161618; --border: #262628; --border-hi: #3a3a3d;
+      --text: #f2f2f2; --dim: #9b9b9f; --muted: #6c6c70; --accent: #c8102e; --line: #c9c9cc; --warn: #e0a458; --ok: #8fd18f;
+      --mono: "JetBrains Mono", ui-monospace, monospace; --sans: "Inter", system-ui, sans-serif;
+      color-scheme: dark;
+    }
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    body { background: var(--bg); color: var(--text); font-family: var(--sans); line-height: 1.55; -webkit-font-smoothing: antialiased; }
+    .wrap { max-width: 1280px; margin: 0 auto; padding: 24px 16px 48px; }
+    .top { display: flex; justify-content: space-between; align-items: center; gap: 12px; flex-wrap: wrap; margin-bottom: 24px; }
+    .back { font-size: 0.9rem; color: var(--dim); text-decoration: none; }
+    .back:hover { color: var(--accent); }
+    .lang { display: flex; border: 1px solid var(--border-hi); }
+    .lang button { font: 500 0.78rem var(--mono); letter-spacing: .05em; background: none; color: var(--dim); border: 0; padding: 5px 10px; cursor: pointer; }
+    .lang button + button { border-left: 1px solid var(--border-hi); }
+    .lang button[aria-pressed="true"] { background: var(--text); color: var(--bg); }
+    .eyebrow { font: 500 0.82rem var(--mono); color: var(--accent); letter-spacing: .04em; }
+    h1 { font-size: clamp(1.6rem, 3.4vw, 2.3rem); line-height: 1.15; margin: 6px 0 10px; text-wrap: balance; }
+    .intro { color: var(--dim); max-width: 82ch; }
+    .intro a { color: var(--line); }
+    .warnbox { border: 1px solid #4a3a20; background: #1a160f; color: var(--warn); border-radius: 6px; padding: 8px 12px; font-size: 0.84rem; margin-top: 12px; }
+    .grid { display: grid; grid-template-columns: 320px minmax(0, 1fr); gap: 20px; align-items: start; margin-top: 20px; }
+    .stack { display: grid; gap: 16px; min-width: 0; }
+    .panel { background: var(--panel); border: 1px solid var(--border); border-radius: 8px; padding: 16px; min-width: 0; }
+    h2 { font: 600 0.78rem var(--mono); letter-spacing: .12em; text-transform: uppercase; color: var(--dim); margin-bottom: 12px; }
+    h3 { font: 600 0.72rem var(--mono); letter-spacing: .08em; text-transform: uppercase; color: var(--dim); margin: 14px 0 10px; padding-top: 12px; border-top: 1px solid var(--border); }
+    button:focus-visible, input:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+    .btn { font: 500 0.82rem var(--sans); background: none; color: var(--text); border: 1px solid var(--border-hi); border-radius: 6px; padding: 6px 11px; cursor: pointer; white-space: nowrap; }
+    .btn:hover { border-color: var(--accent); color: var(--accent); }
+    .btn[aria-pressed="true"] { border-color: var(--accent); color: var(--accent); }
+    .btn.primary { background: var(--accent); border-color: var(--accent); color: #fff; }
+    .seg { display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 10px; }
+    .ctl { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 2px 10px; margin-bottom: 10px; }
+    .ctl label { font: 500 0.76rem var(--mono); color: var(--dim); }
+    .ctl output { font: 0.8rem var(--mono); font-variant-numeric: tabular-nums; text-align: right; }
+    .ctl input[type=range] { grid-column: 1 / -1; width: 100%; accent-color: var(--accent); }
+    .lab { font: 500 0.74rem var(--mono); color: var(--dim); margin: 2px 0 6px; }
+    .hint { font-size: 0.8rem; color: var(--dim); margin-top: 8px; }
+    .kpis { display: grid; grid-template-columns: repeat(6, minmax(0, 1fr)); gap: 10px; }
+    .kpi { border: 1px solid var(--border); border-radius: 6px; padding: 8px 10px; min-width: 0; }
+    .kpi dt { font: 0.66rem var(--mono); color: var(--dim); }
+    .kpi dd { font: 600 1.02rem var(--sans); font-variant-numeric: tabular-nums; margin-top: 2px; }
+    .kpi dd small { font: 400 0.7rem var(--mono); color: var(--dim); margin-left: 3px; }
+    .kpi.bad dd { color: #ff8a8a; } .kpi.good dd { color: var(--ok); }
+    canvas#table { width: 100%; aspect-ratio: 240 / 150; display: block; border: 1px solid var(--border); border-radius: 6px; background: #0a0a0b; margin-top: 12px; cursor: crosshair; touch-action: none; }
+    .controls { display: flex; gap: 8px; flex-wrap: wrap; align-items: center; margin-top: 10px; font: 0.78rem var(--mono); color: var(--dim); }
+    .row2 { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 16px; }
+    .pins { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 6px; font: 0.74rem var(--mono); }
+    .pin { border: 1px solid var(--border); border-radius: 5px; padding: 5px 7px; min-width: 0; }
+    .pin b { display: block; color: var(--dim); font-weight: 500; font-size: 0.68rem; }
+    .pin span { font-variant-numeric: tabular-nums; }
+    .pin.hi { border-color: var(--accent); } .pin.hi span { color: #ff8a8a; }
+    .serial { font: 0.74rem/1.45 var(--mono); background: #0a0a0b; border: 1px solid var(--border); border-radius: 6px; padding: 8px 10px; height: 172px; overflow: hidden; color: var(--line); white-space: pre; }
+    .serial .t { color: var(--muted); }
+    .serial .w { color: #ff8a8a; }
+    .state { font: 0.8rem var(--mono); color: var(--dim); margin-top: 8px; }
+    .state b { color: var(--text); font-weight: 500; }
+    table { width: 100%; border-collapse: collapse; font: 0.8rem var(--mono); font-variant-numeric: tabular-nums; }
+    th, td { text-align: left; padding: 6px 8px; border-bottom: 1px solid var(--border); }
+    td.n, th.n { text-align: right; }
+    th { color: var(--dim); font-weight: 500; }
+    td.bad { color: #ff8a8a; } td.good { color: var(--ok); }
+    .tablewrap { overflow-x: auto; }
+    ol.review { padding-left: 1.2em; display: grid; gap: 6px; font-size: 0.86rem; color: var(--dim); }
+    ol.review b { color: var(--text); font-weight: 600; }
+    .note { font-size: 0.82rem; color: var(--dim); }
+    .note p + p { margin-top: 6px; }
+    .tabs { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 20px; border-bottom: 1px solid var(--border); }
+    .tabs button { font: 500 0.84rem var(--sans); background: none; border: 0; border-bottom: 2px solid transparent; color: var(--dim); padding: 8px 12px; cursor: pointer; }
+    .tabs button[aria-selected="true"] { color: var(--text); border-bottom-color: var(--accent); }
+    .tab[hidden] { display: none; }
+    .scen { display: grid; gap: 6px; margin-bottom: 4px; }
+    .scen .btn { text-align: left; white-space: normal; }
+    select { font: 0.8rem var(--mono); background: #0a0a0b; color: var(--text); border: 1px solid var(--border-hi); border-radius: 5px; padding: 4px 6px; }
+    .lensrow { border: 1px solid var(--border); border-radius: 6px; padding: 8px 10px 2px; margin-bottom: 8px; }
+    .lensrow .hd { display: flex; justify-content: space-between; align-items: center; gap: 8px; margin-bottom: 6px; font: 500 0.76rem var(--mono); color: var(--text); }
+    canvas.view { width: 100%; display: block; border: 1px solid var(--border); border-radius: 6px; background: #0a0a0b; }
+    #cvBench { aspect-ratio: 25 / 9; cursor: ew-resize; touch-action: none; }
+    #cvScreen { aspect-ratio: 1 / 1; max-width: 340px; background: #050505; }
+    #cvGauss { aspect-ratio: 25 / 10; }
+    #cvDiff { aspect-ratio: 25 / 6; background: #000; }
+    #cvRefr { aspect-ratio: 25 / 11; }
+    .screenrow { display: grid; grid-template-columns: minmax(0, 340px) minmax(0, 1fr); gap: 16px; align-items: start; }
+    .chart p { font: 0.72rem var(--mono); color: var(--dim); margin-bottom: 4px; display: flex; gap: 10px; flex-wrap: wrap; }
+    .chart p i { display: inline-block; width: 12px; height: 2px; vertical-align: 3px; margin-right: 5px; }
+    .chart canvas { width: 100%; height: 200px; display: block; border: 1px solid var(--border); border-radius: 6px; background: #0a0a0b; }
+    ul.issues { list-style: none; display: grid; gap: 6px; margin-top: 12px; font-size: 0.84rem; color: var(--dim); }
+    ul.issues li { padding-left: 14px; position: relative; }
+    ul.issues li::before { content: ''; position: absolute; left: 0; top: 0.55em; width: 6px; height: 6px; border-radius: 50%; background: var(--muted); }
+    ul.issues li.ok::before { background: var(--ok); } ul.issues li.bad::before { background: var(--accent); }
+    .good { color: var(--ok); } .note a { color: var(--text); }
+    .msg { font: 0.78rem var(--mono); color: var(--warn); min-height: 1.2em; margin-top: 6px; }
+    #cvPiste { aspect-ratio: 25 / 8; } #cvLean { aspect-ratio: 1 / 1; max-width: 300px; } #cvMap { aspect-ratio: 1 / 1; max-width: 560px; cursor: crosshair; }
+    .row2b { display: grid; grid-template-columns: minmax(0, 300px) minmax(0, 1fr); gap: 16px; align-items: start; }
+    @media (max-width: 760px) { .row2b { grid-template-columns: minmax(0, 1fr); } #cvLean { max-width: none; } }
+    @media (max-width: 1000px) { .grid { grid-template-columns: minmax(0, 1fr); } .main-col { order: -1; } }
+    @media (max-width: 760px) { .screenrow { grid-template-columns: minmax(0, 1fr); } #cvScreen { max-width: none; } .kpis { grid-template-columns: repeat(3, minmax(0, 1fr)); } .row2 { grid-template-columns: minmax(0, 1fr); } .pins { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+  </style>
+</head>
+<body>
+  <div class="wrap">
+    <div class="top">
+      <a class="back" href="../../index.html#projets" data-t="back">← Retour au portfolio</a>
+      <div class="lang" role="group" aria-label="Langue / Language"><button type="button" data-lang="fr">FR</button><button type="button" data-lang="en">EN</button></div>
+    </div>
+    <p class="eyebrow" data-t="eyebrow">Outil · projet personnel · ingénierie et santé</p>
+    <h1 data-t="title">Ski et snowboard : physique de la glisse et prévention des blessures</h1>
+    <p class="intro" data-t="intro"></p>
+    <p class="warnbox" data-t="warn"></p>
+    <div class="tabs" role="tablist">
+      <button type="button" role="tab" data-tab="glisse" data-t="tab1">1 · Glisse et virage</button>
+      <button type="button" role="tab" data-tab="genou" data-t="tab2">2 · Genou et fixation</button>
+      <button type="button" role="tab" data-tab="poignet" data-t="tab3">3 · Poignet (snowboard)</button>
+      <button type="button" role="tab" data-tab="casque" data-t="tab4">4 · Tête et casque</button>
+      <button type="button" role="tab" data-tab="dva" data-t="tab5">5 · Avalanche et DVA</button>
+      <button type="button" role="tab" data-tab="froid" data-t="tab6">6 · Froid</button>
+      <button type="button" role="tab" data-tab="check" data-t="tab7">7 · Vérifications</button>
+    </div>
+
+    <section class="tab" id="tab-glisse">
+      <div class="grid">
+        <div class="stack"><div class="panel" id="ctl1"></div></div>
+        <div class="stack main-col">
+          <div class="panel"><dl class="kpis" id="kpi1"></dl><canvas class="view" id="cvPiste" aria-label="Profil de la piste et vitesse"></canvas>
+            <div class="chart" style="margin-top:12px"><p><span><i style="background:var(--accent)"></i><span data-t="lgV">vitesse (km/h) le long de la piste</span></span><span><i style="background:#9b9b9f"></i><span data-t="lgVt">vitesse limite de chaque tronçon</span></span></p><canvas id="cvV"></canvas></div>
+            <ul class="issues" id="iss1"></ul></div>
+          <div class="panel"><h2 data-t="carveT">Virage coupé : rayon, angle de carre et forces</h2><dl class="kpis" id="kpi1b"></dl>
+            <div class="row2b" style="margin-top:12px"><canvas class="view" id="cvLean" aria-label="Skieur incliné dans le virage"></canvas>
+              <div class="chart"><p><span><i style="background:var(--accent)"></i><span data-t="lgTh">angle de carre nécessaire (°)</span></span><span><i style="background:#4fb3a9"></i><span data-t="lgN">facteur de charge × 20</span></span></p><canvas id="cvCarve"></canvas></div></div>
+            <p class="hint" data-t="carveHint"></p></div>
+        </div>
+      </div>
+    </section>
+
+    <section class="tab" id="tab-genou" hidden>
+      <div class="grid">
+        <div class="stack"><div class="panel" id="ctl2"></div></div>
+        <div class="stack main-col">
+          <div class="panel"><dl class="kpis" id="kpi2"></dl>
+            <div class="chart" style="margin-top:12px"><p><span><i style="background:#9b9b9f"></i><span data-t="lgSnow">couple de la neige sur le ski (N·m)</span></span><span><i style="background:var(--accent)"></i><span data-t="lgLeg">couple transmis à la jambe</span></span><span><i style="background:#e0a458"></i><span data-t="lgRel">seuil de la fixation</span></span><span><i style="background:#4fb3a9"></i><span data-t="lgInj">seuil de lésion (indicatif)</span></span></p><canvas id="cvTw" style="height:260px"></canvas></div>
+            <ul class="issues" id="iss2"></ul></div>
+          <div class="panel note"><p data-t="kneeNote1"></p><p data-t="kneeNote2"></p></div>
+        </div>
+      </div>
+    </section>
+
+    <section class="tab" id="tab-poignet" hidden>
+      <div class="grid">
+        <div class="stack"><div class="panel" id="ctl3"></div></div>
+        <div class="stack main-col">
+          <div class="panel"><dl class="kpis" id="kpi3"></dl>
+            <div class="chart" style="margin-top:12px"><p><span><i style="background:var(--accent)"></i><span id="lgW1"></span></span><span><i style="background:#9b9b9f"></i><span id="lgW2"></span></span><span><i style="background:#4fb3a9"></i><span data-t="lgFr">seuil de fracture (indicatif)</span></span></p><canvas id="cvW" style="height:240px"></canvas></div>
+            <ul class="issues" id="iss3"></ul></div>
+          <div class="panel"><h2 data-t="wTabT">Force maximale selon la neige</h2><div class="tablewrap"><table id="tabW"></table></div><p class="hint" data-t="wHint"></p></div>
+        </div>
+      </div>
+    </section>
+
+    <section class="tab" id="tab-casque" hidden>
+      <div class="grid">
+        <div class="stack"><div class="panel" id="ctl4"></div></div>
+        <div class="stack main-col">
+          <div class="panel"><dl class="kpis" id="kpi4"></dl>
+            <div class="chart" style="margin-top:12px"><p><span><i style="background:var(--accent)"></i><span data-t="lgHel">avec casque</span></span><span><i style="background:#9b9b9f"></i><span data-t="lgBare">tête nue</span></span><span><i style="background:#e0a458"></i><span data-t="lg250">250 g (limite de la norme EN 1077)</span></span></p><canvas id="cvH" style="height:240px"></canvas></div>
+            <ul class="issues" id="iss4"></ul></div>
+          <div class="panel"><h2 data-t="hTabT">Avec casque, selon la vitesse du choc</h2><div class="tablewrap"><table id="tabH"></table></div><p class="hint" data-t="hHint"></p></div>
+        </div>
+      </div>
+    </section>
+
+    <section class="tab" id="tab-dva" hidden>
+      <div class="grid">
+        <div class="stack"><div class="panel" id="ctl5"></div></div>
+        <div class="stack main-col">
+          <div class="panel"><dl class="kpis" id="kpi5"></dl>
+            <canvas class="view" id="cvMap" style="margin-top:12px" aria-label="Avalanche vue de dessus : lignes de champ de la balise et trajet de recherche"></canvas>
+            <div class="controls"><button type="button" class="btn primary" id="bAva" data-t="bAva">Nouvelle avalanche</button><button type="button" class="btn" id="bReplay" data-t="bReplay">Rejouer la recherche</button><span id="dvaRead"></span></div>
+            <p class="hint" data-t="mapHint"></p><ul class="issues" id="iss5"></ul></div>
+          <div class="panel"><div class="chart"><p><span><i style="background:var(--accent)"></i><span data-t="lgSurv">probabilité de survie d’une victime ensevelie (%) selon la durée (min)</span></span></p><canvas id="cvSurv"></canvas></div><p class="hint" data-t="survHint"></p></div>
+        </div>
+      </div>
+    </section>
+
+    <section class="tab" id="tab-froid" hidden>
+      <div class="grid">
+        <div class="stack"><div class="panel" id="ctl6"></div></div>
+        <div class="stack main-col">
+          <div class="panel"><dl class="kpis" id="kpi6"></dl>
+            <div class="chart" style="margin-top:12px"><p><span><i style="background:var(--accent)"></i><span data-t="lgWc">température ressentie (°C) selon la vitesse du skieur (km/h)</span></span></p><canvas id="cvC"></canvas></div>
+            <ul class="issues" id="iss6"></ul></div>
+        </div>
+      </div>
+    </section>
+
+    <section class="tab" id="tab-check" hidden>
+      <div class="panel" style="margin-top:20px"><h2 data-t="checkT">Vérifications calculées en direct</h2><div class="tablewrap"><table id="tabCheck"></table></div><p class="hint" data-t="checkHint"></p></div>
+    </section>
+
+    <div class="panel note" style="margin-top:20px"><p data-t="note1"></p><p data-t="note2"></p><p data-t="note3"></p></div>
+  </div>
+  <script src="hiver.js"></script>
+  <script>
+  (function () {
+    'use strict';
+    const H = window.Hiver, $ = (id) => document.getElementById(id), DEG = Math.PI / 180, KMH = 3.6;
+    let lang = 'fr';
+    try { lang = localStorage.getItem('lang') || ((navigator.language || 'fr').toLowerCase().startsWith('fr') ? 'fr' : 'en'); } catch (e) {}
+    const T = {
+      fr: {
+        back: '← Retour au portfolio', eyebrow: 'Outil · projet personnel · ingénierie et santé', title: 'Ski et snowboard : physique de la glisse et prévention des blessures',
+        intro: "J'aime le ski et le snowboard, alors j'en ai fait un projet d'ingénieur tourné vers la santé, comme à mon école. D'abord la physique : pourquoi on va si vite sur une piste rouge, et jusqu'où un ski peut tourner « en coupé ». Ensuite ce qui blesse et ce qui protège : la fixation qui doit lâcher avant le genou, le poignet du snowboardeur, le casque et ses limites, la recherche d'une victime d'avalanche avec un DVA, et le froid. Chaque partie est un modèle physique calculé et vérifié.",
+        warn: "Modèles simplifiés et seuils de lésion ILLUSTRATIFS (ordres de grandeur de la littérature). Ce n'est pas un outil médical. Ne réglez jamais vos fixations avec cet outil : c'est le rôle d'un technicien certifié (norme ISO 11088).",
+        tab1: '1 · Glisse et virage', tab2: '2 · Genou et fixation', tab3: '3 · Poignet (snowboard)', tab4: '4 · Tête et casque', tab5: '5 · Avalanche et DVA', tab6: '6 · Froid', tab7: '7 · Vérifications',
+        lgV: 'vitesse (km/h) le long de la piste', lgVt: 'vitesse limite de chaque tronçon', carveT: 'Virage coupé : rayon, angle de carre et forces', lgTh: 'angle de carre nécessaire (°)', lgN: 'facteur de charge × 20',
+        carveHint: "Ski posé sur sa carre avec un angle θ : il se cintre et trace un virage de rayon R = R_sc·cos θ (R_sc = rayon de cotation, gravé sur le ski). Pour tenir l'équilibre, l'inclinaison doit vérifier tan θ = v²/(g R), donc sin θ = v²/(g R_sc). Au-delà de v = √(g R_sc), le virage coupé pur est impossible : il faut déraper. Une planche de snowboard (R_sc ≈ 8 m) atteint cette limite bien plus tôt qu'un ski de géant.",
+        lgSnow: 'couple de la neige sur le ski (N·m)', lgLeg: 'couple transmis à la jambe', lgRel: 'seuil de la fixation', lgInj: 'seuil de lésion (indicatif)',
+        kneeNote1: "Modèle : le ski et la chaussure (inertie I autour de l'axe du tibia) reçoivent un couple de la neige ; la fixation, élastique, est en série avec la jambe (raideur en torsion). Tant que la fixation tient, la jambe reçoit le même couple qu'elle ; au-delà de son seuil, elle libère la chaussure. Bien réglée, elle lâche avant la jambe mais pas pendant un virage normal ; son élasticité laisse passer les chocs très brefs.",
+        kneeNote2: "Limite importante : les fixations protègent bien le tibia (fractures en torsion devenues rares), beaucoup moins le ligament croisé antérieur, souvent rompu dans des chutes en arrière (mécanisme du « pied fantôme ») où le couple ne dépasse pas le seuil de déclenchement. C'est encore un sujet de recherche en ingénierie biomédicale.",
+        lgFr: 'seuil de fracture (indicatif)', wTabT: 'Force maximale selon la neige', wHint: "Chute sur la main tendue : une masse effective (une partie du corps) arrive sur la main ; le bras et la neige se comportent comme des ressorts en série, le pic de force vaut environ v·√(k·m). Une neige dure (glacée) donne un choc bien plus violent. Le protège-poignet ajoute une couche qui s'écrase à force presque constante et, surtout dans la réalité, une attelle qui limite l'extension du poignet (non modélisée ici).",
+        lgHel: 'avec casque', lgBare: 'tête nue', lg250: '250 g (limite de la norme EN 1077)', hTabT: 'Avec casque, selon la vitesse du choc', hHint: "La mousse du casque (polystyrène expansé) s'écrase à contrainte presque constante : elle allonge la durée du choc et limite l'accélération. Mais son épaisseur est limitée : au-delà de la vitesse pour laquelle il est testé (5,42 m/s ≈ 20 km/h, chute d'environ 1,5 m), la mousse arrive au bout de sa course et l'accélération remonte. Le casque réduit beaucoup les blessures à basse vitesse, il ne rend pas un choc contre un arbre à 50 km/h survivable sans risque.",
+        bAva: 'Nouvelle avalanche', bReplay: 'Rejouer la recherche', mapHint: "La balise de la victime émet un champ magnétique de dipôle (457 kHz). Le DVA du sauveteur indique la direction du champ : en la suivant, on avance le long d'une ligne de champ courbe (recherche « en lignes de flux »). La distance affichée suppose qu'on est dans l'axe de la balise : elle est exacte dans l'axe et surestimée jusqu'à ×1,26 sur le côté. Clique sur la carte pour placer le sauveteur.",
+        lgSurv: 'probabilité de survie d’une victime ensevelie (%) selon la durée (min)', survHint: "Courbe approchée d'après Brugger et al. (2001) : plus de 90 % de survie si la victime est dégagée en moins de 18 minutes, environ un tiers après 35 minutes (asphyxie). D'où la règle : ce sont les compagnons équipés (DVA, pelle, sonde) qui sauvent, pas les secours qui arrivent plus tard.",
+        lgWc: 'température ressentie (°C) selon la vitesse du skieur (km/h)', checkT: 'Vérifications calculées en direct', checkHint: 'Le moteur a aussi un fichier de tests (node tests/test.js) : 468 vérifications.',
+        note1: "Ce que je retiens : la physique explique pourquoi les blessures diffèrent entre skieurs (genou, torsion) et snowboardeurs (poignet, chute vers l'avant ou l'arrière), et ce que chaque protection peut ou ne peut pas faire. Les ordres de grandeur comptent plus que les décimales.",
+        note2: "Modèles : descente en schuss (frottement de Coulomb + traînée quadratique, densité de l'air selon l'altitude), virage coupé idéal sur le plat (formule de Howe), torsion à 1 degré de liberté, impacts masse-ressort-amortisseur, mousse à plateau avec aire de contact sphérique, HIC sur 15 ms, champ de dipôle magnétique, indice de refroidissement éolien d'Environnement Canada.",
+        note3: "Sources : formule du refroidissement éolien JAG/TI (2001) ; courbe de risque HIC → AIS ≥ 3 de Prasad et Mertz reprise par la NHTSA ; survie en avalanche d'après Brugger et al. (2001) ; test du casque : norme EN 1077 (5,42 m/s, 250 g). Seuils de fracture et raideurs : valeurs indicatives.",
+        rider: 'Pratiquant', ski: 'Skieur (position haute)', tuck: 'Skieur en position de recherche de vitesse', board: 'Snowboardeur', snow: 'Neige', snowCold: 'froide et sèche (μ ≈ 0,04)', snowMid: 'transformée (μ ≈ 0,07)', snowWet: 'mouillée (μ ≈ 0,12)', mass: 'masse (avec le matériel)', alt: 'altitude', piste: 'Piste', pistes: { verte: 'verte', bleue: 'bleue', rouge: 'rouge', noire: 'noire' }, Rsc: 'rayon de cotation R_sc', vC: 'vitesse en virage',
+        k1: { vmax: 'vitesse maxi', T: 'durée', vt: 'vitesse limite (tronçon le plus raide)', h: 'chute équivalente', E: 'énergie cinétique maxi', drop: 'dénivelé' },
+        k1b: { R: 'rayon du virage', th: 'angle de carre', n: 'facteur de charge', vmax: 'vitesse maxi en coupé', a: 'accélération latérale' },
+        i1: { h: (v, h, hn) => 'À ' + v + ' km/h, l’énergie d’un choc est celle d’une chute de ' + h + ' m' + (hn >= 3 ? ' (environ ' + Math.round(hn / 3) + ' étage' + (Math.round(hn / 3) > 1 ? 's' : '') + ' d’immeuble).' : '.'), schuss: 'Descente « tout droit » (schuss) : en vrai, on freine en enchaînant les virages, qui dissipent l’énergie.', stop: 'Pente trop faible : le pratiquant s’arrête (faux plat).' },
+        noCarve: 'au-delà de la limite : dérapage obligatoire',
+        scen: 'Situation', sc: { turn: 'Virage normal (35 N·m, lent)', catch: 'Carre qui accroche (120 N·m en 50 ms)', slow: 'Chute lente en torsion (90 N·m en 0,3 s)', spike: 'Choc très bref (150 N·m pendant 5 ms)' }, Mrel: 'seuil de déclenchement de la fixation', Minj: 'seuil de lésion de la jambe (indicatif)', Mpk: 'couple maximal de la neige', rise: 'durée de montée',
+        k2: { rel: 'fixation', t: 'instant du déclenchement', peak: 'couple maxi sur la jambe', marg: 'marge avant lésion' }, relYes: 'libérée', relNo: 'tenue',
+        i2: { inj: 'Le couple sur la jambe dépasse le seuil de lésion : risque de fracture en torsion. Fixation réglée trop fort pour cette chute.', ok: 'La jambe reste sous le seuil de lésion.', early: 'Déclenchement pendant un virage normal : réglage trop faible, le ski se décroche sans raison (risque de chute).', spike: 'Choc bref filtré : l’inertie du ski et l’élasticité de la fixation évitent un déclenchement inutile.', dyn: 'Amplification dynamique : un couple appliqué brusquement fait osciller l’ensemble ski + jambe et peut dépasser le couple de la neige.' },
+        snow3: 'Neige au point d’impact', s3: { pow: 'poudreuse', groom: 'damée', ice: 'glacée' }, prot: 'Protège-poignet', on: 'oui', off: 'non', v0: 'vitesse de la main à l’impact', meff: 'masse effective', thr: 'seuil de fracture (indicatif)',
+        k3: { peak: 'force maxi', ratio: 'part du seuil', E: 'énergie à absorber', dur: 'durée du choc' },
+        i3: { fr: 'Force supérieure au seuil indicatif : risque de fracture du poignet.', ok: 'Force sous le seuil indicatif.', prot: (p) => 'Le protège-poignet réduit le pic de ' + p + ' %.' }, wCols: ['Neige', 'sans protection', 'avec protège-poignet'],
+        speed: 'vitesse du choc', surf: 'Surface', sf: { pow: 'neige poudreuse', groom: 'neige damée', ice: 'glace (comme l’enclume du test)', tree: 'arbre ou rocher' }, helmet: 'Casque', th: 'épaisseur de mousse', sp: 'résistance de la mousse', presetH: 'Vitesses', ph: { test: 'test de la norme (19,5 km/h)', mid: '30 km/h', fast: '50 km/h' },
+        k4: { pk: 'accélération maxi', hic: 'HIC 15 ms', p: 'risque AIS ≥ 3 (indicatif)', crush: 'mousse écrasée', bare: 'tête nue : maxi' },
+        i4: { pass: 'Sous 250 g : ce choc serait accepté par le test de la norme.', fail: 'Au-delà de 250 g.', bottom: 'La mousse arrive en fin de course (densification) : le casque ne peut plus amortir davantage.', soft: 'Sur neige molle, c’est la neige qui amortit : le casque change peu de chose.' }, hCols: ['Vitesse', 'accélération maxi', 'HIC', 'risque AIS ≥ 3', 'mousse écrasée'],
+        depth: 'profondeur d’ensevelissement', walk: 'vitesse de marche sur l’avalanche', rescuers: 'sauveteurs qui pellettent',
+        k5: { L: 'trajet de recherche', d: 'ligne droite', ratio: 'trajet / ligne droite', tot: 'durée du sauvetage', surv: 'survie estimée', shown: 'distance affichée au départ' },
+        i5: { split: (f, a, b, c, d) => 'Durée : recherche du premier signal ' + f + ' min + suivi des lignes de champ ' + a + ' min + localisation fine ' + b + ' min + sondage ' + c + ' min + pelletage ' + d + ' min (ordres de grandeur).', curve: 'Les lignes de champ sont courbes : le trajet est plus long que la ligne droite, mais il mène toujours à la balise.', dig: 'Le pelletage est souvent la phase la plus longue : plusieurs sauveteurs et une bonne technique changent tout.', noDva: 'Sans DVA ni compagnons, la recherche par sondage en ligne prend des heures : la survie devient très faible.' },
+        temp: 'température de l’air', wind: 'vent', vski: 'vitesse du skieur',
+        k6: { still: 'ressenti à l’arrêt', run: 'ressenti en descente', cat: 'risque', wtot: 'vent relatif' },
+        cats: ['faible', 'faible (inconfort)', 'modéré : gelures possibles en 10 à 30 min', 'élevé : gelures en 5 à 10 min', 'très élevé : gelures en 2 à 5 min', 'extrême : gelures en moins de 2 min'],
+        i6: { speed: 'En descente, la vitesse s’ajoute au vent : à 50 km/h face au vent, le froid ressenti chute fortement. Couvrir le visage et les extrémités.', note: 'Indice d’Environnement Canada (vent mesuré à 10 m) ; on additionne la vitesse du skieur au vent, cas le plus défavorable (face au vent).' },
+        chk: ['Vérification', 'Calcul', 'Attendu', ''],
+      },
+      en: {
+        back: '← Back to portfolio', eyebrow: 'Tool · personal project · engineering and health', title: 'Skiing and snowboarding: physics of gliding and injury prevention',
+        intro: "I love skiing and snowboarding, so I turned them into an engineering project focused on health, as at my school. First the physics: why you go so fast on a red run, and how far a ski can turn \"carved\". Then what injures and what protects: the binding that must release before the knee, the snowboarder's wrist, the helmet and its limits, finding an avalanche victim with a transceiver, and the cold. Each part is a physical model, computed and checked.",
+        warn: 'Simplified models and ILLUSTRATIVE injury thresholds (orders of magnitude from the literature). Not a medical tool. Never set your bindings with this tool: that is the job of a certified technician (ISO 11088).',
+        tab1: '1 · Gliding and turns', tab2: '2 · Knee and binding', tab3: '3 · Wrist (snowboard)', tab4: '4 · Head and helmet', tab5: '5 · Avalanche and transceiver', tab6: '6 · Cold', tab7: '7 · Checks',
+        lgV: 'speed (km/h) along the run', lgVt: 'terminal speed of each section', carveT: 'Carved turn: radius, edge angle and forces', lgTh: 'edge angle needed (°)', lgN: 'load factor × 20',
+        carveHint: "A ski on its edge at an angle θ bends and carves a turn of radius R = R_sc·cos θ (R_sc = sidecut radius, printed on the ski). To stay balanced, the lean must satisfy tan θ = v²/(g R), hence sin θ = v²/(g R_sc). Above v = √(g R_sc), a pure carved turn is impossible: you must skid. A snowboard (R_sc ≈ 8 m) reaches this limit much earlier than a giant-slalom ski.",
+        lgSnow: 'snow torque on the ski (N·m)', lgLeg: 'torque transmitted to the leg', lgRel: 'binding release threshold', lgInj: 'injury threshold (indicative)',
+        kneeNote1: "Model: ski and boot (inertia I about the tibia axis) receive a torque from the snow; the elastic binding is in series with the leg (torsional stiffness). While the binding holds, the leg gets the same torque; beyond its threshold it releases the boot. Well set, it releases before the leg fails but not during a normal turn; its elasticity lets very short shocks pass.",
+        kneeNote2: "Important limit: bindings protect the tibia well (torsion fractures have become rare), much less the anterior cruciate ligament, often torn in backward falls (\"phantom foot\" mechanism) where the torque does not exceed the release threshold. It is still a biomedical engineering research topic.",
+        lgFr: 'fracture threshold (indicative)', wTabT: 'Peak force versus snow', wHint: "Fall on the outstretched hand: an effective mass (part of the body) lands on the hand; arm and snow act as springs in series, the peak force is about v·√(k·m). Hard (icy) snow gives a much harsher impact. The wrist guard adds a layer that crushes at almost constant force and, above all in reality, a splint that limits wrist extension (not modelled here).",
+        lgHel: 'with helmet', lgBare: 'bare head', lg250: '250 g (EN 1077 limit)', hTabT: 'With helmet, versus impact speed', hHint: "The helmet foam (expanded polystyrene) crushes at almost constant stress: it lengthens the impact and limits the acceleration. But its thickness is limited: beyond the speed it is tested at (5.42 m/s ≈ 20 km/h, a fall of about 1.5 m), the foam bottoms out and the acceleration rises again. Helmets greatly reduce injuries at low speed; they do not make hitting a tree at 50 km/h safe.",
+        bAva: 'New avalanche', bReplay: 'Replay the search', mapHint: "The victim's transceiver emits a magnetic dipole field (457 kHz). The rescuer's transceiver shows the field direction: following it, you walk along a curved field line (\"flux line\" search). The displayed distance assumes you are on the transmitter axis: exact on the axis, overestimated by up to ×1.26 on the side. Click the map to place the rescuer.",
+        lgSurv: 'survival probability of a buried victim (%) versus time (min)', survHint: "Approximate curve after Brugger et al. (2001): above 90% survival if the victim is dug out within 18 minutes, about a third after 35 minutes (asphyxia). Hence the rule: equipped companions (transceiver, shovel, probe) save lives, not rescue teams arriving later.",
+        lgWc: 'felt temperature (°C) versus skier speed (km/h)', checkT: 'Checks computed live', checkHint: 'The engine also has a test file (node tests/test.js): 468 checks.',
+        note1: 'What I take away: physics explains why injuries differ between skiers (knee, torsion) and snowboarders (wrist, forward or backward falls), and what each protection can or cannot do. Orders of magnitude matter more than decimals.',
+        note2: "Models: straight descent (Coulomb friction + quadratic drag, air density versus altitude), ideal carved turn on flat ground (Howe's formula), 1-degree-of-freedom torsion, mass-spring-damper impacts, plateau foam with spherical contact area, 15 ms HIC, magnetic dipole field, Environment Canada wind chill index.",
+        note3: 'Sources: JAG/TI wind chill formula (2001); Prasad and Mertz HIC → AIS ≥ 3 risk curve used by NHTSA; avalanche survival after Brugger et al. (2001); helmet test: EN 1077 (5.42 m/s, 250 g). Fracture thresholds and stiffnesses: indicative values.',
+        rider: 'Rider', ski: 'Skier (upright)', tuck: 'Skier in tuck position', board: 'Snowboarder', snow: 'Snow', snowCold: 'cold and dry (μ ≈ 0.04)', snowMid: 'transformed (μ ≈ 0.07)', snowWet: 'wet (μ ≈ 0.12)', mass: 'mass (with gear)', alt: 'altitude', piste: 'Run', pistes: { verte: 'green', bleue: 'blue', rouge: 'red', noire: 'black' }, Rsc: 'sidecut radius R_sc', vC: 'speed in the turn',
+        k1: { vmax: 'top speed', T: 'duration', vt: 'terminal speed (steepest section)', h: 'equivalent fall', E: 'max kinetic energy', drop: 'vertical drop' },
+        k1b: { R: 'turn radius', th: 'edge angle', n: 'load factor', vmax: 'max carving speed', a: 'lateral acceleration' },
+        i1: { h: (v, h, hn) => 'At ' + v + ' km/h, the energy of an impact equals a fall of ' + h + ' m' + (hn >= 3 ? ' (about ' + Math.round(hn / 3) + ' storey' + (Math.round(hn / 3) > 1 ? 's' : '') + ' of a building).' : '.'), schuss: 'Straight descent (schuss): in reality you brake by linking turns, which dissipate energy.', stop: 'Slope too gentle: the rider stops (flat section).' },
+        noCarve: 'beyond the limit: skidding required',
+        scen: 'Situation', sc: { turn: 'Normal turn (35 N·m, slow)', catch: 'Edge catch (120 N·m in 50 ms)', slow: 'Slow twisting fall (90 N·m in 0.3 s)', spike: 'Very short shock (150 N·m for 5 ms)' }, Mrel: 'binding release threshold', Minj: 'leg injury threshold (indicative)', Mpk: 'peak snow torque', rise: 'rise time',
+        k2: { rel: 'binding', t: 'release time', peak: 'peak torque on the leg', marg: 'margin before injury' }, relYes: 'released', relNo: 'held',
+        i2: { inj: 'The leg torque exceeds the injury threshold: risk of torsion fracture. Binding set too high for this fall.', ok: 'The leg stays below the injury threshold.', early: 'Release during a normal turn: setting too low, the ski comes off for no reason (risk of falling).', spike: 'Short shock filtered: ski inertia and binding elasticity avoid a needless release.', dyn: 'Dynamic amplification: a suddenly applied torque makes the ski + leg system oscillate and can exceed the snow torque.' },
+        snow3: 'Snow at impact', s3: { pow: 'powder', groom: 'groomed', ice: 'icy' }, prot: 'Wrist guard', on: 'yes', off: 'no', v0: 'hand speed at impact', meff: 'effective mass', thr: 'fracture threshold (indicative)',
+        k3: { peak: 'peak force', ratio: 'share of threshold', E: 'energy to absorb', dur: 'impact duration' },
+        i3: { fr: 'Force above the indicative threshold: risk of wrist fracture.', ok: 'Force below the indicative threshold.', prot: (p) => 'The wrist guard reduces the peak by ' + p + '%.' }, wCols: ['Snow', 'no protection', 'with wrist guard'],
+        speed: 'impact speed', surf: 'Surface', sf: { pow: 'powder snow', groom: 'groomed snow', ice: 'ice (like the test anvil)', tree: 'tree or rock' }, helmet: 'Helmet', th: 'foam thickness', sp: 'foam strength', presetH: 'Speeds', ph: { test: 'standard test (19.5 km/h)', mid: '30 km/h', fast: '50 km/h' },
+        k4: { pk: 'peak acceleration', hic: 'HIC 15 ms', p: 'AIS ≥ 3 risk (indicative)', crush: 'foam crushed', bare: 'bare head: peak' },
+        i4: { pass: 'Below 250 g: this impact would pass the standard test.', fail: 'Above 250 g.', bottom: 'The foam bottoms out (densification): the helmet cannot absorb any more.', soft: 'On soft snow, the snow does the absorbing: the helmet changes little.' }, hCols: ['Speed', 'peak acceleration', 'HIC', 'AIS ≥ 3 risk', 'foam crushed'],
+        depth: 'burial depth', walk: 'walking speed on the debris', rescuers: 'rescuers shovelling',
+        k5: { L: 'search path', d: 'straight line', ratio: 'path / straight line', tot: 'rescue duration', surv: 'estimated survival', shown: 'distance shown at start' },
+        i5: { split: (f, a, b, c, d) => 'Duration: first-signal search ' + f + ' min + following field lines ' + a + ' min + fine search ' + b + ' min + probing ' + c + ' min + shovelling ' + d + ' min (orders of magnitude).', curve: 'Field lines are curved: the path is longer than the straight line, but it always leads to the transmitter.', dig: 'Shovelling is often the longest phase: several rescuers and a good technique change everything.', noDva: 'Without transceivers or companions, a probe line search takes hours: survival becomes very low.' },
+        temp: 'air temperature', wind: 'wind', vski: 'skier speed',
+        k6: { still: 'felt standing still', run: 'felt while skiing', cat: 'risk', wtot: 'relative wind' },
+        cats: ['low', 'low (discomfort)', 'moderate: frostbite possible in 10 to 30 min', 'high: frostbite in 5 to 10 min', 'very high: frostbite in 2 to 5 min', 'extreme: frostbite in under 2 min'],
+        i6: { speed: 'When skiing, your speed adds to the wind: at 50 km/h into the wind, the felt cold drops sharply. Cover your face and extremities.', note: 'Environment Canada index (wind measured at 10 m); the skier speed is added to the wind, the worst case (into the wind).' },
+        chk: ['Check', 'Computed', 'Expected', ''],
+      },
+    };
+    const t = (k) => (T[lang][k] !== undefined ? T[lang][k] : T.fr[k]);
+    const fmt = (v, d) => (isFinite(v) ? (Math.abs(v) < 0.5 * Math.pow(10, -d) ? 0 : v).toFixed(d) : '—').replace('.', lang === 'fr' ? ',' : '.');
+    function setup(cv) { const dpr = window.devicePixelRatio || 1, w = cv.clientWidth, h = cv.clientHeight; if (cv.width !== Math.round(w * dpr) || cv.height !== Math.round(h * dpr)) { cv.width = Math.round(w * dpr); cv.height = Math.round(h * dpr); } const c = cv.getContext('2d'); c.setTransform(dpr, 0, 0, dpr, 0, 0); return { c, w, h }; }
+    function seg(box, list, cur, onPick) { const s = document.createElement('div'); s.className = 'seg'; list.forEach(([v, l]) => { const b = document.createElement('button'); b.type = 'button'; b.className = 'btn'; b.textContent = l; b.setAttribute('aria-pressed', String(v) === String(cur)); b.addEventListener('click', () => onPick(v)); s.appendChild(b); }); box.appendChild(s); return s; }
+    function slider(box, label, val, min, max, step, show, onInput) { const d = document.createElement('div'); d.className = 'ctl'; const id = 'r' + Math.random().toString(36).slice(2, 7); d.innerHTML = '<label for="' + id + '">' + label + '</label><output></output><input type="range" id="' + id + '" min="' + min + '" max="' + max + '" step="' + step + '">'; const i = d.querySelector('input'), o = d.querySelector('output'); i.value = val; o.textContent = show(+i.value); i.addEventListener('input', () => { o.textContent = show(+i.value); onInput(+i.value); }); box.appendChild(d); }
+    const h3 = (box, txt, first) => { const h = document.createElement('h3'); h.textContent = txt; if (first) h.style.cssText = 'margin-top:0;padding-top:0;border:0'; box.appendChild(h); };
+    const kpi = (k, v, u, cls) => '<div class="kpi' + (cls ? ' ' + cls : '') + '"><dt>' + k + '</dt><dd>' + v + (u ? '<small>' + u + '</small>' : '') + '</dd></div>';
+    const issues = (id, L) => { $(id).innerHTML = L.map(([c, x]) => '<li class="' + c + '">' + x + '</li>').join(''); };
+    function scenBox(box, list, cur, onPick) { const sc = document.createElement('div'); sc.className = 'scen'; list.forEach(([k, l]) => { const b = document.createElement('button'); b.type = 'button'; b.className = 'btn'; b.textContent = l; b.setAttribute('aria-pressed', cur === k); b.addEventListener('click', () => onPick(k)); sc.appendChild(b); }); box.appendChild(sc); }
+    function lineChart(cv, series, xlo, xhi, ylo, yhi, xl, yl, nd, hlines) {
+      const { c, w, h } = setup(cv); c.fillStyle = '#0a0a0b'; c.fillRect(0, 0, w, h);
+      const pl = 46, pb = 22, X = (x) => pl + ((x - xlo) / (xhi - xlo)) * (w - pl - 10), Y = (y) => 8 + (1 - (y - ylo) / (yhi - ylo)) * (h - 8 - pb);
+      c.font = '10px "JetBrains Mono", monospace'; c.fillStyle = '#6c6c70'; c.strokeStyle = '#1e1e21'; c.lineWidth = 1;
+      for (let k = 0; k <= 4; k++) { const v = ylo + ((yhi - ylo) * k) / 4; c.beginPath(); c.moveTo(pl, Y(v)); c.lineTo(w - 10, Y(v)); c.stroke(); c.textAlign = 'right'; c.fillText(fmt(v, nd ? nd[1] : 0), pl - 4, Y(v) + 3); }
+      for (let k = 0; k <= 5; k++) { const v = xlo + ((xhi - xlo) * k) / 5; c.textAlign = 'center'; c.fillText(fmt(v, nd ? nd[0] : 0), X(v), h - 8); }
+      c.textAlign = 'right'; c.fillStyle = '#9b9b9f'; c.fillText(xl, w - 12, h - 20); c.textAlign = 'left'; c.fillText(yl, pl + 4, 18);
+      (hlines || []).forEach(([y, col]) => { c.strokeStyle = col; c.setLineDash([5, 4]); c.beginPath(); c.moveTo(pl, Y(y)); c.lineTo(w - 10, Y(y)); c.stroke(); c.setLineDash([]); });
+      series.forEach(([xs, ys, col, lw, dash]) => { c.strokeStyle = col; c.lineWidth = lw || 1.8; c.setLineDash(dash || []); c.beginPath(); let st = false; xs.forEach((x, k) => { const y = ys[k]; if (!isFinite(x) || !isFinite(y)) { st = false; return; } const p = [X(x), Y(Math.max(ylo, Math.min(yhi, y)))]; st ? c.lineTo(...p) : c.moveTo(...p); st = true; }); c.stroke(); c.setLineDash([]); });
+      return { c, X, Y, w, h };
+    }
+
+    // =========================================================== 1. GLISSE
+    const PISTES = { verte: [{ L: 400, deg: 6 }, { L: 300, deg: 10 }, { L: 300, deg: 5 }], bleue: [{ L: 300, deg: 10 }, { L: 400, deg: 15 }, { L: 300, deg: 8 }], rouge: [{ L: 250, deg: 12 }, { L: 400, deg: 22 }, { L: 250, deg: 10 }, { L: 200, deg: 18 }], noire: [{ L: 200, deg: 15 }, { L: 350, deg: 30 }, { L: 200, deg: 18 }, { L: 250, deg: 26 }] };
+    const RIDERS = { ski: { CdA: 0.5, Rsc: 16 }, tuck: { CdA: 0.2, Rsc: 16 }, board: { CdA: 0.55, Rsc: 8 } };
+    const G1 = { rider: 'ski', mu: 0.07, m: 80, alt: 2000, piste: 'rouge', Rsc: 16, vC: 30 };
+    let R1 = null, anim1 = 0;
+    function renderCtl1() {
+      const box = $('ctl1'); box.innerHTML = '';
+      h3(box, t('rider'), true); scenBox(box, [['ski', t('ski')], ['tuck', t('tuck')], ['board', t('board')]], G1.rider, (v) => { G1.rider = v; G1.Rsc = RIDERS[v].Rsc; renderCtl1(); compute1(); });
+      h3(box, t('snow')); scenBox(box, [[0.04, t('snowCold')], [0.07, t('snowMid')], [0.12, t('snowWet')]], G1.mu, (v) => { G1.mu = v; renderCtl1(); compute1(); });
+      h3(box, t('piste')); seg(box, Object.keys(PISTES).map((k) => [k, t('pistes')[k]]), G1.piste, (v) => { G1.piste = v; renderCtl1(); compute1(); });
+      slider(box, t('mass'), G1.m, 40, 120, 1, (v) => fmt(v, 0) + ' kg', (v) => { G1.m = v; compute1(); });
+      slider(box, t('alt'), G1.alt, 0, 4000, 50, (v) => fmt(v, 0) + ' m', (v) => { G1.alt = v; compute1(); });
+      h3(box, t('carveT').split(':')[0]); slider(box, t('Rsc'), G1.Rsc, 5, 30, 0.5, (v) => fmt(v, 1) + ' m', (v) => { G1.Rsc = v; draw1b(); });
+      slider(box, t('vC'), G1.vC, 5, 80, 1, (v) => fmt(v, 0) + ' km/h', (v) => { G1.vC = v; draw1b(); });
+    }
+    function compute1() {
+      const rd = RIDERS[G1.rider], segs = PISTES[G1.piste]; R1 = H.runPiste({ m: G1.m, mu: G1.mu, CdA: rd.CdA, alt: G1.alt, v0: 1, dt: 0.02, segs }); R1.segs = segs;
+      R1.vts = segs.map((q) => H.terminalSpeed(G1.m, q.deg * DEG, G1.mu, rd.CdA, R1.rho));
+      const vt = Math.max(...R1.vts), hEq = H.equivHeight(R1.vmax), k = t('k1');
+      $('kpi1').innerHTML = kpi(k.vmax, fmt(R1.vmax * KMH, 0), 'km/h') + kpi(k.T, fmt(R1.T, 0), 's') + kpi(k.vt, fmt(vt * KMH, 0), 'km/h') + kpi(k.h, fmt(hEq, 1), 'm', hEq > 5 ? 'bad' : '') + kpi(k.E, fmt(0.5 * G1.m * R1.vmax * R1.vmax / 1000, 1), 'kJ') + kpi(k.drop, fmt(R1.drop, 0), 'm');
+      const L = [['', t('i1').h(fmt(R1.vmax * KMH, 0), fmt(hEq, 1), hEq)], ['', t('i1').schuss]]; if (R1.stopped) L.push(['bad', t('i1').stop]); issues('iss1', L);
+      const ser = [[R1.s, R1.v.map((v) => v * KMH), '#c8102e', 2]]; let acc = 0; segs.forEach((q, i) => { ser.push([[acc, acc + q.L], [R1.vts[i] * KMH, R1.vts[i] * KMH], '#9b9b9f', 1, [5, 4]]); acc += q.L; });
+      lineChart($('cvV'), ser, 0, R1.Ltot, 0, Math.ceil(Math.max(R1.vmax * KMH, ...R1.vts.map((v) => v * KMH)) / 20) * 20 + 10, 's (m)', 'km/h');
+      anim1 = performance.now(); draw1b();
+    }
+    function drawPiste(frac) {
+      const { c, w, h } = setup($('cvPiste')), R = R1; c.fillStyle = '#0a0a0b'; c.fillRect(0, 0, w, h);
+      // profil (x horizontal, z) à la même échelle
+      const pts = [[0, 0]]; let x = 0, z = 0; R.segs.forEach((q) => { x += q.L * Math.cos(q.deg * DEG); z -= q.L * Math.sin(q.deg * DEG); pts.push([x, z]); });
+      const xm = x, zm = -z, sc = Math.min((w - 40) / xm, (h - 30) / zm), X = (xx) => 20 + xx * sc, Y = (zz) => 15 + -zz * sc;
+      c.fillStyle = 'rgba(242,242,242,0.08)'; c.beginPath(); c.moveTo(X(0), Y(0)); pts.forEach(([a, b]) => c.lineTo(X(a), Y(b))); c.lineTo(X(xm), h); c.lineTo(X(0), h); c.closePath(); c.fill();
+      c.strokeStyle = '#f2f2f2'; c.lineWidth = 2; c.beginPath(); pts.forEach(([a, b], i) => (i ? c.lineTo(X(a), Y(b)) : c.moveTo(X(a), Y(b)))); c.stroke();
+      c.font = '10px "JetBrains Mono", monospace'; c.fillStyle = '#9b9b9f'; c.textAlign = 'center'; R.segs.forEach((q, i) => { const a = pts[i], b = pts[i + 1]; c.fillText(q.deg + '°', X((a[0] + b[0]) / 2), Y((a[1] + b[1]) / 2) - 8); });
+      // position du pratiquant
+      const tt = frac * R.T; let k = 0; while (k < R.t.length - 1 && R.t[k + 1] < tt) k++; const s = R.s[k]; let acc = 0, px = 0, pz = 0;
+      for (let i = 0; i < R.segs.length; i++) { const q = R.segs[i]; if (s <= acc + q.L) { const f = s - acc; px += f * Math.cos(q.deg * DEG); pz -= f * Math.sin(q.deg * DEG); break; } acc += q.L; px += q.L * Math.cos(q.deg * DEG); pz -= q.L * Math.sin(q.deg * DEG); }
+      c.fillStyle = '#c8102e'; c.beginPath(); c.arc(X(px), Y(pz) - 5, 5, 0, 7); c.fill(); c.fillStyle = '#f2f2f2'; c.textAlign = 'left'; c.font = '600 13px Inter, sans-serif'; c.fillText(fmt(R.v[k] * KMH, 0) + ' km/h', X(px) + 9, Y(pz) - 10);
+      c.font = '10px "JetBrains Mono", monospace'; c.fillStyle = '#6c6c70'; c.textAlign = 'right'; c.fillText('t = ' + fmt(tt, 0) + ' s', w - 8, 14);
+    }
+    function draw1b() {
+      const v = G1.vC / KMH, Rsc = G1.Rsc, th = H.carveAngle(v, Rsc), R = isFinite(th) ? H.carvedRadius(Rsc, th) : NaN, n = isFinite(R) ? H.loadFactor(v, R) : NaN, k = t('k1b');
+      $('kpi1b').innerHTML = kpi(k.R, fmt(R, 1), isFinite(R) ? 'm' : '') + kpi(k.th, isFinite(th) ? fmt(th / DEG, 1) : '—', isFinite(th) ? '°' : '', isFinite(th) ? '' : 'bad') + kpi(k.n, fmt(n, 2), isFinite(n) ? 'g' : '') + kpi(k.a, isFinite(R) ? fmt(v * v / R / 9.81, 2) : '—', isFinite(R) ? 'g' : '') + kpi(k.vmax, fmt(H.carveMaxSpeed(Rsc) * KMH, 0), 'km/h') + kpi('R_sc', fmt(Rsc, 1), 'm');
+      const vs = [], ths = [], ns = []; for (let s = 1; s <= 80; s++) { const vv = s / KMH, a = H.carveAngle(vv, Rsc); vs.push(s); ths.push(isFinite(a) ? a / DEG : NaN); ns.push(isFinite(a) ? 20 * H.loadFactor(vv, H.carvedRadius(Rsc, a)) : NaN); }
+      const g = lineChart($('cvCarve'), [[vs, ths, '#c8102e', 2], [vs, ns, '#4fb3a9', 1.6]], 0, 80, 0, 90, 'v (km/h)', '°', [0, 0]);
+      const vm = H.carveMaxSpeed(Rsc) * KMH; g.c.strokeStyle = 'rgba(242,242,242,0.4)'; g.c.setLineDash([4, 3]); g.c.beginPath(); g.c.moveTo(g.X(vm), 8); g.c.lineTo(g.X(vm), g.h - 22); g.c.stroke(); g.c.setLineDash([]); g.c.fillStyle = '#9b9b9f'; g.c.fillText('√(g R_sc)', g.X(Math.min(vm, 70)) + 4, 30);
+      g.c.strokeStyle = '#f2f2f2'; g.c.beginPath(); g.c.moveTo(g.X(G1.vC), 8); g.c.lineTo(g.X(G1.vC), g.h - 22); g.c.stroke();
+      // skieur vu de face, incliné de θ
+      const { c, w, h } = setup($('cvLean')); c.fillStyle = '#0a0a0b'; c.fillRect(0, 0, w, h); const cx = w * 0.5, gy = h * 0.82, L = h * 0.55, a = isFinite(th) ? th : Math.PI / 2 * 0.8;
+      c.strokeStyle = '#3a3a3d'; c.beginPath(); c.moveTo(10, gy); c.lineTo(w - 10, gy); c.stroke();
+      const hx = cx - Math.sin(a) * L, hy = gy - Math.cos(a) * L; c.strokeStyle = isFinite(th) ? '#f2f2f2' : '#ff8a8a'; c.lineWidth = 5; c.lineCap = 'round'; c.beginPath(); c.moveTo(cx, gy); c.lineTo(hx, hy); c.stroke(); c.lineWidth = 1; c.beginPath(); c.arc(hx - Math.sin(a) * 12, hy - Math.cos(a) * 12, 10, 0, 7); c.fillStyle = c.strokeStyle; c.fill();
+      c.strokeStyle = '#c8102e'; c.lineWidth = 4; c.beginPath(); c.moveTo(cx - 26 * Math.cos(a), gy - 26 * Math.sin(a) * -1 * -1 + 0); c.lineTo(cx + 6 * Math.cos(a), gy + 0); c.stroke(); c.lineWidth = 1;
+      // forces au centre de masse
+      const gx = cx - Math.sin(a) * L * 0.55, gyy = gy - Math.cos(a) * L * 0.55, sc = 40; const arrow = (x1, y1, x2, y2, col, lab) => { c.strokeStyle = col; c.fillStyle = col; c.lineWidth = 2; c.beginPath(); c.moveTo(x1, y1); c.lineTo(x2, y2); c.stroke(); const an = Math.atan2(y2 - y1, x2 - x1); c.beginPath(); c.moveTo(x2, y2); c.lineTo(x2 - 8 * Math.cos(an - 0.4), y2 - 8 * Math.sin(an - 0.4)); c.lineTo(x2 - 8 * Math.cos(an + 0.4), y2 - 8 * Math.sin(an + 0.4)); c.fill(); c.font = '11px "JetBrains Mono", monospace'; c.fillText(lab, x2 + 4, y2 + 4); };
+      arrow(gx, gyy, gx, gyy + sc, '#9b9b9f', 'P'); if (isFinite(th)) arrow(gx, gyy, gx + sc * Math.tan(th), gyy, '#4fb3a9', lang === 'fr' ? 'inertie' : 'inertia');
+      c.font = '12px "JetBrains Mono", monospace'; c.fillStyle = isFinite(th) ? '#c9c9cc' : '#ff8a8a'; c.textAlign = 'left'; c.fillText(isFinite(th) ? 'θ = ' + fmt(th / DEG, 1) + '°' : t('noCarve'), 10, 18);
+    }
+
+    // =========================================================== 2. GENOU
+    const G2 = { scen: 'catch', Mrel: 70, Minj: 100, Mpeak: 120, rise: 0.05, hold: 0.25 };
+    const SC2 = { turn: { Mpeak: 35, rise: 0.2, hold: 0.5 }, catch: { Mpeak: 120, rise: 0.05, hold: 0.25 }, slow: { Mpeak: 90, rise: 0.3, hold: 0.3 }, spike: { Mpeak: 150, rise: 0.005, hold: 0.005 } };
+    function renderCtl2() {
+      const box = $('ctl2'); box.innerHTML = ''; h3(box, t('scen'), true);
+      scenBox(box, Object.keys(SC2).map((k) => [k, t('sc')[k]]), G2.scen, (k) => { G2.scen = k; Object.assign(G2, SC2[k]); renderCtl2(); compute2(); });
+      slider(box, t('Mrel'), G2.Mrel, 20, 160, 1, (v) => fmt(v, 0) + ' N·m', (v) => { G2.Mrel = v; compute2(); });
+      slider(box, t('Minj'), G2.Minj, 60, 160, 1, (v) => fmt(v, 0) + ' N·m', (v) => { G2.Minj = v; compute2(); });
+      slider(box, t('Mpk'), G2.Mpeak, 10, 200, 1, (v) => fmt(v, 0) + ' N·m', (v) => { G2.Mpeak = v; G2.scen = null; compute2(); });
+      slider(box, t('rise'), G2.rise * 1000, 2, 400, 1, (v) => fmt(v, 0) + ' ms', (v) => { G2.rise = v / 1000; G2.scen = null; compute2(); });
+    }
+    function compute2() {
+      const f = H.twistFall({ Mrel: G2.Mrel, Mpeak: G2.Mpeak, rise: G2.rise, hold: G2.hold, T: Math.max(0.6, 2 * G2.rise + G2.hold + 0.2), dt: 1e-4 }), k = t('k2'), inj = f.peakLeg > G2.Minj;
+      $('kpi2').innerHTML = kpi(k.rel, f.released ? t('relYes') : t('relNo'), '', f.released ? 'good' : '') + kpi(k.t, f.released ? fmt(f.tRel * 1000, 0) : '—', f.released ? 'ms' : '') + kpi(k.peak, fmt(f.peakLeg, 0), 'N·m', inj ? 'bad' : 'good') + kpi(k.marg, fmt(G2.Minj - f.peakLeg, 0), 'N·m', inj ? 'bad' : '');
+      const L = [[inj ? 'bad' : 'ok', inj ? t('i2').inj : t('i2').ok]]; if (f.released && G2.Mpeak <= 40) L.push(['bad', t('i2').early]); if (!f.released && G2.rise < 0.02 && G2.Mpeak > G2.Mrel) L.push(['ok', t('i2').spike]); if (Math.max(...f.leg) > G2.Mpeak * 1.05) L.push(['', t('i2').dyn]); issues('iss2', L);
+      const top = Math.max(G2.Mpeak, G2.Minj, G2.Mrel, ...f.leg) * 1.15;
+      lineChart($('cvTw'), [[f.t.map((x) => x * 1000), f.snow, '#9b9b9f', 1.4], [f.t.map((x) => x * 1000), f.leg, '#c8102e', 2.2]], 0, f.t[f.t.length - 1] * 1000, 0, top, 't (ms)', 'N·m', [0, 0], [[G2.Mrel, '#e0a458'], [G2.Minj, '#4fb3a9']]);
+    }
+
+    // =========================================================== 3. POIGNET
+    const SNOW3 = { pow: 4e4, groom: 3e5, ice: 2e6 }, G3 = { snow: 'ice', prot: false, v0: 3.4, m: 6, thr: 2500 };
+    function renderCtl3() {
+      const box = $('ctl3'); box.innerHTML = ''; h3(box, t('snow3'), true); seg(box, Object.keys(SNOW3).map((k) => [k, t('s3')[k]]), G3.snow, (v) => { G3.snow = v; renderCtl3(); compute3(); });
+      h3(box, t('prot')); seg(box, [[1, t('on')], [0, t('off')]], G3.prot ? 1 : 0, (v) => { G3.prot = !!v; renderCtl3(); compute3(); });
+      slider(box, t('v0'), G3.v0, 1.5, 6, 0.1, (v) => fmt(v, 1) + ' m/s', (v) => { G3.v0 = v; compute3(); });
+      slider(box, t('meff'), G3.m, 3, 10, 0.5, (v) => fmt(v, 1) + ' kg', (v) => { G3.m = v; compute3(); });
+      slider(box, t('thr'), G3.thr, 1500, 4000, 50, (v) => fmt(v, 0) + ' N', (v) => { G3.thr = v; compute3(); });
+    }
+    function compute3() {
+      const base = { m: G3.m, v0: G3.v0, ks: SNOW3[G3.snow] }, a = H.wristImpact(Object.assign({}, base, { prot: G3.prot })), b = H.wristImpact(Object.assign({}, base, { prot: !G3.prot })), k = t('k3'), over = a.peak > G3.thr;
+      const dur = a.t.filter((_, i) => a.F[i] > 1).length ? a.t[a.F.reduce((m, F, i) => (F > 1 ? i : m), 0)] : 0;
+      $('kpi3').innerHTML = kpi(k.peak, fmt(a.peak, 0), 'N', over ? 'bad' : 'good') + kpi(k.ratio, fmt((100 * a.peak) / G3.thr, 0), '%') + kpi(k.E, fmt(a.E, 1), 'J') + kpi(k.dur, fmt(dur * 1000, 0), 'ms');
+      const withP = G3.prot ? a : b, noP = G3.prot ? b : a, L = [[over ? 'bad' : 'ok', over ? t('i3').fr : t('i3').ok], ['', t('i3').prot(fmt(100 * (1 - withP.peak / noP.peak), 0))]]; issues('iss3', L);
+      $('lgW1').textContent = G3.prot ? t('wCols')[2] : t('wCols')[1]; $('lgW2').textContent = G3.prot ? t('wCols')[1] : t('wCols')[2];
+      const tm = Math.max(a.t[a.t.length - 1], b.t[b.t.length - 1]) * 1000, top = Math.max(a.peak, b.peak, G3.thr) * 1.15;
+      lineChart($('cvW'), [[b.t.map((x) => x * 1000), b.F, '#9b9b9f', 1.4, [5, 4]], [a.t.map((x) => x * 1000), a.F, '#c8102e', 2.2]], 0, tm, 0, top, 't (ms)', 'N', [0, 0], [[G3.thr, '#4fb3a9']]);
+      $('tabW').innerHTML = '<thead><tr>' + t('wCols').map((x, j) => '<th' + (j ? ' class="n"' : '') + '>' + x + '</th>').join('') + '</tr></thead><tbody>' + Object.keys(SNOW3).map((s) => { const p0 = H.wristImpact({ m: G3.m, v0: G3.v0, ks: SNOW3[s] }).peak, p1 = H.wristImpact({ m: G3.m, v0: G3.v0, ks: SNOW3[s], prot: true }).peak; return '<tr><td>' + t('s3')[s] + '</td><td class="n' + (p0 > G3.thr ? ' bad' : '') + '">' + fmt(p0, 0) + ' N</td><td class="n' + (p1 > G3.thr ? ' bad' : '') + '">' + fmt(p1, 0) + ' N</td></tr>'; }).join('') + '</tbody>';
+    }
+
+    // =========================================================== 4. CASQUE
+    const SURF = { pow: 5e4, groom: 3e5, ice: 5e6, tree: 2e7 }, G4 = { v: 19.5, surf: 'groom', helmet: true, th: 25, sp: 0.55 };
+    function renderCtl4() {
+      const box = $('ctl4'); box.innerHTML = ''; h3(box, t('presetH'), true); scenBox(box, [[19.5, t('ph').test], [30, t('ph').mid], [50, t('ph').fast]], G4.v, (v) => { G4.v = v; renderCtl4(); compute4(); });
+      slider(box, t('speed'), G4.v, 5, 60, 0.5, (v) => fmt(v, 1) + ' km/h', (v) => { G4.v = v; compute4(); });
+      h3(box, t('surf')); scenBox(box, Object.keys(SURF).map((k) => [k, t('sf')[k]]), G4.surf, (v) => { G4.surf = v; renderCtl4(); compute4(); });
+      h3(box, t('helmet')); seg(box, [[1, t('on')], [0, t('off')]], G4.helmet ? 1 : 0, (v) => { G4.helmet = !!v; renderCtl4(); compute4(); });
+      slider(box, t('th'), G4.th, 12, 45, 1, (v) => fmt(v, 0) + ' mm', (v) => { G4.th = v; compute4(); });
+      slider(box, t('sp'), G4.sp, 0.25, 1.2, 0.05, (v) => fmt(v, 2) + ' MPa', (v) => { G4.sp = v; compute4(); });
+    }
+    const headOpt = (v, helmet) => ({ v: v / KMH, helmet, ks: SURF[G4.surf], h: G4.th / 1000, sp: G4.sp * 1e6, dt: 2e-6 });
+    function compute4() {
+      const a = H.headImpact(headOpt(G4.v, true)), b = H.headImpact(headOpt(G4.v, false)), cur = G4.helmet ? a : b, k = t('k4');
+      $('kpi4').innerHTML = kpi(k.pk, fmt(cur.peakG, 0), 'g', cur.peakG > 250 ? 'bad' : 'good') + kpi(k.hic, fmt(cur.HIC, 0), '', cur.HIC > 1000 ? 'bad' : '') + kpi(k.p, fmt(cur.pAIS3 * 100, 1), '%') + kpi(k.crush, G4.helmet ? fmt(a.crushFrac * 100, 0) : '—', G4.helmet ? '%' : '', G4.helmet && a.crushFrac > 0.75 ? 'bad' : '') + kpi(k.bare, fmt(b.peakG, 0), 'g') + kpi(lang === 'fr' ? 'chute équivalente' : 'equivalent fall', fmt(H.equivHeight(G4.v / KMH), 2), 'm');
+      const L = [[cur.peakG <= 250 ? 'ok' : 'bad', cur.peakG <= 250 ? t('i4').pass : t('i4').fail]]; if (G4.helmet && a.crushFrac > 0.75) L.push(['bad', t('i4').bottom]); if (G4.surf === 'pow' || G4.surf === 'groom') L.push(['', t('i4').soft]); issues('iss4', L);
+      const tm = Math.max(a.t[a.t.length - 1], b.t[b.t.length - 1]) * 1000, top = Math.max(a.peakG, b.peakG, 260) * 1.1;
+      lineChart($('cvH'), [[b.t.map((x) => x * 1000), b.a, '#9b9b9f', 1.4, [5, 4]], [a.t.map((x) => x * 1000), a.a, '#c8102e', 2.2]], 0, tm, 0, top, 't (ms)', 'g', [1, 0], [[250, '#e0a458']]);
+      $('tabH').innerHTML = '<thead><tr>' + t('hCols').map((x, j) => '<th' + (j ? ' class="n"' : '') + '>' + x + '</th>').join('') + '</tr></thead><tbody>' + [10, 19.5, 25, 30, 40, 50].map((v) => { const r = H.headImpact(Object.assign(headOpt(v, true), { dt: 4e-6 })); return '<tr><td>' + fmt(v, 1) + ' km/h</td><td class="n' + (r.peakG > 250 ? ' bad' : ' good') + '">' + fmt(r.peakG, 0) + ' g</td><td class="n">' + fmt(r.HIC, 0) + '</td><td class="n">' + fmt(r.pAIS3 * 100, 1) + ' %</td><td class="n' + (r.crushFrac > 0.75 ? ' bad' : '') + '">' + fmt(r.crushFrac * 100, 0) + ' %</td></tr>'; }).join('') + '</tbody>';
+    }
+
+    // =========================================================== 5. AVALANCHE
+    const G5 = { seed: 3, depth: 1, walk: 0.5, resc: 1, start: [8, 52] };
+    let R5 = null, anim5 = 0;
+    function newAva() { const r = H.rng(G5.seed * 7919 + 13); G5.v = [15 + r() * 30, 8 + r() * 22]; G5.ang = r() * Math.PI; }
+    function renderCtl5() {
+      const box = $('ctl5'); box.innerHTML = ''; h3(box, t('tab5').slice(4), true);
+      slider(box, t('depth'), G5.depth, 0.3, 2.5, 0.1, (v) => fmt(v, 1) + ' m', (v) => { G5.depth = v; compute5(); });
+      slider(box, t('walk'), G5.walk, 0.2, 1.2, 0.05, (v) => fmt(v, 2) + ' m/s', (v) => { G5.walk = v; compute5(); });
+      slider(box, t('rescuers'), G5.resc, 1, 4, 1, (v) => fmt(v, 0), (v) => { G5.resc = v; compute5(); });
+    }
+    function compute5() {
+      const fs = H.fluxSearch({ x0: G5.start[0], y0: G5.start[1], xv: G5.v[0], yv: G5.v[1], ang: G5.ang, depth: G5.depth, step: 0.3, stop: 1.5 }), rt = H.rescueTime({ L: fs.L, walk: G5.walk, depth: G5.depth, n: G5.resc }), surv = H.survival(rt.total), k = t('k5');
+      R5 = { fs, rt, surv }; const shown = H.shownDistance(G5.start[0], G5.start[1], G5.v[0], G5.v[1], G5.ang, G5.depth);
+      $('kpi5').innerHTML = kpi(k.L, fmt(fs.L + 1.5, 0), 'm') + kpi(k.d, fmt(fs.straight, 0), 'm') + kpi(k.ratio, fmt((fs.L + 1.5) / fs.straight, 2), '') + kpi(k.shown, fmt(shown, 0), 'm') + kpi(k.tot, fmt(rt.total, 0), 'min', rt.total > 18 ? 'bad' : 'good') + kpi(k.surv, fmt(surv * 100, 0), '%', surv < 0.8 ? 'bad' : 'good');
+      issues('iss5', [['', t('i5').split(fmt(rt.first, 0), fmt(rt.tSearch, 1), fmt(rt.fine, 1), fmt(rt.probe, 1), fmt(rt.dig, 1))], ['', t('i5').curve], ['', t('i5').dig], ['bad', t('i5').noDva]]);
+      const ts = [], ps = []; for (let m = 0; m <= 150; m++) { ts.push(m); ps.push(H.survival(m) * 100); }
+      const g = lineChart($('cvSurv'), [[ts, ps, '#c8102e', 2]], 0, 150, 0, 100, 't (min)', '%'); g.c.fillStyle = '#f2f2f2'; g.c.beginPath(); g.c.arc(g.X(Math.min(150, rt.total)), g.Y(surv * 100), 5, 0, 7); g.c.fill();
+      anim5 = performance.now();
+    }
+    function drawMap(frac) {
+      const cv = $('cvMap'), { c, w, h } = setup(cv), S = 60, X = (x) => (x / S) * w, Y = (y) => h - (y / S) * h; c.fillStyle = '#e9eef2'; c.fillRect(0, 0, w, h);
+      // lignes de champ (petits segments orientés)
+      c.strokeStyle = 'rgba(40,60,80,0.35)'; c.lineWidth = 1;
+      for (let i = 1; i < 30; i++) for (let j = 1; j < 30; j++) { const x = i * 2, y = j * 2, B = H.dipole(x, y, G5.v[0], G5.v[1], G5.ang, G5.depth), bh = Math.hypot(B[0], B[1]); if (!bh) continue; const ux = B[0] / bh, uy = B[1] / bh; c.beginPath(); c.moveTo(X(x - ux * 0.7), Y(y - uy * 0.7)); c.lineTo(X(x + ux * 0.7), Y(y + uy * 0.7)); c.stroke(); }
+      // trajet
+      const P = R5.fs.path, n = Math.max(2, Math.round(frac * P.length)); c.strokeStyle = '#c8102e'; c.lineWidth = 2.5; c.beginPath(); for (let k = 0; k < n; k++) { const [x, y] = P[k]; k ? c.lineTo(X(x), Y(y)) : c.moveTo(X(x), Y(y)); } c.stroke();
+      const cur = P[n - 1]; c.fillStyle = '#c8102e'; c.beginPath(); c.arc(X(cur[0]), Y(cur[1]), 6, 0, 7); c.fill();
+      // victime (balise)
+      c.save(); c.translate(X(G5.v[0]), Y(G5.v[1])); c.rotate(-G5.ang); c.fillStyle = '#1b1b1d'; c.fillRect(-9, -4, 18, 8); c.restore(); c.fillStyle = '#1b1b1d'; c.font = '11px "JetBrains Mono", monospace'; c.textAlign = 'left'; c.fillText(lang === 'fr' ? 'balise ensevelie' : 'buried transmitter', X(G5.v[0]) + 12, Y(G5.v[1]) + 4);
+      c.fillText(lang === 'fr' ? 'départ' : 'start', X(G5.start[0]) + 8, Y(G5.start[1]) - 6); c.fillStyle = '#55555a'; c.fillText('60 × 60 m', 6, h - 6);
+      const d = Math.hypot(cur[0] - G5.v[0], cur[1] - G5.v[1]), sh = H.shownDistance(cur[0], cur[1], G5.v[0], G5.v[1], G5.ang, G5.depth); $('dvaRead').textContent = (lang === 'fr' ? 'DVA affiche ' : 'transceiver shows ') + fmt(sh, 1) + ' m · ' + (lang === 'fr' ? 'réel ' : 'actual ') + fmt(Math.hypot(d, G5.depth), 1) + ' m';
+    }
+    $('bAva').addEventListener('click', () => { G5.seed++; newAva(); compute5(); });
+    $('bReplay').addEventListener('click', () => { anim5 = performance.now(); });
+    $('cvMap').addEventListener('click', (e) => { const r = $('cvMap').getBoundingClientRect(); G5.start = [((e.clientX - r.left) / r.width) * 60, 60 - ((e.clientY - r.top) / r.height) * 60]; compute5(); });
+
+    // =========================================================== 6. FROID
+    const G6 = { T: -10, wind: 15, vs: 50 };
+    function renderCtl6() {
+      const box = $('ctl6'); box.innerHTML = ''; h3(box, t('tab6').slice(4), true);
+      slider(box, t('temp'), G6.T, -35, 5, 1, (v) => fmt(v, 0) + ' °C', (v) => { G6.T = v; compute6(); });
+      slider(box, t('wind'), G6.wind, 0, 70, 1, (v) => fmt(v, 0) + ' km/h', (v) => { G6.wind = v; compute6(); });
+      slider(box, t('vski'), G6.vs, 0, 90, 1, (v) => fmt(v, 0) + ' km/h', (v) => { G6.vs = v; compute6(); });
+    }
+    function compute6() {
+      const w0 = H.windChill(G6.T, G6.wind), w1 = H.windChill(G6.T, G6.wind + G6.vs), c1 = H.chillRisk(w1), k = t('k6');
+      $('kpi6').innerHTML = kpi(k.still, fmt(w0, 0), '°C') + kpi(k.run, fmt(w1, 0), '°C', c1 >= 2 ? 'bad' : '') + kpi(k.wtot, fmt(G6.wind + G6.vs, 0), 'km/h') + kpi(k.cat, String(c1), '/ 5', c1 >= 2 ? 'bad' : 'good');
+      issues('iss6', [[c1 >= 2 ? 'bad' : 'ok', t('cats')[c1]], ['', t('i6').speed], ['', t('i6').note]]);
+      const vs = [], ws = []; for (let v = 0; v <= 90; v++) { vs.push(v); ws.push(H.windChill(G6.T, G6.wind + v)); }
+      const lo = Math.floor(Math.min(...ws) / 5) * 5 - 5, g = lineChart($('cvC'), [[vs, ws, '#c8102e', 2]], 0, 90, lo, Math.max(G6.T + 5, 0), 'v (km/h)', '°C', [0, 0], [[-28, '#e0a458'], [-40, '#ff8a8a']]);
+      g.c.fillStyle = '#f2f2f2'; g.c.beginPath(); g.c.arc(g.X(G6.vs), g.Y(w1), 5, 0, 7); g.c.fill();
+    }
+
+    // =========================================================== 7. VÉRIFICATIONS
+    function runChecks() {
+      const rows = [], add = (a, b, c2, ok) => rows.push([a, b, c2, ok]), D = DEG;
+      { const m = 80, a = 22 * D, mu = 0.07, C = 0.5, rho = H.rhoAir(2000), r = H.runPiste({ m, mu, CdA: C, alt: 2000, v0: 1e-6, dt: 0.005, segs: [{ L: 600, deg: 22 }] }), ex = H.straightExact(m, a, mu, C, rho, r.T); add(lang === 'fr' ? 'descente : RK4 = solution exacte (v tanh)' : 'descent: RK4 = exact solution (v tanh)', fmt(r.v[r.v.length - 1] * KMH, 3) + ' km/h', fmt(ex.v * KMH, 3) + ' km/h', Math.abs(r.v[r.v.length - 1] - ex.v) < 2e-3 * ex.v); }
+      add(lang === 'fr' ? 'chute équivalente à 50 km/h' : 'equivalent fall at 50 km/h', fmt(H.equivHeight(50 / KMH), 2) + ' m', '9,83 m', Math.abs(H.equivHeight(50 / KMH) - 9.833) < 0.01);
+      { const v = 10, R = 15, th = H.carveAngle(v, R); add(lang === 'fr' ? 'virage coupé : tan θ = v²/(g R)' : 'carved turn: tan θ = v²/(g R)', fmt(Math.tan(th), 6), fmt((v * v) / (9.81 * H.carvedRadius(R, th)), 6), Math.abs(Math.tan(th) - (v * v) / (9.81 * H.carvedRadius(R, th))) < 1e-9); }
+      { let okk = true; for (let i = 0; i < 20; i++) { const M = 20 + i * 7, f = H.twistFall({ Mrel: M, Mpeak: 180, dt: 2e-4 }); if (f.peakLeg > M + 1e-9) okk = false; } add(lang === 'fr' ? 'jambe ≤ seuil de la fixation (20 réglages)' : 'leg ≤ binding threshold (20 settings)', okk ? '✓' : '✗', '✓', okk); }
+      { const w = H.wristImpact({ m: 6, v0: 3.4, ka: 60000, ks: 1e12, damp: 0, dt: 1e-6 }); add(lang === 'fr' ? 'impact linéaire : F = v √(k m)' : 'linear impact: F = v √(k m)', fmt(w.peak, 0) + ' N', fmt(3.4 * Math.sqrt(360000), 0) + ' N', Math.abs(w.peak - 3.4 * Math.sqrt(360000)) < 3); }
+      { const a = new Array(1000).fill(0); for (let i = 0; i < 100; i++) a[i] = 100; const v = H.hic(a, 1e-4, 0.015).HIC; add(lang === 'fr' ? 'HIC d’un créneau 100 g / 10 ms' : 'HIC of a 100 g / 10 ms pulse', fmt(v, 1), '1000,0', Math.abs(v - 1000) < 1e-6); }
+      { const e = H.headImpact({ v: 5.42 }); add(lang === 'fr' ? 'casque à 5,42 m/s (EN 1077)' : 'helmet at 5.42 m/s (EN 1077)', fmt(e.peakG, 0) + ' g', '< 250 g', e.peakG < 250); }
+      add(lang === 'fr' ? 'probabilité AIS ≥ 3 à HIC 1 000' : 'AIS ≥ 3 probability at HIC 1,000', fmt(H.pAIS3(1000) * 100, 1) + ' %', '≈ 23 %', Math.abs(H.pAIS3(1000) - 0.231) < 0.003);
+      { const a = H.dipole(5, 0, 0, 0, 0, 0), e = H.dipole(0, 5, 0, 0, 0, 0); add(lang === 'fr' ? 'dipôle : champ dans l’axe / sur le côté' : 'dipole: on-axis / side field', fmt(Math.hypot(...a.slice(0, 3)) / Math.hypot(...e.slice(0, 3)), 6), '2', Math.abs(Math.hypot(...a.slice(0, 3)) / Math.hypot(...e.slice(0, 3)) - 2) < 1e-12); }
+      add(lang === 'fr' ? 'survie à 18 min (Brugger 2001)' : 'survival at 18 min (Brugger 2001)', fmt(H.survival(18) * 100, 0) + ' %', '91 %', Math.abs(H.survival(18) - 0.91) < 1e-12);
+      add(lang === 'fr' ? 'refroidissement éolien −10 °C, 50 km/h' : 'wind chill −10 °C, 50 km/h', fmt(H.windChill(-10, 50), 2) + ' °C', '−21,77 °C', Math.abs(H.windChill(-10, 50) + 21.77) < 0.01);
+      $('tabCheck').innerHTML = '<thead><tr>' + t('chk').map((x, j) => '<th' + (j && j < 3 ? ' class="n"' : '') + '>' + x + '</th>').join('') + '</tr></thead><tbody>' + rows.map(([a, b, c2, ok]) => '<tr><td>' + a + '</td><td class="n">' + b + '</td><td class="n">' + c2 + '</td><td class="' + (ok ? 'good' : 'bad') + '">' + (ok ? '✓' : '✗') + '</td></tr>').join('') + '</tbody>';
+    }
+
+    // =========================================================== onglets, animation, langue
+    const TABS = ['glisse', 'genou', 'poignet', 'casque', 'dva', 'froid', 'check']; let tab = 'glisse';
+    function showTab(k) { tab = k; document.querySelectorAll('[role=tab]').forEach((b) => b.setAttribute('aria-selected', b.dataset.tab === k)); TABS.forEach((x) => { $('tab-' + x).hidden = x !== k; }); try { history.replaceState(null, '', '#' + k); } catch (e) {} redraw(); }
+    function redraw() { if (tab === 'glisse') { renderCtl1(); compute1(); } else if (tab === 'genou') { renderCtl2(); compute2(); } else if (tab === 'poignet') { renderCtl3(); compute3(); } else if (tab === 'casque') { renderCtl4(); compute4(); } else if (tab === 'dva') { renderCtl5(); compute5(); } else if (tab === 'froid') { renderCtl6(); compute6(); } else runChecks(); }
+    function loop(now) {
+      if (tab === 'glisse' && R1 && $('cvPiste').clientWidth) { const dur = 8000, f = Math.min(1, (now - anim1) / dur); drawPiste(f); if (now - anim1 > dur + 1500) anim1 = now; }
+      if (tab === 'dva' && R5 && $('cvMap').clientWidth) drawMap(Math.min(1, (now - anim5) / 6000));
+      requestAnimationFrame(loop);
+    }
+    document.querySelectorAll('[role=tab]').forEach((b) => b.addEventListener('click', () => showTab(b.dataset.tab)));
+    function setLang(l) { lang = l; document.documentElement.lang = l; document.querySelectorAll('[data-t]').forEach((el) => { const v = T[l][el.dataset.t]; if (typeof v === 'string') el.textContent = v; }); document.querySelectorAll('.lang button').forEach((b) => b.setAttribute('aria-pressed', b.dataset.lang === l)); try { localStorage.setItem('lang', l); } catch (e) {} redraw(); }
+    document.querySelectorAll('.lang button').forEach((b) => b.addEventListener('click', () => setLang(b.dataset.lang)));
+    let rz = null; window.addEventListener('resize', () => { clearTimeout(rz); rz = setTimeout(redraw, 120); });
+    newAva(); const h0 = (location.hash || '').slice(1); tab = TABS.includes(h0) ? h0 : 'glisse';
+    setLang(lang); showTab(tab); requestAnimationFrame(loop);
+  })();
+  </script>
+</body>
+</html>
