@@ -1,0 +1,303 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Course de robots</title>
+  <meta name="description" content="Course de robots autonomes : modèle de robot à deux roues, télémètres, pare-chocs, capteur de couleur, odométrie, caméra au plafond et filtre de Kalman, cinq stratégies de navigation comparées.">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --bg: #0c0c0d; --panel: #161618; --border: #262628; --border-hi: #3a3a3d;
+      --text: #f2f2f2; --dim: #9b9b9f; --muted: #6c6c70; --accent: #c8102e; --line: #c9c9cc; --warn: #e0a458; --ok: #8fd18f;
+      --mono: "JetBrains Mono", ui-monospace, monospace; --sans: "Inter", system-ui, sans-serif;
+      color-scheme: dark;
+    }
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    body { background: var(--bg); color: var(--text); font-family: var(--sans); line-height: 1.55; -webkit-font-smoothing: antialiased; }
+    .wrap { max-width: 1280px; margin: 0 auto; padding: 24px 16px 48px; }
+    .top { display: flex; justify-content: space-between; align-items: center; gap: 12px; flex-wrap: wrap; margin-bottom: 24px; }
+    .back { font-size: 0.9rem; color: var(--dim); text-decoration: none; }
+    .back:hover { color: var(--accent); }
+    .lang { display: flex; border: 1px solid var(--border-hi); }
+    .lang button { font: 500 0.78rem var(--mono); letter-spacing: .05em; background: none; color: var(--dim); border: 0; padding: 5px 10px; cursor: pointer; }
+    .lang button + button { border-left: 1px solid var(--border-hi); }
+    .lang button[aria-pressed="true"] { background: var(--text); color: var(--bg); }
+    .eyebrow { font: 500 0.82rem var(--mono); color: var(--accent); letter-spacing: .04em; }
+    h1 { font-size: clamp(1.6rem, 3.4vw, 2.3rem); line-height: 1.15; margin: 6px 0 10px; text-wrap: balance; }
+    .intro { color: var(--dim); max-width: 82ch; }
+    .intro a { color: var(--line); }
+    .warnbox { border: 1px solid #4a3a20; background: #1a160f; color: var(--warn); border-radius: 6px; padding: 8px 12px; font-size: 0.84rem; margin-top: 12px; }
+    .grid { display: grid; grid-template-columns: 320px minmax(0, 1fr); gap: 20px; align-items: start; margin-top: 20px; }
+    .stack { display: grid; gap: 16px; min-width: 0; }
+    .panel { background: var(--panel); border: 1px solid var(--border); border-radius: 8px; padding: 16px; min-width: 0; }
+    h2 { font: 600 0.78rem var(--mono); letter-spacing: .12em; text-transform: uppercase; color: var(--dim); margin-bottom: 12px; }
+    h3 { font: 600 0.72rem var(--mono); letter-spacing: .08em; text-transform: uppercase; color: var(--dim); margin: 14px 0 10px; padding-top: 12px; border-top: 1px solid var(--border); }
+    button:focus-visible, input:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+    .btn { font: 500 0.82rem var(--sans); background: none; color: var(--text); border: 1px solid var(--border-hi); border-radius: 6px; padding: 6px 11px; cursor: pointer; white-space: nowrap; }
+    .btn:hover { border-color: var(--accent); color: var(--accent); }
+    .btn[aria-pressed="true"] { border-color: var(--accent); color: var(--accent); }
+    .btn.primary { background: var(--accent); border-color: var(--accent); color: #fff; }
+    .seg { display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 10px; }
+    .ctl { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 2px 10px; margin-bottom: 10px; }
+    .ctl label { font: 500 0.76rem var(--mono); color: var(--dim); }
+    .ctl output { font: 0.8rem var(--mono); font-variant-numeric: tabular-nums; text-align: right; }
+    .ctl input[type=range] { grid-column: 1 / -1; width: 100%; accent-color: var(--accent); }
+    .lab { font: 500 0.74rem var(--mono); color: var(--dim); margin: 2px 0 6px; }
+    .hint { font-size: 0.8rem; color: var(--dim); margin-top: 8px; }
+    .kpis { display: grid; grid-template-columns: repeat(6, minmax(0, 1fr)); gap: 10px; }
+    .kpi { border: 1px solid var(--border); border-radius: 6px; padding: 8px 10px; min-width: 0; }
+    .kpi dt { font: 0.66rem var(--mono); color: var(--dim); }
+    .kpi dd { font: 600 1.02rem var(--sans); font-variant-numeric: tabular-nums; margin-top: 2px; }
+    .kpi dd small { font: 400 0.7rem var(--mono); color: var(--dim); margin-left: 3px; }
+    .kpi.bad dd { color: #ff8a8a; } .kpi.good dd { color: var(--ok); }
+    canvas#table { width: 100%; aspect-ratio: 240 / 150; display: block; border: 1px solid var(--border); border-radius: 6px; background: #0a0a0b; margin-top: 12px; cursor: crosshair; touch-action: none; }
+    .controls { display: flex; gap: 8px; flex-wrap: wrap; align-items: center; margin-top: 10px; font: 0.78rem var(--mono); color: var(--dim); }
+    .row2 { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 16px; }
+    .pins { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 6px; font: 0.74rem var(--mono); }
+    .pin { border: 1px solid var(--border); border-radius: 5px; padding: 5px 7px; min-width: 0; }
+    .pin b { display: block; color: var(--dim); font-weight: 500; font-size: 0.68rem; }
+    .pin span { font-variant-numeric: tabular-nums; }
+    .pin.hi { border-color: var(--accent); } .pin.hi span { color: #ff8a8a; }
+    .serial { font: 0.74rem/1.45 var(--mono); background: #0a0a0b; border: 1px solid var(--border); border-radius: 6px; padding: 8px 10px; height: 172px; overflow: hidden; color: var(--line); white-space: pre; }
+    .serial .t { color: var(--muted); }
+    .serial .w { color: #ff8a8a; }
+    .state { font: 0.8rem var(--mono); color: var(--dim); margin-top: 8px; }
+    .state b { color: var(--text); font-weight: 500; }
+    table { width: 100%; border-collapse: collapse; font: 0.8rem var(--mono); font-variant-numeric: tabular-nums; }
+    th, td { text-align: left; padding: 6px 8px; border-bottom: 1px solid var(--border); }
+    td.n, th.n { text-align: right; }
+    th { color: var(--dim); font-weight: 500; }
+    td.bad { color: #ff8a8a; } td.good { color: var(--ok); }
+    .tablewrap { overflow-x: auto; }
+    ol.review { padding-left: 1.2em; display: grid; gap: 6px; font-size: 0.86rem; color: var(--dim); }
+    ol.review b { color: var(--text); font-weight: 600; }
+    .note { font-size: 0.82rem; color: var(--dim); }
+    .note p + p { margin-top: 6px; }
+    canvas#cvTrack { width: 100%; aspect-ratio: 10 / 3.2; display: block; border: 1px solid var(--border); border-radius: 6px; margin-top: 12px; }
+    canvas#cvCam { width: 100%; aspect-ratio: 10 / 3; display: block; border: 1px solid var(--border); border-radius: 6px; image-rendering: pixelated; }
+    .chart p { font: 0.72rem var(--mono); color: var(--dim); margin-bottom: 4px; display: flex; gap: 10px; flex-wrap: wrap; }
+    .chart p i { display: inline-block; width: 12px; height: 2px; vertical-align: 3px; margin-right: 5px; }
+    .chart canvas { width: 100%; height: 180px; display: block; border: 1px solid var(--border); border-radius: 6px; background: #0a0a0b; }
+    .bot { border: 1px solid var(--border); border-radius: 6px; padding: 8px 10px; margin-bottom: 8px; }
+    .bn { font: 600 0.8rem var(--sans); margin-bottom: 6px; } .bn i { display: inline-block; width: 10px; height: 10px; border-radius: 50%; margin-right: 6px; vertical-align: -1px; }
+    label.sel { display: grid; grid-template-columns: 90px minmax(0, 1fr); gap: 8px; align-items: center; font: 0.74rem var(--mono); color: var(--dim); margin-bottom: 4px; }
+    label.sel select { background: #0a0a0b; color: var(--text); border: 1px solid var(--border-hi); border-radius: 5px; padding: 4px 6px; font: 0.8rem var(--sans); min-width: 0; }
+    .sw { display: inline-block; width: 10px; height: 10px; border-radius: 50%; margin-right: 6px; vertical-align: -1px; }
+    tr.me td { background: #1d1d20; } .dim { color: var(--muted); }
+    .note a { color: var(--text); }
+    @media (max-width: 1000px) { .grid { grid-template-columns: minmax(0, 1fr); } .main-col { order: -1; } }
+    @media (max-width: 760px) { .kpis { grid-template-columns: repeat(3, minmax(0, 1fr)); } .row2 { grid-template-columns: minmax(0, 1fr); } .pins { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+  </style>
+</head>
+<body>
+  <div class="wrap">
+    <div class="top">
+      <a class="back" href="../../index.html#projets" data-t="back">← Retour au portfolio</a>
+      <div class="lang" role="group" aria-label="Langue / Language"><button type="button" data-lang="fr">FR</button><button type="button" data-lang="en">EN</button></div>
+    </div>
+    <p class="eyebrow" data-t="eyebrow">Démo · refaite de zéro en 2026, d'après une course de robots en TP (décembre 2024)</p>
+    <h1 data-t="title">Course de robots autonomes : obstacles, localisation et stratégies</h1>
+    <p class="intro" data-t="intro"></p>
+    <p class="warnbox" data-t="warn"></p>
+    <div class="grid">
+      <div class="stack"><div class="panel" id="ctl"></div></div>
+      <div class="stack main-col">
+        <div class="panel">
+          <dl class="kpis" id="kpis"></dl>
+          <canvas id="cvTrack" aria-label="Piste vue de dessus"></canvas>
+          <div class="controls"><button type="button" class="btn primary" id="play" data-t="pause">Pause</button><button type="button" class="btn" id="again" data-t="again">Nouvelle course</button><span data-t="speed">Vitesse</span><span class="seg" id="speed" style="margin:0"></span><span id="clk"></span></div>
+          <p class="hint" data-t="trackHint"></p>
+        </div>
+        <div class="panel row2">
+          <div><h2 data-t="camT">Ce que voit l'ordinateur (caméra au plafond)</h2><canvas id="cvCam" aria-label="Vue de la caméra"></canvas><p class="hint" data-t="camHint"></p></div>
+          <div><h2 data-t="rankT">Classement</h2><div class="tablewrap"><table id="rank"></table></div></div>
+        </div>
+        <div class="panel">
+          <div class="chart"><p id="lgErr"></p><canvas id="cvErr"></canvas></div>
+          <p class="hint" data-t="errHint"></p>
+        </div>
+        <div class="panel">
+          <h2><span data-t="statT">Statistiques : 30 courses par stratégie, seul sur la piste</span><button type="button" class="btn" id="runStats" data-t="runStats">Lancer</button></h2>
+          <div class="tablewrap"><table id="stats"></table></div>
+          <p class="hint" data-t="statHint"></p>
+        </div>
+        <div class="panel note"><p data-t="note1"></p><p data-t="note2"></p><p data-t="note3"></p><p><a href="https://github.com/Valentin-Auger-Laboratoire/course-robots-autonomes" target="_blank" rel="noopener" data-t="repo">Dépôt : moteur, tests, explications ↗</a></p></div>
+      </div>
+    </div>
+  </div>
+  <script src="robots.js"></script>
+  <script>
+  (function () {
+    'use strict';
+    const R = window.Robots, $ = (id) => document.getElementById(id);
+    let lang = 'fr';
+    try { lang = localStorage.getItem('lang') || ((navigator.language || 'fr').toLowerCase().startsWith('fr') ? 'fr' : 'en'); } catch (e) {}
+    const T = {
+      fr: {
+        back: '← Retour au portfolio', eyebrow: "Démo · refaite de zéro en 2026, d'après une course de robots en TP (décembre 2024)", title: 'Course de robots autonomes : obstacles, localisation et stratégies',
+        intro: "En TP, des petits robots autonomes faisaient la course sur une piste bordée de barrières : rouges sur le bord, noires au milieu. Chaque robot devait aller seul jusqu'à l'arrivée, en détectant les barrières, en reculant quand il touchait, et en repartant du bon côté selon la couleur ; une caméra au plafond permettait de suivre la course sur l'ordinateur. J'avais le robot orange et j'ai gagné. Le programme d'origine est perdu : cette démo refait tout de zéro, avec un modèle de robot, ses capteurs, et cinq stratégies qui s'affrontent.",
+        warn: "Simulation refaite en 2026 : ce n'est pas mon programme de 2024 (perdu). Valeurs du robot, des capteurs et de la caméra SUPPOSÉES (ordres de grandeur, voir les notes). La stratégie « couleurs » reprend la règle de la course telle que je m'en souviens.",
+        pause: 'Pause', play: 'Reprendre', again: 'Nouvelle course', speed: 'Vitesse',
+        trackHint: "Vue de dessus, piste de 4 m × 1,2 m : départ en bas à gauche, demi-tour au bout de la barrière noire, arrivée en haut à gauche (damier). Trait plein : trajet réel ; cercle pointillé : là où le robot croit être. Les rayons sont les télémètres du robot orange.",
+        camT: "Ce que voit l'ordinateur (caméra au plafond)", camHint: "L'image de la caméra est pixelisée (2 cm par pixel) et ne se rafraîchit que 5 fois par seconde : la position mesurée saute et tremble. Le filtre de Kalman la fusionne avec les codeurs des roues.",
+        rankT: 'Classement', errHint: "Écart entre la position réelle et la position estimée. L'odométrie seule dérive (erreur d'étalonnage des roues, patinage contre les murs) ; avec la caméra et le filtre de Kalman, l'erreur reste de quelques millimètres.",
+        statT: 'Statistiques : 30 courses par stratégie, seul sur la piste', runStats: 'Lancer', statHint: "Chaque ligne : 30 courses avec des tirages différents (bruit des capteurs, des codeurs, des angles du rebond), robot seul sur la piste, 3 minutes maximum.",
+        note1: "Le robot : deux roues motrices (voie 10 cm, 0,25 m/s), un pare-chocs, cinq télémètres infrarouges (devant, ±45°, côtés ; portée 40 cm, bruit 8 mm), un capteur de couleur à l'avant, des codeurs sur les roues. Les codeurs comptent la rotation des roues même quand le robot patine contre un mur, et les deux roues n'ont pas exactement le même diamètre (+0,4 % / −0,3 %) : l'odométrie dérive. La caméra (5 Hz, 2 cm par pixel) donne la position et le cap ; un filtre de Kalman étendu fusionne les deux.",
+        note2: "Les stratégies : couleurs (au contact, recule puis s'écarte par la droite du noir, par la gauche du rouge : il garde le noir à gauche et fait le tour) ; rebond aléatoire (recule et tourne au hasard) ; suivi de mur à droite (régulateur PD sur la distance au mur) ; Bug2 (va droit vers l'arrivée, contourne ce qui le bloque et reprend sa ligne) ; champ de potentiel (attiré par des points de passage, repoussé par les télémètres). Les trois premières n'ont besoin d'aucune localisation ; les deux dernières en dépendent.",
+        note3: "Vérifié par 220 tests : distances des télémètres exactes, filtre de Kalman (prédiction = odométrie, la mesure réduit l'incertitude), odométrie exacte avec des codeurs parfaits, aucun robot ne traverse un mur ni un autre robot, et les résultats des stratégies sur 20 courses par piste.",
+        repo: 'Dépôt : moteur, tests, explications ↗',
+        trackL: 'Piste', tU: 'Piste en U (ma vidéo)', tObs: 'Avec obstacles', tChi: 'Chicanes', robotsL: 'Les quatre robots', algo: 'Stratégie', loc: 'Localisation',
+        algos: { colors: 'couleurs (TP)', bounce: 'rebond aléatoire', wall: 'suivi de mur', bug2: 'Bug2', potential: 'champ de potentiel' },
+        locs: { true: 'parfaite', odom: 'odométrie seule', ekf: 'odométrie + caméra' },
+        names: ['orange (le mien)', 'rouge', 'bleu', 'violet'],
+        kTime: 'Temps', kFirst: 'En tête', kHits: 'Chocs (orange)', kErr: 'Erreur de position (orange)', kStrat: 'Stratégie (orange)', kDone: 'Arrivés',
+        rankCols: ['', 'Robot', 'Stratégie', 'Temps', 'Chocs', 'Distance', 'Erreur moy.'], dnf: 'pas arrivé',
+        statCols: ['Stratégie', 'Localisation', 'Arrivées', 'Temps moyen', 'Meilleur', 'Chocs', 'Erreur de position'], computing: 'calcul…',
+        lgErr: "erreur de position estimée (cm) au cours de la course",
+      },
+      en: {
+        back: '← Back to portfolio', eyebrow: 'Demo · rebuilt from scratch in 2026, from a robot race in a lab (December 2024)', title: 'Autonomous robot race: obstacles, localisation and strategies',
+        intro: 'In a lab, small autonomous robots raced on a track lined with barriers: red on the edge, black in the middle. Each robot had to reach the finish on its own, detecting the barriers, backing off on contact and setting off again on the right side depending on the colour; a ceiling camera let us follow the race on the computer. I had the orange robot and I won. The original program is lost: this demo rebuilds everything from scratch, with a robot model, its sensors and five competing strategies.',
+        warn: 'Simulation rebuilt in 2026: this is not my 2024 program (lost). Robot, sensor and camera values are ASSUMED (orders of magnitude, see the notes). The “colours” strategy follows the race rule as I remember it.',
+        pause: 'Pause', play: 'Resume', again: 'New race', speed: 'Speed',
+        trackHint: 'Top view, 4 m × 1.2 m track: start bottom left, U-turn at the end of the black barrier, finish top left (checkerboard). Solid line: actual path; dashed circle: where the robot thinks it is. The rays are the orange robot range sensors.',
+        camT: 'What the computer sees (ceiling camera)', camHint: 'The camera image is pixelated (2 cm per pixel) and refreshes only 5 times per second: the measured position jumps and jitters. The Kalman filter fuses it with the wheel encoders.',
+        rankT: 'Ranking', errHint: 'Gap between actual and estimated position. Odometry alone drifts (wheel calibration error, slipping against walls); with the camera and the Kalman filter the error stays at a few millimetres.',
+        statT: 'Statistics: 30 races per strategy, alone on the track', runStats: 'Run', statHint: 'Each row: 30 races with different random draws (sensor and encoder noise, bounce angles), robot alone on the track, 3 minutes maximum.',
+        note1: 'The robot: two driven wheels (10 cm track, 0.25 m/s), a bumper, five infrared range sensors (front, ±45°, sides; 40 cm range, 8 mm noise), a front colour sensor, wheel encoders. The encoders count wheel rotation even when the robot slips against a wall, and the two wheels are not exactly the same diameter (+0.4 % / −0.3 %): odometry drifts. The camera (5 Hz, 2 cm per pixel) gives position and heading; an extended Kalman filter fuses both.',
+        note2: 'Strategies: colours (on contact, back off then veer right away from black, left away from red: it keeps black on its left and goes round); random bounce (backs off and turns randomly); right wall following (PD controller on wall distance); Bug2 (heads straight for the finish, goes round whatever blocks it and rejoins its line); potential field (attracted by waypoints, repelled by the range sensors). The first three need no localisation; the last two depend on it.',
+        note3: 'Checked by 220 tests: exact range sensor distances, Kalman filter (prediction = odometry, the measurement reduces uncertainty), exact odometry with perfect encoders, no robot passes through a wall or another robot, and strategy results over 20 races per track.',
+        repo: 'Repository: engine, tests, explanations ↗',
+        trackL: 'Track', tU: 'U track (my video)', tObs: 'With obstacles', tChi: 'Chicanes', robotsL: 'The four robots', algo: 'Strategy', loc: 'Localisation',
+        algos: { colors: 'colours (lab)', bounce: 'random bounce', wall: 'wall following', bug2: 'Bug2', potential: 'potential field' },
+        locs: { true: 'perfect', odom: 'odometry only', ekf: 'odometry + camera' },
+        names: ['orange (mine)', 'red', 'blue', 'purple'],
+        kTime: 'Time', kFirst: 'Leading', kHits: 'Bumps (orange)', kErr: 'Position error (orange)', kStrat: 'Strategy (orange)', kDone: 'Finished',
+        rankCols: ['', 'Robot', 'Strategy', 'Time', 'Bumps', 'Distance', 'Mean error'], dnf: 'did not finish',
+        statCols: ['Strategy', 'Localisation', 'Finished', 'Mean time', 'Best', 'Bumps', 'Position error'], computing: 'computing…',
+        lgErr: 'estimated position error (cm) during the race',
+      },
+    };
+    const t = (k) => (T[lang][k] !== undefined ? T[lang][k] : T.fr[k]);
+    const fmt = (v, d) => (isFinite(v) ? v.toFixed(d) : '—').replace('.', lang === 'fr' ? ',' : '.');
+    const COLS = ['#ff8a1f', '#e0323a', '#3a6fe0', '#a24bd6'];
+    const S = { track: 'u', seed: 1, speed: 2, bots: [{ algo: 'colors', loc: 'ekf' }, { algo: 'bounce', loc: 'ekf' }, { algo: 'wall', loc: 'ekf' }, { algo: 'potential', loc: 'odom' }] };
+    let RES = null, simT = 0, last = null, running = true;
+    function seg(box, list, cur, onPick) { const s = document.createElement('div'); s.className = 'seg'; list.forEach(([v, l]) => { const b = document.createElement('button'); b.type = 'button'; b.className = 'btn'; b.textContent = l; b.setAttribute('aria-pressed', String(v) === String(cur)); b.addEventListener('click', () => onPick(v)); s.appendChild(b); }); box.appendChild(s); return s; }
+    const h3 = (box, txt, first) => { const h = document.createElement('h3'); h.textContent = txt; if (first) h.style.cssText = 'margin-top:0;padding-top:0;border:0'; box.appendChild(h); };
+    function select(box, label, opts, cur, onCh) { const w = document.createElement('label'); w.className = 'sel'; w.innerHTML = '<span>' + label + '</span>'; const s = document.createElement('select'); opts.forEach(([v, l]) => { const o = document.createElement('option'); o.value = v; o.textContent = l; if (v === cur) o.selected = true; s.appendChild(o); }); s.addEventListener('change', () => onCh(s.value)); w.appendChild(s); box.appendChild(w); }
+    function renderCtl() {
+      const box = $('ctl'); box.innerHTML = '';
+      h3(box, t('trackL'), true);
+      seg(box, [['u', t('tU')], ['obstacles', t('tObs')], ['chicane', t('tChi')]], S.track, (v) => { S.track = v; renderCtl(); run(); });
+      h3(box, t('robotsL'));
+      S.bots.forEach((b, i) => {
+        const d = document.createElement('div'); d.className = 'bot'; d.innerHTML = '<p class="bn"><i style="background:' + COLS[i] + '"></i>' + t('names')[i] + '</p>'; box.appendChild(d);
+        select(d, t('algo'), R.ALGOS.map((a) => [a, t('algos')[a]]), b.algo, (v) => { b.algo = v; run(); });
+        select(d, t('loc'), ['ekf', 'odom', 'true'].map((l) => [l, t('locs')[l]]), b.loc, (v) => { b.loc = v; run(); });
+      });
+    }
+    function run() { RES = R.race({ track: S.track, robots: S.bots.map((b, i) => ({ algo: b.algo, loc: b.loc, color: COLS[i] })), seed: S.seed, record: true, every: 5 }); simT = 0; drawErr(); rank(); }
+    function setup(cv) { const dpr = window.devicePixelRatio || 1, w = cv.clientWidth, h = cv.clientHeight; if (cv.width !== Math.round(w * dpr) || cv.height !== Math.round(h * dpr)) { cv.width = Math.round(w * dpr); cv.height = Math.round(h * dpr); } const c = cv.getContext('2d'); c.setTransform(dpr, 0, 0, dpr, 0, 0); return { c, w, h }; }
+    const tEnd = () => Math.max(...RES.bots.map((b) => (b.trace.length ? b.trace[b.trace.length - 1][0] : 0)));
+    const at = (b, tt) => { const tr = b.trace; let k = Math.min(tr.length - 1, Math.floor(tt / (RES.dt * 5))); return tr[Math.max(0, k)]; };
+    function drawTrackTo(c, w, h, opts) {
+      const Tk = RES.track, sx = w / Tk.W, sy = h / Tk.H, X = (x) => x * sx, Y = (y) => h - y * sy;
+      c.fillStyle = opts.cam ? '#b9b4a8' : '#d9d6cf'; c.fillRect(0, 0, w, h);
+      // arrivée (damier)
+      const fx = Tk.finish.x; for (let i = 0; i < 6; i++) for (let j = 0; j < 2; j++) { c.fillStyle = (i + j) % 2 ? '#111' : '#f2f2f2'; c.fillRect(X(fx) - (j + 1) * 6, Y(0.6) - (i + 1) * (Y(0.6) - Y(1.2)) / 6, 6, (Y(0.6) - Y(1.2)) / 6); }
+      Tk.walls.forEach((s, i) => { c.strokeStyle = Tk.colors[i] === 'black' ? '#151515' : '#c8102e'; c.lineWidth = opts.cam ? 3 : 4; c.beginPath(); c.moveTo(X(s[0]), Y(s[1])); c.lineTo(X(s[2]), Y(s[3])); c.stroke(); });
+      return { X, Y, sx };
+    }
+    function drawTrack() {
+      const { c, w, h } = setup($('cvTrack')), { X, Y, sx } = drawTrackTo(c, w, h, {});
+      RES.bots.forEach((b, i) => {
+        // trace réelle jusqu'à simT
+        c.strokeStyle = COLS[i] + 'aa'; c.lineWidth = 1.5; c.beginPath(); let st = false;
+        for (const p of b.trace) { if (p[0] > simT) break; st ? c.lineTo(X(p[1]), Y(p[2])) : c.moveTo(X(p[1]), Y(p[2])); st = true; } c.stroke();
+        const p = at(b, simT); if (!p) return;
+        // position estimée
+        c.setLineDash([3, 3]); c.strokeStyle = COLS[i]; c.lineWidth = 1.2; c.beginPath(); c.arc(X(p[4]), Y(p[5]), R.ROBOT.r * sx, 0, 7); c.stroke(); c.setLineDash([]);
+        // télémètres du robot orange
+        if (i === 0) R.ROBOT.irAngles.forEach((a, k) => { const d = Math.min(R.ROBOT.irRange, p[7][k]) + R.ROBOT.r, ang = p[3] + a; c.strokeStyle = p[7][k] < R.ROBOT.irRange ? 'rgba(200,16,46,0.8)' : 'rgba(80,80,80,0.35)'; c.lineWidth = 1; c.beginPath(); c.moveTo(X(p[1]), Y(p[2])); c.lineTo(X(p[1] + d * Math.cos(ang)), Y(p[2] + d * Math.sin(ang))); c.stroke(); });
+        // robot (dôme)
+        c.fillStyle = COLS[i]; c.beginPath(); c.arc(X(p[1]), Y(p[2]), R.ROBOT.r * sx, 0, 7); c.fill();
+        if (p[8]) { c.strokeStyle = '#fff'; c.lineWidth = 2; c.stroke(); }
+        c.strokeStyle = '#111'; c.lineWidth = 2; c.beginPath(); c.moveTo(X(p[1]), Y(p[2])); c.lineTo(X(p[1] + R.ROBOT.r * Math.cos(p[3])), Y(p[2] + R.ROBOT.r * Math.sin(p[3]))); c.stroke();
+      });
+    }
+    function drawCam() {
+      const cv = $('cvCam'), { c, w, h } = setup(cv), lw = 200, lh = 60, off = document.createElement('canvas'); off.width = lw; off.height = lh;
+      const oc = off.getContext('2d'), m = drawTrackTo(oc, lw, lh, { cam: true });
+      let fr = null; for (const f of RES.frames) { if (f[0] > simT) break; fr = f; }
+      if (fr) fr[1].forEach((z, i) => { if (!z) return; oc.fillStyle = COLS[i]; oc.beginPath(); oc.arc(m.X(z[0]), m.Y(z[1]), 2.5, 0, 7); oc.fill(); });
+      c.imageSmoothingEnabled = false; c.drawImage(off, 0, 0, w, h);
+      c.fillStyle = 'rgba(0,0,0,0.55)'; c.fillRect(0, 0, 140, 18); c.fillStyle = '#8fd18f'; c.font = '11px "JetBrains Mono", monospace'; c.fillText('CAM 5 Hz  ' + fmt(fr ? fr[0] : 0, 1) + ' s', 6, 13);
+    }
+    function drawErr() {
+      const { c, w, h } = setup($('cvErr')); c.fillStyle = '#0a0a0b'; c.fillRect(0, 0, w, h);
+      const t1 = Math.max(10, tEnd()), series = RES.bots.map((b) => b.trace.map((p) => [p[0], Math.hypot(p[4] - p[1], p[5] - p[2]) * 100]));
+      let hi = 1; series.forEach((s) => s.forEach((p) => (hi = Math.max(hi, p[1])))); hi = Math.min(hi * 1.1, 200);
+      const pl = 40, pb = 20, X = (x) => pl + (x / t1) * (w - pl - 8), Y = (v) => 8 + (1 - Math.min(v, hi) / hi) * (h - 8 - pb);
+      c.font = '10px "JetBrains Mono", monospace'; c.fillStyle = '#6c6c70'; c.strokeStyle = '#1e1e21'; c.textAlign = 'right';
+      for (let k = 0; k <= 4; k++) { const v = (hi * k) / 4; c.beginPath(); c.moveTo(pl, Y(v)); c.lineTo(w - 8, Y(v)); c.stroke(); c.fillText(fmt(v, v < 10 ? 1 : 0), pl - 4, Y(v) + 3); }
+      c.textAlign = 'center'; for (let k = 0; k <= 4; k++) c.fillText(fmt((t1 * k) / 4, 0) + ' s', X((t1 * k) / 4), h - 5);
+      series.forEach((s, i) => { c.strokeStyle = COLS[i]; c.lineWidth = 1.5; c.beginPath(); s.forEach((p, k) => (k ? c.lineTo(X(p[0]), Y(p[1])) : c.moveTo(X(p[0]), Y(p[1])))); c.stroke(); });
+      c.strokeStyle = 'rgba(242,242,242,0.5)'; c.beginPath(); c.moveTo(X(simT), 6); c.lineTo(X(simT), h - pb); c.stroke();
+      $('lgErr').innerHTML = '<span>' + t('lgErr') + '</span>' + RES.bots.map((b, i) => '<span><i style="background:' + COLS[i] + '"></i>' + t('locs')[b.loc] + '</span>').join('');
+    }
+    function rank() {
+      const rows = RES.bots.map((b, i) => ({ b, i })).sort((a, z) => (a.b.time === null ? 1e9 : a.b.time) - (z.b.time === null ? 1e9 : z.b.time));
+      $('rank').innerHTML = '<thead><tr>' + t('rankCols').map((x, j) => '<th' + (j > 2 ? ' class="n"' : '') + '>' + x + '</th>').join('') + '</tr></thead><tbody>' + rows.map(({ b, i }, r) => '<tr' + (i === 0 ? ' class="me"' : '') + '><td>' + (b.time === null ? '—' : r + 1) + '</td><td><span class="sw" style="background:' + COLS[i] + '"></span>' + t('names')[i] + '</td><td>' + t('algos')[b.algo] + '</td><td class="n">' + (b.time === null ? '<span class="dim">' + t('dnf') + '</span>' : fmt(b.time, 1) + ' s') + '</td><td class="n">' + b.hits + '</td><td class="n">' + fmt(b.dist, 1) + ' m</td><td class="n">' + fmt(b.errRms * 100, 1) + ' cm</td></tr>').join('') + '</tbody>';
+    }
+    function kpis() {
+      const kpi = (k, v, u, cls) => '<div class="kpi' + (cls ? ' ' + cls : '') + '"><dt>' + k + '</dt><dd>' + v + (u ? '<small>' + u + '</small>' : '') + '</dd></div>';
+      const me = RES.bots[0], p = at(me, simT), done = RES.bots.filter((b) => b.time !== null && b.time <= simT).length;
+      // en tête : le plus avancé le long du parcours (abscisse curviligne approchée)
+      const prog = (q) => (q[1] > 3.3 || q[2] > 0.6 ? (q[2] > 0.6 ? 3.3 + 0.6 + (3.6 - q[1]) : q[1] + (q[2] - 0)) : q[1]);
+      let lead = 0, best = -1; RES.bots.forEach((b, i) => { const q = at(b, simT); const v = b.time !== null && b.time <= simT ? 1e6 - b.time : prog(q); if (v > best) { best = v; lead = i; } });
+      const hitsNow = me.trace.filter((q, k) => q[0] <= simT && q[8] && !(me.trace[k - 1] && me.trace[k - 1][8])).length;
+      $('kpis').innerHTML = kpi(t('kTime'), fmt(simT, 1), 's') + kpi(t('kFirst'), '<span class="sw" style="background:' + COLS[lead] + '"></span>' + t('names')[lead].split(' ')[0], '') + kpi(t('kStrat'), t('algos')[me.algo], '') + kpi(t('kHits'), String(hitsNow), '') + kpi(t('kErr'), fmt(Math.hypot(p[4] - p[1], p[5] - p[2]) * 100, 1), 'cm') + kpi(t('kDone'), done + ' / 4', '', done ? 'good' : '');
+    }
+    function loop(now) {
+      if (RES) {
+        if (last === null) last = now; const dt = Math.min(0.05, (now - last) / 1000); last = now;
+        if (running) simT = Math.min(tEnd(), simT + dt * [1, 4, 12][S.speed - 1 < 0 ? 0 : S.speed - 1]);
+        drawTrack(); drawCam(); drawErr(); kpis();
+        $('clk').textContent = fmt(simT, 1) + ' s';
+      }
+      requestAnimationFrame(loop);
+    }
+    function runStats() {
+      const plan = [['colors', 'odom'], ['bounce', 'odom'], ['wall', 'odom'], ['bug2', 'odom'], ['bug2', 'ekf'], ['potential', 'odom'], ['potential', 'ekf'], ['potential', 'true']], out = [];
+      $('stats').innerHTML = '<tr><td>' + t('computing') + '</td></tr>';
+      const step = () => {
+        if (out.length === plan.length) return;
+        const [a, l] = plan[out.length]; out.push(R.stats(a, l, 30, { track: S.track }));
+        $('stats').innerHTML = '<thead><tr>' + t('statCols').map((x, j) => '<th' + (j > 1 ? ' class="n"' : '') + '>' + x + '</th>').join('') + '</tr></thead><tbody>' + out.map((s) => '<tr><td>' + t('algos')[s.algo] + '</td><td>' + t('locs')[s.loc] + '</td><td class="n ' + (s.rate === 1 ? 'good' : s.rate < 0.5 ? 'bad' : '') + '">' + fmt(s.rate * 100, 0) + ' %</td><td class="n">' + (isFinite(s.tMean) ? fmt(s.tMean, 1) + ' s' : '—') + '</td><td class="n">' + (isFinite(s.tMin) ? fmt(s.tMin, 1) + ' s' : '—') + '</td><td class="n">' + fmt(s.hits, 1) + '</td><td class="n">' + fmt(s.err * 100, 1) + ' cm</td></tr>').join('') + (out.length < plan.length ? '<tr><td colspan="7" class="dim">' + t('computing') + '</td></tr>' : '') + '</tbody>';
+        setTimeout(step, 10);
+      };
+      setTimeout(step, 10);
+    }
+    $('play').addEventListener('click', () => { running = !running; $('play').textContent = running ? t('pause') : t('play'); });
+    $('again').addEventListener('click', () => { S.seed++; run(); running = true; $('play').textContent = t('pause'); });
+    $('runStats').addEventListener('click', runStats);
+    function renderSpeed() { $('speed').innerHTML = ''; seg($('speed'), [[1, '×1'], [2, '×4'], [3, '×12']], S.speed, (v) => { S.speed = v; renderSpeed(); }).style.margin = '0'; }
+    function setLang(l) {
+      lang = l; document.documentElement.lang = l;
+      document.querySelectorAll('[data-t]').forEach((el) => { const v = T[l][el.dataset.t]; if (typeof v === 'string') el.textContent = v; });
+      document.querySelectorAll('.lang button').forEach((b) => b.setAttribute('aria-pressed', b.dataset.lang === l));
+      try { localStorage.setItem('lang', l); } catch (e) {}
+      $('play').textContent = running ? t('pause') : t('play');
+      renderCtl(); renderSpeed(); if (RES) { rank(); drawErr(); }
+    }
+    document.querySelectorAll('.lang button').forEach((b) => b.addEventListener('click', () => setLang(b.dataset.lang)));
+    setLang(lang); run();
+    requestAnimationFrame(loop);
+  })();
+  </script>
+</body>
+</html>
