@@ -101,6 +101,38 @@
     ul.issues li.ok::before { background: var(--ok); } ul.issues li.bad::before { background: var(--accent); }
     .good { color: var(--ok); } .note a { color: var(--text); }
     .msg { font: 0.78rem var(--mono); color: var(--warn); min-height: 1.2em; margin-top: 6px; }
+    .schema { width: 100%; display: block; background: #0a0a0b; border: 1px solid var(--border); border-radius: 6px; }
+    .schema line, .schema polyline, .schema path { stroke-width: 1.6; fill: none; stroke-linecap: round; }
+    .schema .fill { stroke: none; }
+    .schema .ax { stroke: #6c6c70; } .schema .ax.fill { fill: #9b9b9f; }
+    .schema .lens { stroke: #f2f2f2; stroke-width: 2; fill: none; } .schema .lens.fill { fill: #f2f2f2; }
+    .schema .obj { stroke: #f2f2f2; stroke-width: 2.4; } .schema .obj.fill { fill: #f2f2f2; }
+    .schema .img { stroke: #c8102e; stroke-width: 2.4; } .schema .img.fill { fill: #c8102e; }
+    .schema .r1 { stroke: #e0a458; } .schema .r1.fill { fill: #e0a458; }
+    .schema .r2 { stroke: #4fb3a9; } .schema .r2.fill { fill: #4fb3a9; }
+    .schema .r3 { stroke: #c9c9cc; } .schema .r3.fill { fill: #c9c9cc; }
+    .schema .aux, .schema line.dim { stroke: #6c6c70; } .schema .aux.fill { fill: #9b9b9f; }
+    .schema .dash { stroke-dasharray: 5 4; }
+    .schema text { font: 12px "JetBrains Mono", monospace; fill: #c9c9cc; stroke: none; }
+    .schema text.dim { fill: #8a8a8f; font-size: 10px; } .schema text.objt { fill: #f2f2f2; } .schema text.imgt { fill: #ff8a8a; }
+    .schema .medium2 { fill: rgba(120,160,190,0.16); } .schema .medium0 { fill: rgba(190,150,110,0.12); } .schema .glass { fill: rgba(120,160,190,0.2); stroke: #9b9b9f; stroke-width: 1.2; }
+    .schema .cone { fill: rgba(79,179,169,0.15); } .schema .sensor { fill: #55555a; }
+    #ctlS .scen .btn { font-size: 0.8rem; padding: 5px 9px; }
+    .quiz { display: grid; gap: 8px; margin-top: 12px; font-size: 0.86rem; }
+    .quiz .row { display: flex; flex-wrap: wrap; gap: 6px; align-items: center; }
+    .quiz .row b { font: 500 0.76rem var(--mono); color: var(--dim); min-width: 8ch; }
+    .quiz .btn.ok { border-color: var(--ok); color: var(--ok); } .quiz .btn.ko { border-color: var(--accent); color: #ff8a8a; }
+    #sheet { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 14px; margin-top: 12px; }
+    #sheet figure { margin: 0; } #sheet figcaption { font: 500 0.76rem var(--mono); color: var(--dim); margin-bottom: 4px; }
+    @media (max-width: 760px) { #sheet { grid-template-columns: minmax(0, 1fr); } }
+    @media print {
+      body { background: #fff; } .wrap > *:not(#tab-schem), #tab-schem .grid > .stack:first-child, #tab-schem .main-col > .panel:not(:last-child), #tab-schem .seg, #tab-schem h2 { display: none !important; }
+      #tab-schem { display: block !important; } #tab-schem .grid { display: block; margin: 0; } .panel { border: 0; background: #fff; padding: 0; }
+      #sheet { grid-template-columns: 1fr 1fr; gap: 8px; } #sheet figure { break-inside: avoid; } #sheet figcaption { color: #000; }
+      .schema { background: #fff; border: 1px solid #bbb; } .schema .ax, .schema .aux, .schema line.dim { stroke: #777; } .schema .ax.fill, .schema .aux.fill { fill: #777; }
+      .schema .lens, .schema .obj { stroke: #000; } .schema .lens.fill, .schema .obj.fill { fill: #000; } .schema text, .schema text.objt { fill: #000; } .schema text.dim { fill: #555; }
+      .schema .r3 { stroke: #555; } .schema .r3.fill { fill: #555; } .schema .r1 { stroke: #c06a00; } .schema .r1.fill { fill: #c06a00; } .schema .r2 { stroke: #1b7f74; } .schema .r2.fill { fill: #1b7f74; }
+    }
     @media (max-width: 1000px) { .grid { grid-template-columns: minmax(0, 1fr); } .main-col { order: -1; } }
     @media (max-width: 760px) { .screenrow { grid-template-columns: minmax(0, 1fr); } #cvScreen { max-width: none; } .kpis { grid-template-columns: repeat(3, minmax(0, 1fr)); } .row2 { grid-template-columns: minmax(0, 1fr); } .pins { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
   </style>
@@ -117,10 +149,11 @@
     <p class="warnbox" data-t="warn"></p>
     <div class="tabs" role="tablist">
       <button type="button" role="tab" data-tab="bench" data-t="tabBench">1 · Banc d'optique</button>
-      <button type="button" role="tab" data-tab="gauss" data-t="tabGauss">2 · Conditions de Gauss</button>
-      <button type="button" role="tab" data-tab="refr" data-t="tabRefr">3 · Réfraction, prisme, fibre</button>
-      <button type="button" role="tab" data-tab="diff" data-t="tabDiff">4 · Laser, interférences, diffraction</button>
-      <button type="button" role="tab" data-tab="check" data-t="tabCheck">5 · Vérifications</button>
+      <button type="button" role="tab" data-tab="schem" data-t="tabSchem">2 · Schémas à connaître</button>
+      <button type="button" role="tab" data-tab="gauss" data-t="tabGauss">3 · Conditions de Gauss</button>
+      <button type="button" role="tab" data-tab="refr" data-t="tabRefr">4 · Réfraction, prisme, fibre</button>
+      <button type="button" role="tab" data-tab="diff" data-t="tabDiff">5 · Laser, interférences, diffraction</button>
+      <button type="button" role="tab" data-tab="check" data-t="tabCheck">6 · Vérifications</button>
     </div>
 
     <section class="tab" id="tab-bench">
@@ -149,6 +182,31 @@
             </div>
             <div id="besselBox" style="margin-top:12px"></div>
             <p class="hint" data-t="measHint"></p>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section class="tab" id="tab-schem" hidden>
+      <div class="grid">
+        <div class="stack"><div class="panel" id="ctlS"></div></div>
+        <div class="stack main-col">
+          <div class="panel">
+            <h2 id="sTitle"></h2>
+            <div id="sFig"></div>
+            <div class="controls"><button type="button" class="btn" id="sPrev">◀</button><button type="button" class="btn primary" id="sNext" data-t="sNext">Étape suivante ▶</button><button type="button" class="btn" id="sAll" data-t="sAll">Tout montrer</button><button type="button" class="btn" id="sHide" data-t="sHide">Tout cacher (révision)</button><button type="button" class="btn" id="sQuizB" data-t="sQuizB">Quiz : nature de l'image</button><span id="sCount"></span></div>
+            <div id="sQuiz"></div>
+            <ol class="review" id="sSteps" style="margin-top:12px"></ol>
+            <p class="hint" id="sNum"></p>
+          </div>
+          <div class="panel">
+            <h2 data-t="sRulesT">Règles à savoir par cœur</h2>
+            <ul class="issues" id="sRules" style="margin-top:0"></ul>
+          </div>
+          <div class="panel">
+            <h2 data-t="sSheetT">Planche complète</h2>
+            <div class="seg"><button type="button" class="btn" id="sSheetB" data-t="sSheetB">Afficher tous les schémas</button><button type="button" class="btn" id="sPrint" data-t="sPrint">Imprimer la planche</button></div>
+            <div id="sheet"></div>
           </div>
         </div>
       </div>
@@ -238,6 +296,7 @@
     <div class="panel note" style="margin-top:20px"><p data-t="note1"></p><p data-t="note2"></p><p data-t="note3"></p></div>
   </div>
   <script src="optique.js"></script>
+  <script src="schemas.js"></script>
   <script>
   (function () {
     'use strict';
@@ -249,7 +308,7 @@
         back: '← Retour au portfolio', eyebrow: "Démo · refaite de zéro en 2026, d'après un TP d'optique (banc, lentilles, laser)", title: "Banc d'optique : lentilles, conditions de Gauss et diffraction d'un laser",
         intro: "En TP d'optique, on travaillait sur un banc : une lampe et un objet, des lentilles convergentes et divergentes qu'on déplace, un écran, puis un laser et des fentes pour la diffraction, toujours « dans l'approximation des petits angles ». Je n'ai plus les photos ni les mesures, alors j'ai refait le banc de zéro et je suis allé plus loin : flou réel sur l'écran, œil qui accommode, faisceau laser gaussien, mesure de focale avec incertitudes, tracé de rayons exact pour voir où s'arrêtent les conditions de Gauss, chromatisme et doublet achromatique, diffraction avec angles exacts et écran proche (Fresnel). J'ai ajouté ce qu'on voyait en cours autour du TP : réfraction et réflexion totale, prisme, fibre optique, interférences (formule de Fresnel, contraste, lumière blanche) et la lunette astronomique.",
         warn: "Simulation refaite en 2026 : aucune photo ni mesure d'origine. Lentilles et lasers du commerce (N-BK7, F2, lasers 405 à 650 nm), indices calculés par la formule de Sellmeier. Ce n'est ni le sujet ni le compte rendu du TP.",
-        tabBench: "1 · Banc d'optique", tabGauss: '2 · Conditions de Gauss', tabRefr: '3 · Réfraction, prisme, fibre', tabDiff: '4 · Laser, interférences, diffraction', tabCheck: '5 · Vérifications',
+        tabBench: "1 · Banc d'optique", tabSchem: '2 · Schémas à connaître', tabGauss: '3 · Conditions de Gauss', tabRefr: '4 · Réfraction, prisme, fibre', tabDiff: '5 · Laser, interférences, diffraction', tabCheck: '6 · Vérifications',
         benchHint: "Fais glisser la source, les lentilles ou l'écran directement sur le banc (ou utilise les curseurs). Optique paraxiale : lentilles minces, matrices de transfert. Avec une seule lentille, les 3 rayons particuliers (rouge : parallèle à l'axe puis par F′ ; gris : par le centre ; vert : par F puis parallèle) construisent l'image ; « faisceau réel » montre les rayons que laissent passer les montures. Pointillés : plans focaux objet (F) et image (F′) ; un objet à l'infini donne son image dans le plan focal image. Les montures limitent les rayons (flou, vignettage). L'échelle verticale est agrandie pour lire les rayons.",
         scrT: "Ce qu'on voit sur l'écran", scrEye: "Ce que voit l'œil (champ ±12°)",
         measT: 'Mesurer une focale comme en TP', bFocus: "Placer l'écran au point", bRead: 'Relever (OA, OA′)', bClear: 'Effacer', bBessel: 'Méthode de Bessel (2 000 essais)',
@@ -267,6 +326,15 @@
         note1: "Ce que je retiens : les formules du TP (Descartes, grandissement, L = 2λD/a) sont des approximations de petits angles. Le tracé exact montre précisément quand elles cessent d'être vraies, et pourquoi on diaphragme les lentilles ou on choisit leur sens.",
         note2: "Modèle : lentilles minces paraxiales sur le banc ; tracé exact (loi de Snell-Descartes vectorielle) dans des lentilles épaisses à faces sphériques, dans le plan méridien seulement ; œil réduit (lentille de 17 mm, accommodation de 25 cm à l'infini, pupille 4 mm) ; faisceau laser gaussien idéal (M² = 1) ; diffraction de Fraunhofer (et Fresnel pour la fente), éclairage cohérent.",
         note3: "Sources des données : coefficients de Sellmeier du catalogue Schott (N-BK7, F2, N-SF11) et de Malitson (1965) pour la silice. Pas un logiciel de conception optique.",
+        sNext: 'Étape suivante ▶', sAll: 'Tout montrer', sHide: 'Tout cacher (révision)', sQuizB: "Quiz : nature de l'image", sRulesT: 'Règles à savoir par cœur', sSheetT: 'Planche complète', sSheetB: 'Afficher tous les schémas', sPrint: 'Imprimer la planche',
+        qLab: { nat: 'Image', sens: 'Sens', taille: 'Taille' }, qOpt: { real: 'réelle', virt: 'virtuelle', inf: "à l'infini", up: 'droite', down: 'renversée', big: 'agrandie', small: 'réduite', same: 'même taille' }, qScore: (a, n) => a + ' / ' + n + ' bonnes réponses. Clique « Étape suivante » pour refaire la construction.',
+        sRules: {
+          conv: ['Un rayon parallèle à l’axe ressort en passant par le foyer image F′.', 'Un rayon passant par le centre optique O n’est pas dévié.', 'Un rayon passant par le foyer objet F ressort parallèle à l’axe.', 'Conjugaison : 1/OA′ − 1/OA = 1/f′ ; grandissement γ = A′B′/AB = OA′/OA.', 'Réel : du côté où la lumière va réellement (image après la lentille, objet avant) ; virtuel : à l’intersection des prolongements (pointillés).', 'Lentille convergente : F′ après la lentille (f′ > 0), F symétrique de F′ par rapport à O.'],
+          div: ['Un rayon parallèle à l’axe ressort comme s’il venait de F′ (F′ est AVANT la lentille, f′ < 0).', 'Un rayon passant par O n’est pas dévié.', 'Un rayon dirigé vers F (après la lentille) ressort parallèle à l’axe.', 'Un objet réel donne toujours une image virtuelle, droite et réduite.', 'Mêmes formules : 1/OA′ − 1/OA = 1/f′ et γ = OA′/OA, avec f′ < 0.'],
+          any: ['Deux rayons parallèles entre eux avant une lentille se coupent (ou leurs prolongements) dans le plan focal IMAGE.', 'Deux rayons qui ressortent parallèles entre eux viennent d’un même point du plan focal OBJET.', 'Méthode : tracer le rayon parallèle qui passe par O (non dévié), repérer le foyer secondaire F′s ou Fs, puis relier.'],
+          base: ['Réflexion : rayon réfléchi dans le plan d’incidence, angle de réflexion = angle d’incidence.', 'Réfraction : n₁ sin i₁ = n₂ sin i₂ (angles comptés depuis la normale).', 'Réflexion totale si n₁ > n₂ et i₁ > iₗ avec sin iₗ = n₂/n₁.', 'Miroir plan : image symétrique, virtuelle, de même taille ; stigmatisme rigoureux.', 'Conditions de Gauss (stigmatisme approché des lentilles) : rayons proches de l’axe et peu inclinés.'],
+          dev: ['Prisme : sin i = n sin r, n sin r′ = sin i′, r + r′ = A, D = i + i′ − A ; au minimum : n = sin((A + Dm)/2)/sin(A/2).', 'Fibre : ON = sin θa = √(n₁² − n₂²).', 'Loupe : objet dans le plan focal objet, image à l’infini, G = dₘ/f′ (dₘ ≈ 25 cm).', 'Lunette de Kepler : F′₁ = F₂ (afocale), G = α′/α = −f′₁/f′₂.', 'Œil réduit : lentille de focale variable + rétine fixe ; PR à l’infini et PP ≈ 25 cm pour l’œil normal ; myope → lentille divergente, hypermétrope → convergente.', 'Appareil photo : image réelle sur le capteur, mise au point par le tirage, diaphragme = lumière et profondeur de champ.'],
+        },
         ctlExp: 'Expériences', ctlSrc: 'Source', ctlLens: 'Lentilles', ctlScr: 'Écran ou œil',
         srcObj: 'Lampe + objet « F »', srcLaser: 'Laser', srcInf: "Objet à l'infini (étoiles)",
         pos: 'position', focal: 'focale f′', diam: 'diamètre des montures', objH: "hauteur de l'objet", alpha: "angle de l'étoile hors axe", w0: 'rayon du faisceau laser',
@@ -309,7 +377,7 @@
         back: '← Back to portfolio', eyebrow: 'Demo · rebuilt from scratch in 2026, after an optics lab (bench, lenses, laser)', title: 'Optical bench: lenses, paraxial (Gauss) conditions and laser diffraction',
         intro: "In the optics lab we worked on a bench: a lamp and an object, converging and diverging lenses we moved around, a screen, then a laser and slits for diffraction, always \"in the small-angle approximation\". I no longer have the photos or the measurements, so I rebuilt the bench from scratch and went further: real blur on the screen, an eye that accommodates, a Gaussian laser beam, focal-length measurement with uncertainties, exact ray tracing to see where the paraxial conditions stop, chromatic aberration and an achromatic doublet, diffraction with exact angles and a close screen (Fresnel). I added what the course covered around the lab: refraction and total internal reflection, prism, optical fibre, interference (Fresnel formula, contrast, white light) and the astronomical telescope.",
         warn: 'Simulation rebuilt in 2026: no original photo or measurement. Off-the-shelf lenses and lasers (N-BK7, F2, 405 to 650 nm lasers), refractive indices from the Sellmeier formula. This is neither the lab handout nor the report.',
-        tabBench: '1 · Optical bench', tabGauss: '2 · Paraxial conditions', tabRefr: '3 · Refraction, prism, fibre', tabDiff: '4 · Laser, interference, diffraction', tabCheck: '5 · Checks',
+        tabBench: '1 · Optical bench', tabSchem: '2 · Diagrams to know', tabGauss: '3 · Paraxial conditions', tabRefr: '4 · Refraction, prism, fibre', tabDiff: '5 · Laser, interference, diffraction', tabCheck: '6 · Checks',
         benchHint: 'Drag the source, the lenses or the screen directly on the bench (or use the sliders). Paraxial optics: thin lenses, transfer matrices. With a single lens, the 3 principal rays (red: parallel to the axis then through F′; grey: through the centre; green: through F then parallel) construct the image; "real beam" shows the rays the mounts let through. Dotted lines: object (F) and image (F′) focal planes; an object at infinity is imaged in the image focal plane. Lens mounts limit the rays (blur, vignetting). The vertical scale is enlarged so the rays can be read.',
         scrT: 'What the screen shows', scrEye: 'What the eye sees (±12° field)',
         measT: 'Measuring a focal length like in the lab', bFocus: 'Focus the screen', bRead: 'Record (OA, OA′)', bClear: 'Clear', bBessel: 'Bessel method (2,000 trials)',
@@ -327,6 +395,15 @@
         note1: 'What I take away: the lab formulas (Descartes, magnification, L = 2λD/a) are small-angle approximations. Exact ray tracing shows precisely when they stop being true, and why lenses are stopped down or turned the right way.',
         note2: 'Model: paraxial thin lenses on the bench; exact ray tracing (vector Snell law) in thick spherical lenses, meridional plane only; reduced eye (17 mm lens, accommodation from 25 cm to infinity, 4 mm pupil); ideal Gaussian laser beam (M² = 1); Fraunhofer diffraction (and Fresnel for the slit), coherent illumination.',
         note3: 'Data sources: Sellmeier coefficients from the Schott catalogue (N-BK7, F2, N-SF11) and Malitson (1965) for fused silica. Not optical design software.',
+        sNext: 'Next step ▶', sAll: 'Show all', sHide: 'Hide all (revision)', sQuizB: 'Quiz: nature of the image', sRulesT: 'Rules to know by heart', sSheetT: 'Full sheet', sSheetB: 'Show every diagram', sPrint: 'Print the sheet',
+        qLab: { nat: 'Image', sens: 'Orientation', taille: 'Size' }, qOpt: { real: 'real', virt: 'virtual', inf: 'at infinity', up: 'upright', down: 'inverted', big: 'enlarged', small: 'reduced', same: 'same size' }, qScore: (a, n) => a + ' / ' + n + ' correct answers. Click "Next step" to redo the construction.',
+        sRules: {
+          conv: ['A ray parallel to the axis emerges through the image focus F′.', 'A ray through the optical centre O is not deviated.', 'A ray through the object focus F emerges parallel to the axis.', 'Conjugation: 1/OA′ − 1/OA = 1/f′; magnification m = A′B′/AB = OA′/OA.', 'Real: on the side where light actually goes (image after the lens, object before); virtual: where extensions meet (dotted).', 'Converging lens: F′ after the lens (f′ > 0), F symmetric to F′ about O.'],
+          div: ['A ray parallel to the axis emerges as if it came from F′ (F′ is BEFORE the lens, f′ < 0).', 'A ray through O is not deviated.', 'A ray aimed at F (after the lens) emerges parallel to the axis.', 'A real object always gives a virtual, upright, reduced image.', 'Same formulas: 1/OA′ − 1/OA = 1/f′ and m = OA′/OA, with f′ < 0.'],
+          any: ['Two rays parallel before a lens meet (or their extensions do) in the IMAGE focal plane.', 'Two rays emerging parallel come from the same point of the OBJECT focal plane.', 'Method: draw the parallel ray through O (not deviated), find the secondary focus F′s or Fs, then join.'],
+          base: ['Reflection: reflected ray in the plane of incidence, angle of reflection = angle of incidence.', 'Refraction: n₁ sin i₁ = n₂ sin i₂ (angles from the normal).', 'Total internal reflection if n₁ > n₂ and i₁ > i_c with sin i_c = n₂/n₁.', 'Plane mirror: symmetric, virtual, same-size image; rigorous stigmatism.', 'Paraxial (Gauss) conditions for lenses: rays close to the axis and slightly inclined.'],
+          dev: ['Prism: sin i = n sin r, n sin r′ = sin i′, r + r′ = A, D = i + i′ − A; at minimum: n = sin((A + Dm)/2)/sin(A/2).', 'Fibre: NA = sin θa = √(n₁² − n₂²).', 'Magnifier: object in the object focal plane, image at infinity, G = dₘ/f′ (dₘ ≈ 25 cm).', 'Keplerian telescope: F′₁ = F₂ (afocal), G = α′/α = −f′₁/f′₂.', 'Reduced eye: variable-focus lens + fixed retina; far point at infinity and near point ≈ 25 cm for a normal eye; short-sighted → diverging lens, long-sighted → converging.', 'Camera: real image on the sensor, focusing by the lens–sensor distance, aperture = light and depth of field.'],
+        },
         ctlExp: 'Experiments', ctlSrc: 'Source', ctlLens: 'Lenses', ctlScr: 'Screen or eye',
         srcObj: 'Lamp + "F" object', srcLaser: 'Laser', srcInf: 'Object at infinity (stars)',
         pos: 'position', focal: 'focal length f′', diam: 'mount diameter', objH: 'object height', alpha: 'off-axis star angle', w0: 'laser beam radius',
@@ -606,6 +683,41 @@
       cv.addEventListener('pointerdown', (ev) => { drag = pick(ev); if (drag) { cv.setPointerCapture(ev.pointerId); ev.preventDefault(); } });
       cv.addEventListener('pointermove', move); cv.addEventListener('pointerup', () => { drag = null; }); cv.addEventListener('pointercancel', () => { drag = null; });
     })();
+
+    // =========================================================== 2. SCHÉMAS À CONNAÎTRE
+    const SCH = window.Schemas, SS = { id: 'c1', step: 1, quiz: false, ans: {}, cache: {} };
+    const getS = (id) => { SCH.setLang(lang); const k = lang + id; return SS.cache[k] || (SS.cache[k] = SCH.LIST.find((x) => x.id === id).make()); };
+    function renderCtlS() {
+      const box = $('ctlS'); box.innerHTML = ''; let first = true;
+      Object.keys(SCH.GROUPS).forEach((g) => { h3(box, SCH.GROUPS[g][lang], first); first = false; const sc = document.createElement('div'); sc.className = 'scen';
+        SCH.LIST.filter((x) => x.g === g).forEach((it) => { const b = document.createElement('button'); b.type = 'button'; b.className = 'btn'; b.textContent = it.t[lang]; b.setAttribute('aria-pressed', SS.id === it.id); b.addEventListener('click', () => { SS.id = it.id; SS.step = SS.quiz ? 0 : 1; SS.ans = {}; renderCtlS(); drawS(); }); sc.appendChild(b); }); box.appendChild(sc); });
+      const rules = t('sRules')[SCH.LIST.find((x) => x.id === SS.id).g] || []; $('sRules').innerHTML = rules.map((x) => '<li>' + x + '</li>').join('');
+    }
+    function drawS() {
+      const it = SCH.LIST.find((x) => x.id === SS.id), r = getS(SS.id), n = r.F.steps.length, q = SS.quiz && r.nat !== undefined, answered = q && Object.keys(SS.ans).length >= qItems(r).length;
+      $('sTitle').textContent = it.t[lang];
+      $('sFig').innerHTML = r.F.svg(SS.step, q && !answered && SS.step < n);
+      $('sCount').textContent = (lang === 'fr' ? 'étape ' : 'step ') + SS.step + ' / ' + n; $('sNext').disabled = SS.step >= n; $('sPrev').disabled = SS.step <= 0;
+      $('sSteps').innerHTML = r.F.steps.slice(0, SS.step).map((st) => '<li>' + st[lang] + '</li>').join('');
+      $('sQuizB').style.display = r.nat !== undefined && r.sens !== undefined ? '' : 'none'; $('sQuizB').setAttribute('aria-pressed', SS.quiz);
+      // calcul de l'image (lentilles)
+      if (r.pp !== undefined) { const u = lang === 'fr' ? ' (unités du schéma)' : ' (diagram units)'; $('sNum').textContent = isFinite(r.pp) ? 'f′ = ' + fmt(r.f, 0) + ', OA = ' + fmt(r.p, 0) + ' → 1/OA′ − 1/OA = 1/f′ donne OA′ = ' + fmt(r.pp, 1) + ' ; γ = OA′/OA = ' + fmt(r.g, 2) + u : 'f′ = ' + fmt(r.f, 0) + ', OA = ' + fmt(r.p, 0) + ' = −f′ → 1/OA′ = 0 : ' + (lang === 'fr' ? 'image à l’infini.' : 'image at infinity.'); } else $('sNum').textContent = '';
+      // quiz
+      const qb = $('sQuiz'); qb.innerHTML = '';
+      if (q) { const box = document.createElement('div'); box.className = 'quiz'; qItems(r).forEach(([key, opts, good]) => { const row = document.createElement('div'); row.className = 'row'; row.innerHTML = '<b>' + t('qLab')[key] + '</b>'; opts.forEach((o) => { const b = document.createElement('button'); b.type = 'button'; b.className = 'btn'; b.textContent = t('qOpt')[o]; if (SS.ans[key]) { if (o === good) b.classList.add('ok'); else if (o === SS.ans[key]) b.classList.add('ko'); } b.addEventListener('click', () => { if (SS.ans[key]) return; SS.ans[key] = o; drawS(); }); row.appendChild(b); }); box.appendChild(row); });
+        if (answered) { const nb = qItems(r).filter(([k, , g]) => SS.ans[k] === g).length, p = document.createElement('p'); p.className = 'hint'; p.textContent = t('qScore')(nb, qItems(r).length); box.appendChild(p); }
+        qb.appendChild(box); }
+    }
+    function qItems(r) { if (r.nat === 'inf') return [['nat', ['real', 'virt', 'inf'], 'inf']]; const L = [['nat', ['real', 'virt', 'inf'], r.nat]]; if (r.sens) L.push(['sens', ['up', 'down'], r.sens]); if (r.taille) L.push(['taille', ['big', 'small', 'same'], r.taille]); return L; }
+    $('sNext').addEventListener('click', () => { SS.step = Math.min(getS(SS.id).F.steps.length, SS.step + 1); drawS(); });
+    $('sPrev').addEventListener('click', () => { SS.step = Math.max(0, SS.step - 1); drawS(); });
+    $('sAll').addEventListener('click', () => { SS.step = getS(SS.id).F.steps.length; drawS(); });
+    $('sHide').addEventListener('click', () => { SS.step = 0; SS.ans = {}; drawS(); });
+    $('sQuizB').addEventListener('click', () => { SS.quiz = !SS.quiz; SS.step = SS.quiz ? 0 : 1; SS.ans = {}; drawS(); });
+    function drawSheet() { $('sheet').innerHTML = SCH.LIST.map((it) => '<figure><figcaption>' + it.t[lang] + '</figcaption>' + getS(it.id).F.svg(99) + '</figure>').join(''); }
+    $('sSheetB').addEventListener('click', () => { if ($('sheet').innerHTML) $('sheet').innerHTML = ''; else drawSheet(); });
+    $('sPrint').addEventListener('click', () => { drawSheet(); setTimeout(() => window.print(), 50); });
+    document.addEventListener('keydown', (e) => { if (tab !== 'schem' || /INPUT|SELECT|TEXTAREA/.test((e.target && e.target.tagName) || '')) return; if (e.key === 'ArrowRight') $('sNext').click(); else if (e.key === 'ArrowLeft') $('sPrev').click(); });
 
     // =========================================================== 2. CONDITIONS DE GAUSS
     const G = { shape: 'pc', f: 100, D: 30, diaph: 100, alpha: 0, glass: 'BK7', light: 'd', view: 0 };
@@ -926,8 +1038,8 @@
 
     // =========================================================== onglets, langue
     let tab = 'bench';
-    function showTab(k) { tab = k; document.querySelectorAll('[role=tab]').forEach((b) => b.setAttribute('aria-selected', b.dataset.tab === k)); ['bench', 'gauss', 'refr', 'diff', 'check'].forEach((x) => { $('tab-' + x).hidden = x !== k; }); try { history.replaceState(null, '', '#' + k); } catch (e) {} redraw(); }
-    function redraw() { if (tab === 'bench') { renderCtlB(); computeB(); } else if (tab === 'gauss') { renderCtlG(); computeG(); } else if (tab === 'diff') { renderCtlD(); computeD(); } else if (tab === 'refr') { renderCtlR(); computeR(); } else runChecks(); }
+    function showTab(k) { tab = k; document.querySelectorAll('[role=tab]').forEach((b) => b.setAttribute('aria-selected', b.dataset.tab === k)); ['bench', 'schem', 'gauss', 'refr', 'diff', 'check'].forEach((x) => { $('tab-' + x).hidden = x !== k; }); try { history.replaceState(null, '', '#' + k); } catch (e) {} redraw(); }
+    function redraw() { if (tab === 'bench') { renderCtlB(); computeB(); } else if (tab === 'gauss') { renderCtlG(); computeG(); } else if (tab === 'diff') { renderCtlD(); computeD(); } else if (tab === 'refr') { renderCtlR(); computeR(); } else if (tab === 'schem') { renderCtlS(); drawS(); } else runChecks(); }
     document.querySelectorAll('[role=tab]').forEach((b) => b.addEventListener('click', () => showTab(b.dataset.tab)));
     function setLang(l) {
       lang = l; document.documentElement.lang = l;
@@ -938,7 +1050,7 @@
     }
     document.querySelectorAll('.lang button').forEach((b) => b.addEventListener('click', () => setLang(b.dataset.lang)));
     let rz = null; window.addEventListener('resize', () => { clearTimeout(rz); rz = setTimeout(redraw, 120); });
-    const h0 = (location.hash || '').slice(1); tab = ['bench', 'gauss', 'refr', 'diff', 'check'].includes(h0) ? h0 : 'bench';
+    const h0 = (location.hash || '').slice(1); tab = ['bench', 'schem', 'gauss', 'refr', 'diff', 'check'].includes(h0) ? h0 : 'bench';
     setLang(lang); showTab(tab);
   })();
   </script>
