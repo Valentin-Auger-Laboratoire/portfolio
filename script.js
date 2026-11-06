@@ -1,3 +1,7 @@
+// ===== Nombre de projets (au bout de la ligne du titre) =====
+const projTitle = document.querySelector('.section-title--count');
+if (projTitle) projTitle.dataset.count = document.querySelectorAll('.project-card').length;
+
 // ===== Filtres des projets =====
 document.querySelectorAll('.filter').forEach(btn => {
   btn.addEventListener('click', () => {
