@@ -118,7 +118,7 @@ window.I18N_EN = {
   'p44.date': 'Dec 2024 · 2026',
   'p44.title': 'Autonomous robot race: obstacles, localisation and strategies',
   'p44.desc': "In a lab, autonomous robots raced on a track with red (edge) and black (middle) barriers; I had the orange robot and I won. The program was lost, so I rebuilt everything from scratch: a two-wheeled robot with bumper, range sensors, colour sensor and encoders, drifting odometry, a pixelated ceiling camera and a Kalman filter to fuse both. Five strategies compete (the lab colour rule, random bounce, wall following, Bug2, potential field) on three tracks, with statistics over 30 races. 220 tests.",
-  'p44.img': "Simulated autonomous robot race: top view of the track with red and black barriers, pixelated ceiling camera image and each robot's localisation error",
+  'p44.img': "Photo of the real lab race (my orange robot) and the rebuilt simulation: track with red and black barriers, pixelated ceiling camera, localisation error",
   'p43.date': 'Nov 2022',
   'p43.title': 'Connected house: temperature control',
   'p43.desc': "My task, done on my own: control a room's temperature with a Grove sensor (thermistor), a relay for the heater plate, a fan and an LCD screen. SysML diagrams, information and power chains, flowcharts, Arduino program and wiring. Reviewed in 2026: thresholds that are too close make the relay chatter (about 3,000 switchings per simulated day), an unplugged sensor reads −273.15 °C and leaves the heater on, and some pin names are misleading. The demo runs my 2022 program and a corrected version side by side. 62 tests.",

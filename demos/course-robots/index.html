@@ -88,6 +88,10 @@
     .sw { display: inline-block; width: 10px; height: 10px; border-radius: 50%; margin-right: 6px; vertical-align: -1px; }
     tr.me td { background: #1d1d20; } .dim { color: var(--muted); }
     .note a { color: var(--text); }
+    .real { display: grid; grid-template-columns: 220px minmax(0, 1fr); gap: 16px; align-items: center; margin-top: 16px; }
+    .real img { width: 100%; display: block; border-radius: 6px; border: 1px solid var(--border); }
+    .real p { color: var(--dim); font-size: 0.9rem; }
+    @media (max-width: 760px) { .real { grid-template-columns: minmax(0, 1fr); } .real img { max-width: 260px; } }
     @media (max-width: 1000px) { .grid { grid-template-columns: minmax(0, 1fr); } .main-col { order: -1; } }
     @media (max-width: 760px) { .kpis { grid-template-columns: repeat(3, minmax(0, 1fr)); } .row2 { grid-template-columns: minmax(0, 1fr); } .pins { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
   </style>
@@ -102,6 +106,10 @@
     <h1 data-t="title">Course de robots autonomes : obstacles, localisation et stratégies</h1>
     <p class="intro" data-t="intro"></p>
     <p class="warnbox" data-t="warn"></p>
+    <div class="panel real">
+      <img src="img/course-tp.jpg" alt="" data-alt="realAlt">
+      <div><h2 data-t="realT">La vraie course (décembre 2024)</h2><p data-t="realP"></p></div>
+    </div>
     <div class="grid">
       <div class="stack"><div class="panel" id="ctl"></div></div>
       <div class="stack main-col">
@@ -140,6 +148,7 @@
         back: '← Retour au portfolio', eyebrow: "Démo · refaite de zéro en 2026, d'après une course de robots en TP (décembre 2024)", title: 'Course de robots autonomes : obstacles, localisation et stratégies',
         intro: "En TP, des petits robots autonomes faisaient la course sur une piste bordée de barrières : rouges sur le bord, noires au milieu. Chaque robot devait aller seul jusqu'à l'arrivée, en détectant les barrières, en reculant quand il touchait, et en repartant du bon côté selon la couleur ; une caméra au plafond permettait de suivre la course sur l'ordinateur. J'avais le robot orange et j'ai gagné. Le programme d'origine est perdu : cette démo refait tout de zéro, avec un modèle de robot, ses capteurs, et cinq stratégies qui s'affrontent.",
         warn: "Simulation refaite en 2026 : ce n'est pas mon programme de 2024 (perdu). Valeurs du robot, des capteurs et de la caméra SUPPOSÉES (ordres de grandeur, voir les notes). La stratégie « couleurs » reprend la règle de la course telle que je m'en souviens.",
+        realT: 'La vraie course (décembre 2024)', realAlt: 'Photo de la course en TP : barrières rouges sur le bord, noires au milieu, robots orange, bleu, violet et rouge', realP: "Image tirée de ma vidéo de la course : barrières rouges sur le bord, noires au milieu, et les robots en dôme. Le mien est l'orange, en haut, déjà engagé dans la ligne droite du retour : il a gagné. La simulation ci-dessous reprend cette piste et la règle des couleurs.",
         pause: 'Pause', play: 'Reprendre', again: 'Nouvelle course', speed: 'Vitesse',
         trackHint: "Vue de dessus, piste de 4 m × 1,2 m : départ en bas à gauche, demi-tour au bout de la barrière noire, arrivée en haut à gauche (damier). Trait plein : trajet réel ; cercle pointillé : là où le robot croit être. Les rayons sont les télémètres du robot orange.",
         camT: "Ce que voit l'ordinateur (caméra au plafond)", camHint: "L'image de la caméra est pixelisée (2 cm par pixel) et ne se rafraîchit que 5 fois par seconde : la position mesurée saute et tremble. Le filtre de Kalman la fusionne avec les codeurs des roues.",
@@ -162,6 +171,7 @@
         back: '← Back to portfolio', eyebrow: 'Demo · rebuilt from scratch in 2026, from a robot race in a lab (December 2024)', title: 'Autonomous robot race: obstacles, localisation and strategies',
         intro: 'In a lab, small autonomous robots raced on a track lined with barriers: red on the edge, black in the middle. Each robot had to reach the finish on its own, detecting the barriers, backing off on contact and setting off again on the right side depending on the colour; a ceiling camera let us follow the race on the computer. I had the orange robot and I won. The original program is lost: this demo rebuilds everything from scratch, with a robot model, its sensors and five competing strategies.',
         warn: 'Simulation rebuilt in 2026: this is not my 2024 program (lost). Robot, sensor and camera values are ASSUMED (orders of magnitude, see the notes). The “colours” strategy follows the race rule as I remember it.',
+        realT: 'The real race (December 2024)', realAlt: 'Photo of the lab race: red barriers on the edge, black in the middle, orange, blue, purple and red robots', realP: 'Frame from my video of the race: red barriers on the edge, black in the middle, and the dome robots. Mine is the orange one at the top, already on the return straight: it won. The simulation below uses this track and the colour rule.',
         pause: 'Pause', play: 'Resume', again: 'New race', speed: 'Speed',
         trackHint: 'Top view, 4 m × 1.2 m track: start bottom left, U-turn at the end of the black barrier, finish top left (checkerboard). Solid line: actual path; dashed circle: where the robot thinks it is. The rays are the orange robot range sensors.',
         camT: 'What the computer sees (ceiling camera)', camHint: 'The camera image is pixelated (2 cm per pixel) and refreshes only 5 times per second: the measured position jumps and jitters. The Kalman filter fuses it with the wheel encoders.',
@@ -289,6 +299,7 @@
     function setLang(l) {
       lang = l; document.documentElement.lang = l;
       document.querySelectorAll('[data-t]').forEach((el) => { const v = T[l][el.dataset.t]; if (typeof v === 'string') el.textContent = v; });
+      document.querySelectorAll('[data-alt]').forEach((el) => { const v = T[l][el.dataset.alt]; if (typeof v === 'string') el.alt = v; });
       document.querySelectorAll('.lang button').forEach((b) => b.setAttribute('aria-pressed', b.dataset.lang === l));
       try { localStorage.setItem('lang', l); } catch (e) {}
       $('play').textContent = running ? t('pause') : t('play');
