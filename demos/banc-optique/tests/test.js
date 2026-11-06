@@ -1,6 +1,6 @@
 /* Tests du moteur optique.js : node tests/test.js */
 'use strict';
-const O = require('../optique.js');
+const O = require('../optique.js'), SC = require('../schemas.js');
 let n = 0, bad = 0;
 function ok(c, msg) { n++; if (!c) { bad++; console.log('ÉCHEC : ' + msg); } }
 const near = (a, b, tol, msg) => ok(Math.abs(a - b) <= tol, msg + ' (' + a + ' ≠ ' + b + ')');
@@ -121,5 +121,14 @@ ok(O.rgbOf(632.8)[0] === 255 && O.rgbOf(532)[1] === 255, 'couleurs des lasers');
   const pin = O.fiberPath(1.48, 1.46, 1, fb.acc * 0.9, 25e-6, 0.01), pout = O.fiberPath(1.48, 1.46, 1, fb.acc * 1.1, 25e-6, 0.01);
   near(pin.P, 1, 1e-12, 'fibre : rayon dans le cône d’acceptance guidé sans perte'); ok(pout.P < 0.01, 'fibre : rayon hors du cône perdu à travers la gaine'); ok(pin.pts.every((q) => Math.abs(q[1]) <= 25e-6 + 1e-15), 'fibre : le rayon reste dans le cœur');
   const th1 = Math.asin(Math.sin(fb.acc * 0.9) / 1.48), geo = 0.01 / Math.cos(th1); ok(Math.abs(pin.pts.reduce((s2, q, k) => (k ? s2 + Math.hypot(q[0] - pin.pts[k - 1][0], q[1] - pin.pts[k - 1][1]) : 0), 0) - geo) < 1e-9, 'fibre : longueur du zigzag = L / cos θ'); }
+// schémas à connaître : chaque cas de lentille donne la bonne image, et les 3 rayons émergents passent par B′
+{ const exp = { c1: ['real', 'down', 'small'], c2: ['real', 'down', 'big'], c3: ['inf', null, null], c4: ['virt', 'up', 'big'], c5: ['real', 'up', 'small'], d1: ['virt', 'up', 'small'], d2: ['real', 'up', 'big'], d3: ['virt', 'down', 'big'] };
+  SC.LIST.forEach((it) => { const r = it.make(); ok(r.F.steps.length >= 2, 'schéma ' + it.id + ' : étapes'); const svg = r.F.svg(99); ok(svg.startsWith('<svg') && !/NaN|Infinity|undefined/.test(svg), 'schéma ' + it.id + ' : SVG valide');
+    if (exp[it.id]) { const e = exp[it.id]; ok(r.nat === e[0] && r.sens === e[1] && r.taille === e[2], 'schéma ' + it.id + ' : nature/sens/taille ' + [r.nat, r.sens, r.taille].join('/'));
+      if (isFinite(r.pp)) { const { f, p, h, pp, hp } = r, y1 = h - (h / f) * pp, y2 = (h / p) * pp, y3 = h - (h / (p + f)) * p; near(y1, hp, 1e-9, it.id + ' : rayon parallèle passe par B′'); near(y2, hp, 1e-9, it.id + ' : rayon par O passe par B′'); near(y3, hp, 1e-9, it.id + ' : rayon par F passe par B′'); near(1 / pp - 1 / p, 1 / f, 1e-12, it.id + ' : conjugaison de Descartes'); } } });
+  const c2b = SC.lensCase(60, -120, 28); near(c2b.g, -1, 1e-12, 'objet en 2F : γ = −1'); near(c2b.pp, 120, 1e-9, 'objet en 2F : image en 2F′');
+  const pf = SC.prismFig(); near(pf.Dm, 2 * Math.asin(1.5168 * Math.sin(Math.PI / 6)) - Math.PI / 3, 1e-12, 'schéma prisme : Dmin'); near(SC.kepler().G, -3, 1e-12, 'schéma lunette : G = −f1/f2');
+  ['myope', 'hyper'].forEach((k) => { const r = SC.eye(k), svg = r.F.svg(9); const m = [...svg.matchAll(/<line x1="([\d.]+)" y1="([\d.]+)" x2="([\d.]+)" y2="([\d.]+)" class="img"\/>/g)].filter((q, i) => i % 2 === 1); ok(m.length === 3, 'œil ' + k + ' corrigé : 3 rayons'); const ends = m.map((q) => +q[4]); ok(Math.max(...ends) - Math.min(...ends) < 0.02, 'œil ' + k + ' corrigé : les rayons se rejoignent sur la rétine'); });
+  const fo = SC.fiberFig(); near(Math.sin(fo.acc), Math.sqrt(1.5 ** 2 - 1.4 ** 2), 1e-12, 'schéma fibre : ON'); }
 console.log(n + ' vérifications, ' + bad + ' échec(s)');
 process.exit(bad ? 1 : 0);
