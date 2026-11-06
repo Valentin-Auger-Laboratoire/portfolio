@@ -1,0 +1,316 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Maison connectée</title>
+  <meta name="description" content="Maison connectée : régulation de température avec un Arduino, un capteur Grove, un relais de chauffage, un ventilateur et un écran LCD ; mon programme de 2022 comparé à une version corrigée en 2026.">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --bg: #0c0c0d; --panel: #161618; --border: #262628; --border-hi: #3a3a3d;
+      --text: #f2f2f2; --dim: #9b9b9f; --muted: #6c6c70; --accent: #c8102e; --line: #c9c9cc; --warn: #e0a458; --ok: #8fd18f;
+      --mono: "JetBrains Mono", ui-monospace, monospace; --sans: "Inter", system-ui, sans-serif;
+      color-scheme: dark;
+    }
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    body { background: var(--bg); color: var(--text); font-family: var(--sans); line-height: 1.55; -webkit-font-smoothing: antialiased; }
+    .wrap { max-width: 1280px; margin: 0 auto; padding: 24px 16px 48px; }
+    .top { display: flex; justify-content: space-between; align-items: center; gap: 12px; flex-wrap: wrap; margin-bottom: 24px; }
+    .back { font-size: 0.9rem; color: var(--dim); text-decoration: none; }
+    .back:hover { color: var(--accent); }
+    .lang { display: flex; border: 1px solid var(--border-hi); }
+    .lang button { font: 500 0.78rem var(--mono); letter-spacing: .05em; background: none; color: var(--dim); border: 0; padding: 5px 10px; cursor: pointer; }
+    .lang button + button { border-left: 1px solid var(--border-hi); }
+    .lang button[aria-pressed="true"] { background: var(--text); color: var(--bg); }
+    .eyebrow { font: 500 0.82rem var(--mono); color: var(--accent); letter-spacing: .04em; }
+    h1 { font-size: clamp(1.6rem, 3.4vw, 2.3rem); line-height: 1.15; margin: 6px 0 10px; text-wrap: balance; }
+    .intro { color: var(--dim); max-width: 82ch; }
+    .intro a { color: var(--line); }
+    .warnbox { border: 1px solid #4a3a20; background: #1a160f; color: var(--warn); border-radius: 6px; padding: 8px 12px; font-size: 0.84rem; margin-top: 12px; }
+    .grid { display: grid; grid-template-columns: 320px minmax(0, 1fr); gap: 20px; align-items: start; margin-top: 20px; }
+    .stack { display: grid; gap: 16px; min-width: 0; }
+    .panel { background: var(--panel); border: 1px solid var(--border); border-radius: 8px; padding: 16px; min-width: 0; }
+    h2 { font: 600 0.78rem var(--mono); letter-spacing: .12em; text-transform: uppercase; color: var(--dim); margin-bottom: 12px; }
+    h3 { font: 600 0.72rem var(--mono); letter-spacing: .08em; text-transform: uppercase; color: var(--dim); margin: 14px 0 10px; padding-top: 12px; border-top: 1px solid var(--border); }
+    button:focus-visible, input:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+    .btn { font: 500 0.82rem var(--sans); background: none; color: var(--text); border: 1px solid var(--border-hi); border-radius: 6px; padding: 6px 11px; cursor: pointer; white-space: nowrap; }
+    .btn:hover { border-color: var(--accent); color: var(--accent); }
+    .btn[aria-pressed="true"] { border-color: var(--accent); color: var(--accent); }
+    .btn.primary { background: var(--accent); border-color: var(--accent); color: #fff; }
+    .seg { display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 10px; }
+    .ctl { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 2px 10px; margin-bottom: 10px; }
+    .ctl label { font: 500 0.76rem var(--mono); color: var(--dim); }
+    .ctl output { font: 0.8rem var(--mono); font-variant-numeric: tabular-nums; text-align: right; }
+    .ctl input[type=range] { grid-column: 1 / -1; width: 100%; accent-color: var(--accent); }
+    .lab { font: 500 0.74rem var(--mono); color: var(--dim); margin: 2px 0 6px; }
+    .hint { font-size: 0.8rem; color: var(--dim); margin-top: 8px; }
+    .kpis { display: grid; grid-template-columns: repeat(6, minmax(0, 1fr)); gap: 10px; }
+    .kpi { border: 1px solid var(--border); border-radius: 6px; padding: 8px 10px; min-width: 0; }
+    .kpi dt { font: 0.66rem var(--mono); color: var(--dim); }
+    .kpi dd { font: 600 1.02rem var(--sans); font-variant-numeric: tabular-nums; margin-top: 2px; }
+    .kpi dd small { font: 400 0.7rem var(--mono); color: var(--dim); margin-left: 3px; }
+    .kpi.bad dd { color: #ff8a8a; } .kpi.good dd { color: var(--ok); }
+    canvas#table { width: 100%; aspect-ratio: 240 / 150; display: block; border: 1px solid var(--border); border-radius: 6px; background: #0a0a0b; margin-top: 12px; cursor: crosshair; touch-action: none; }
+    .controls { display: flex; gap: 8px; flex-wrap: wrap; align-items: center; margin-top: 10px; font: 0.78rem var(--mono); color: var(--dim); }
+    .row2 { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 16px; }
+    .pins { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 6px; font: 0.74rem var(--mono); }
+    .pin { border: 1px solid var(--border); border-radius: 5px; padding: 5px 7px; min-width: 0; }
+    .pin b { display: block; color: var(--dim); font-weight: 500; font-size: 0.68rem; }
+    .pin span { font-variant-numeric: tabular-nums; }
+    .pin.hi { border-color: var(--accent); } .pin.hi span { color: #ff8a8a; }
+    .serial { font: 0.74rem/1.45 var(--mono); background: #0a0a0b; border: 1px solid var(--border); border-radius: 6px; padding: 8px 10px; height: 172px; overflow: hidden; color: var(--line); white-space: pre; }
+    .serial .t { color: var(--muted); }
+    .serial .w { color: #ff8a8a; }
+    .state { font: 0.8rem var(--mono); color: var(--dim); margin-top: 8px; }
+    .state b { color: var(--text); font-weight: 500; }
+    table { width: 100%; border-collapse: collapse; font: 0.8rem var(--mono); font-variant-numeric: tabular-nums; }
+    th, td { text-align: left; padding: 6px 8px; border-bottom: 1px solid var(--border); }
+    td.n, th.n { text-align: right; }
+    th { color: var(--dim); font-weight: 500; }
+    td.bad { color: #ff8a8a; } td.good { color: var(--ok); }
+    .tablewrap { overflow-x: auto; }
+    ol.review { padding-left: 1.2em; display: grid; gap: 6px; font-size: 0.86rem; color: var(--dim); }
+    ol.review b { color: var(--text); font-weight: 600; }
+    .note { font-size: 0.82rem; color: var(--dim); }
+    .note p + p { margin-top: 6px; }
+    .scen { display: grid; gap: 6px; margin-bottom: 4px; }
+    .scen .btn { text-align: left; white-space: normal; }
+    .cap { font: 0.72rem var(--mono); color: var(--dim); margin-bottom: 4px; }
+    canvas.house { width: 100%; aspect-ratio: 4 / 3; display: block; border: 1px solid var(--border); border-radius: 6px; background: #0a0a0b; }
+    .chart p { font: 0.72rem var(--mono); color: var(--dim); margin-bottom: 4px; display: flex; gap: 10px; flex-wrap: wrap; }
+    .chart p i { display: inline-block; width: 12px; height: 2px; vertical-align: 3px; margin-right: 5px; }
+    .chart canvas { width: 100%; height: 210px; display: block; border: 1px solid var(--border); border-radius: 6px; background: #0a0a0b; }
+    #cvR { height: 90px; }
+    .gal { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 12px; }
+    .gal img { width: 100%; display: block; border: 1px solid var(--border); border-radius: 6px; background: #fff; }
+    .gal figcaption { font-size: 0.78rem; color: var(--dim); margin-top: 6px; }
+    .note a { color: var(--text); }
+    @media (max-width: 760px) { .gal { grid-template-columns: minmax(0, 1fr); } }
+    @media (max-width: 1000px) { .grid { grid-template-columns: minmax(0, 1fr); } .main-col { order: -1; } }
+    @media (max-width: 760px) { .kpis { grid-template-columns: repeat(3, minmax(0, 1fr)); } .row2 { grid-template-columns: minmax(0, 1fr); } .pins { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+  </style>
+</head>
+<body>
+  <div class="wrap">
+    <div class="top">
+      <a class="back" href="../../index.html#projets" data-t="back">← Retour au portfolio</a>
+      <div class="lang" role="group" aria-label="Langue / Language"><button type="button" data-lang="fr">FR</button><button type="button" data-lang="en">EN</button></div>
+    </div>
+    <p class="eyebrow" data-t="eyebrow">Démo · projet STI2D SIN, terminale (novembre 2022)</p>
+    <h1 data-t="title">Maison connectée : régulation de la température</h1>
+    <p class="intro" data-t="intro"></p>
+    <p class="warnbox" data-t="warn"></p>
+    <div class="grid">
+      <div class="stack"><div class="panel" id="ctl"></div></div>
+      <div class="stack main-col">
+        <div class="panel">
+          <dl class="kpis" id="kpis"></dl>
+          <div class="row2" style="margin-top:12px">
+            <div><p class="cap" data-t="cap22">Programme de 2022 (porté ligne à ligne)</p><canvas id="cv22" class="house" aria-label="Maquette 2022"></canvas></div>
+            <div><p class="cap" data-t="cap26">Version corrigée en 2026</p><canvas id="cv26" class="house" aria-label="Maquette 2026"></canvas></div>
+          </div>
+          <div class="controls"><button type="button" class="btn primary" id="play" data-t="pause">Pause</button><button type="button" class="btn" id="restart" data-t="restart">Recommencer</button><span id="clk"></span></div>
+        </div>
+        <div class="panel">
+          <div class="chart"><p><span><i style="background:var(--warn)"></i><span data-t="lg22">pièce, programme 2022</span></span><span><i style="background:var(--accent)"></i><span data-t="lg26">pièce, version 2026</span></span><span><i style="background:#6c6c70"></i><span data-t="lgExt">extérieur</span></span><span data-t="lgThr">bandes : seuils de 26 et 30 °C</span></p><canvas id="cvT"></canvas></div>
+          <div class="chart" style="margin-top:10px"><p><span data-t="lgRel">sorties : chauffage (haut) et ventilateur (bas), 2022 puis 2026</span></p><canvas id="cvR"></canvas></div>
+        </div>
+        <div class="panel row2">
+          <div><h2 data-t="ser22">Moniteur série · 2022</h2><div class="serial" id="s22"></div></div>
+          <div><h2 data-t="ser26">Moniteur série · 2026 (CSV)</h2><div class="serial" id="s26"></div></div>
+        </div>
+        <div class="panel"><h2 data-t="revT">Ce que montre la relecture de 2026</h2><ol class="review" id="review"></ol></div>
+        <div class="panel">
+          <h2 data-t="workT">Mon travail de 2022</h2>
+          <div class="gal">
+            <figure><img src="img/montage-1.jpg" alt="" data-alt="a1" loading="lazy"><figcaption data-t="f1"></figcaption></figure>
+            <figure><img src="img/montage-2.jpg" alt="" data-alt="a2" loading="lazy"><figcaption data-t="f2"></figcaption></figure>
+            <figure><img src="img/chaines.png" alt="" data-alt="a3" loading="lazy"><figcaption data-t="f3"></figcaption></figure>
+            <figure><img src="img/cas-utilisation.png" alt="" data-alt="a4" loading="lazy"><figcaption data-t="f4"></figcaption></figure>
+            <figure><img src="img/exigences.png" alt="" data-alt="a5" loading="lazy"><figcaption data-t="f5"></figcaption></figure>
+            <figure><img src="img/algorigramme-technique-1.png" alt="" data-alt="a6" loading="lazy"><figcaption data-t="f6"></figcaption></figure>
+          </div>
+        </div>
+        <div class="panel note"><p data-t="note1"></p><p data-t="note2"></p><p><a href="https://github.com/Valentin-Auger-Laboratoire/maison-connectee" target="_blank" rel="noopener" data-t="repo">Dépôt : programme transcrit, diagrammes, photos ↗</a></p></div>
+      </div>
+    </div>
+  </div>
+  <script src="maison.js"></script>
+  <script>
+  (function () {
+    'use strict';
+    const M = window.Maison, $ = (id) => document.getElementById(id);
+    let lang = 'fr';
+    try { lang = localStorage.getItem('lang') || ((navigator.language || 'fr').toLowerCase().startsWith('fr') ? 'fr' : 'en'); } catch (e) {}
+    const T = {
+      fr: {
+        back: '← Retour au portfolio', eyebrow: 'Démo · projet STI2D SIN, terminale (novembre 2022)', title: 'Maison connectée : régulation de la température',
+        intro: "Ma tâche dans le projet « maison connectée » : réguler la température d'une pièce avec un capteur Grove (thermistance), une résistance chauffante commandée par un relais, un ventilateur et un écran LCD. La démo fait tourner, côte à côte, mon programme de 2022 porté ligne à ligne (mêmes seuils, mêmes delay(), même formule de la thermistance) et une version corrigée en 2026, sur la même journée simulée.",
+        warn: "La pièce est une maquette thermique SUPPOSÉE (capacité 4 000 J/K, pertes 1 W/K, chauffage 20 W, ventilateur +3 W/K, bruit de ±1 point sur la mesure) : elle sert à comparer les deux programmes, pas à reproduire une pièce réelle. Les seuils, les broches et la formule viennent de mon programme.",
+        cap22: 'Programme de 2022 (porté ligne à ligne)', cap26: 'Version corrigée en 2026', pause: 'Pause', play: 'Reprendre', restart: 'Recommencer',
+        lg22: 'pièce, programme 2022', lg26: 'pièce, version 2026', lgExt: 'extérieur', lgThr: 'bandes : seuils de 26 et 30 °C', lgRel: 'sorties : chauffage (haut) et ventilateur (bas), 2022 puis 2026',
+        ser22: 'Moniteur série · 2022', ser26: 'Moniteur série · 2026 (CSV)', revT: 'Ce que montre la relecture de 2026', workT: 'Mon travail de 2022',
+        f1: 'Mon montage à 23,83 °C : la LED du relais de la plaque chauffante est allumée, le chauffage marche.', f2: 'À 30,11 °C : le relais est éteint. Les deux photos confirment que le relais est sur digPin (D2).',
+        f3: 'Chaînes d\'information et de puissance (mon diagramme).', f4: 'Diagramme de cas d\'utilisation (SysML).', f5: 'Diagramme des exigences (SysML).', f6: 'Algorigramme technique de la boucle.',
+        a1: 'Montage : plaque chauffante avec relais allumé, ventilateur, carte Arduino et écran LCD affichant 23,83', a2: 'Montage : écran LCD affichant 30,11, relais éteint', a3: 'Chaînes d\'information et de puissance', a4: 'Diagramme de cas d\'utilisation', a5: 'Diagramme des exigences', a6: 'Algorigramme technique',
+        note1: "Ce que j'ai fait (seul, tâche 1 du projet) : analyse du besoin et diagrammes SysML sous draw.io, chaînes d'information et de puissance, algorigrammes, programme Arduino commenté, montage et test. Le programme est transcrit depuis les captures de ma présentation ; deux versions y figurent (seuils 27/30 puis 26,1/29,9, la seconde téléversée).",
+        note2: "Calculs : conversion de la thermistance R = R0·(1023/a − 1), T = 1/(ln(R/R0)/B + 1/298,15) − 273,15 avec B = 4 275 et R0 = 100 kΩ (celle de mon programme) ; maquette C·dT/dt = P_chauffe − G·(T − T_ext) au pas de 1 s ; 62 tests.",
+        repo: 'Dépôt : programme transcrit, diagrammes, photos ↗',
+        scen: 'Journées', sWinter: 'Hiver', sMild: 'Mi-saison', sSummer: 'Été', sUnplug: 'Sonde débranchée (été, à 9 h)', sQuiet: 'Hiver sans bruit de mesure',
+        set: 'Réglages', noise: 'Bruit de mesure', hyst: 'Écart d\'hystérésis 2026', speed: 'Vitesse',
+        kSw22: 'Commutations 2022', kSw26: 'Commutations 2026', kH22: 'Chauffage 2022', kH26: 'Chauffage 2026', kT22: 'T max 2022', kT26: 'T max 2026',
+        heat: 'chauffage', fan: 'ventilateur', room: 'pièce', ext: 'ext.',
+        review: [
+          ['Le relais claque.', "Les seuils sont collés (26 → 26,1 °C et 29,9 → 30 °C) et la mesure bouge d'environ 0,08 °C par point du convertisseur : avec un peu de bruit, le chauffage s'allume et s'éteint toutes les quelques secondes. Sur une journée d'hiver simulée : environ 3 000 commutations, contre moins de 100 avec une hystérésis de 1 °C."],
+          ['Sonde débranchée = chauffage allumé.', "Si le capteur est débranché (0) ou en court-circuit (1023), la formule donne −273,15 °C ; comme c'est inférieur à 26, le chauffage reste allumé. En 2026 : défaut détecté, tout est coupé, « DEFAUT SONDE » à l'écran."],
+          ['Des noms qui trompent.', "La variable relayPin (D4) commande le ventilateur, alors que le relais est sur digPin (D2), avec le chauffage ; un commentaire dit « le ventilateur s'allume » au lieu du chauffage, et la déclaration de digPin porte le commentaire de la constante B. Mes photos confirment que le câblage, lui, était bon."],
+          ['Les commentaires ne suivent plus les seuils.', '« T supérieur 25, T inférieur ou égal 27 » pour un test entre 26,1 et 29,9 °C : les seuils ont été changés, pas les commentaires.'],
+          ['Une boucle lente et bloquante.', "delay(100) + delay(1000) + delay(1000) : 2,1 s par tour, rien ne peut se passer pendant ce temps. analogRead(A0) est lu deux fois (valeur ne sert pas) et Serial.begin est appelé deux fois."],
+          ["L'écran garde des restes.", "La ligne 2 n'est jamais effacée : après « -273.15 », afficher « 26.43 » laisse « 26.4315 »."],
+          ['Un débordement qui tombe juste.', "const int R0 = 100000 : sur un Arduino Uno, un int tient sur 16 bits (32 767 au plus), la valeur devient −31 072. Le calcul reste juste parce que R0 se simplifie dans R/R0. La capture montre une marque « ^~~~~ » au-dessus du compte rendu de compilation, sans doute l'avertissement correspondant."],
+        ],
+      },
+      en: {
+        back: '← Back to portfolio', eyebrow: 'Demo · STI2D digital systems project, final year (November 2022)', title: 'Connected house: temperature control',
+        intro: "My task in the “connected house” project: control a room's temperature with a Grove sensor (thermistor), a heater driven by a relay, a fan and an LCD screen. The demo runs, side by side, my 2022 program ported line by line (same thresholds, same delay() calls, same thermistor formula) and a version corrected in 2026, on the same simulated day.",
+        warn: 'The room is an ASSUMED thermal model (heat capacity 4,000 J/K, losses 1 W/K, heater 20 W, fan +3 W/K, ±1 count of measurement noise): it is used to compare the two programs, not to reproduce a real room. Thresholds, pins and formula come from my program.',
+        cap22: '2022 program (ported line by line)', cap26: 'Version corrected in 2026', pause: 'Pause', play: 'Resume', restart: 'Restart',
+        lg22: 'room, 2022 program', lg26: 'room, 2026 version', lgExt: 'outside', lgThr: 'bands: 26 and 30 °C thresholds', lgRel: 'outputs: heater (top) and fan (bottom), 2022 then 2026',
+        ser22: 'Serial monitor · 2022', ser26: 'Serial monitor · 2026 (CSV)', revT: 'What the 2026 review shows', workT: 'My 2022 work',
+        f1: 'My circuit at 23.83 °C: the heater-plate relay LED is on, the heater runs.', f2: 'At 30.11 °C: the relay is off. Both photos confirm the relay is on digPin (D2).',
+        f3: 'Information and power chains (my diagram).', f4: 'Use-case diagram (SysML).', f5: 'Requirements diagram (SysML).', f6: 'Technical flowchart of the loop.',
+        a1: 'Circuit: heater plate with relay on, fan, Arduino and LCD showing 23.83', a2: 'Circuit: LCD showing 30.11, relay off', a3: 'Information and power chains', a4: 'Use-case diagram', a5: 'Requirements diagram', a6: 'Technical flowchart',
+        note1: 'What I did (on my own, task 1 of the project): needs analysis and SysML diagrams in draw.io, information and power chains, flowcharts, commented Arduino program, wiring and test. The program is transcribed from the screenshots in my presentation; it shows two versions (thresholds 27/30 then 26.1/29.9, the second one uploaded).',
+        note2: 'Computation: thermistor conversion R = R0·(1023/a − 1), T = 1/(ln(R/R0)/B + 1/298.15) − 273.15 with B = 4,275 and R0 = 100 kΩ (from my program); model C·dT/dt = P_heat − G·(T − T_out) stepped every second; 62 tests.',
+        repo: 'Repository: transcribed program, diagrams, photos ↗',
+        scen: 'Days', sWinter: 'Winter', sMild: 'Mid-season', sSummer: 'Summer', sUnplug: 'Sensor unplugged (summer, 9 am)', sQuiet: 'Winter without measurement noise',
+        set: 'Settings', noise: 'Measurement noise', hyst: '2026 hysteresis gap', speed: 'Speed',
+        kSw22: 'Switchings 2022', kSw26: 'Switchings 2026', kH22: 'Heating 2022', kH26: 'Heating 2026', kT22: 'Max T 2022', kT26: 'Max T 2026',
+        heat: 'heater', fan: 'fan', room: 'room', ext: 'out',
+        review: [
+          ['The relay chatters.', 'The thresholds are back to back (26 → 26.1 °C and 29.9 → 30 °C) and the reading moves by about 0.08 °C per converter count: with a little noise the heater switches every few seconds. On a simulated winter day: about 3,000 switchings, versus fewer than 100 with a 1 °C hysteresis.'],
+          ['Unplugged sensor = heater on.', 'If the sensor is unplugged (0) or shorted (1023), the formula gives −273.15 °C; since that is below 26 the heater stays on. In 2026: fault detected, everything off, “DEFAUT SONDE” on screen.'],
+          ['Misleading names.', 'The variable relayPin (D4) drives the fan, while the relay is on digPin (D2) with the heater; one comment says “the fan turns on” instead of the heater, and the digPin declaration carries the comment of the B constant. My photos confirm the wiring itself was right.'],
+          ['Comments no longer match the thresholds.', '“T above 25, T at most 27” for a test between 26.1 and 29.9 °C: the thresholds were changed, not the comments.'],
+          ['A slow, blocking loop.', 'delay(100) + delay(1000) + delay(1000): 2.1 s per pass, nothing can happen meanwhile. analogRead(A0) is read twice (valeur is unused) and Serial.begin is called twice.'],
+          ['The screen keeps leftovers.', 'Line 2 is never cleared: after “-273.15”, printing “26.43” leaves “26.4315”.'],
+          ['An overflow that happens to work.', 'const int R0 = 100000: on an Arduino Uno an int is 16 bits (at most 32,767), so the value becomes −31,072. The result is still right because R0 cancels out in R/R0. The screenshot shows a “^~~~~” mark above the compile report, most likely the matching warning.'],
+        ],
+      },
+    };
+    const t = (k) => (T[lang][k] !== undefined ? T[lang][k] : T.fr[k]);
+    const fmt = (v, d) => (isFinite(v) ? v.toFixed(d) : '—').replace('.', lang === 'fr' ? ',' : '.');
+    const S = { scen: 'winter', noise: 1, gap: 1, speed: 1200, unplug: null, pre: 'winter' };
+    let A = null, B = null, simT = 0, last = null, running = true;
+    function seg(box, list, cur, onPick) { const s = document.createElement('div'); s.className = 'seg'; list.forEach(([v, l]) => { const b = document.createElement('button'); b.type = 'button'; b.className = 'btn'; b.textContent = l; b.setAttribute('aria-pressed', String(v) === String(cur)); b.addEventListener('click', () => onPick(v)); s.appendChild(b); }); box.appendChild(s); }
+    function slider(box, label, val, min, max, step, show, onInput) { const d = document.createElement('div'); d.className = 'ctl'; const id = 'r' + Math.random().toString(36).slice(2, 7); d.innerHTML = '<label for="' + id + '">' + label + '</label><output></output><input type="range" id="' + id + '" min="' + min + '" max="' + max + '" step="' + step + '">'; const i = d.querySelector('input'), o = d.querySelector('output'); i.value = val; o.textContent = show(+i.value); i.addEventListener('input', () => { o.textContent = show(+i.value); onInput(+i.value, false); }); i.addEventListener('change', () => onInput(+i.value, true)); box.appendChild(d); }
+    const h3 = (box, txt, first) => { const h = document.createElement('h3'); h.textContent = txt; if (first) h.style.cssText = 'margin-top:0;padding-top:0;border:0'; box.appendChild(h); };
+    const PRE = { winter: { scen: 'winter', noise: 1, unplug: null }, mild: { scen: 'mild', noise: 1, unplug: null }, summer: { scen: 'summer', noise: 1, unplug: null }, unplug: { scen: 'summer', noise: 1, unplug: 9 * 3600 }, quiet: { scen: 'winter', noise: 0, unplug: null } };
+    function renderCtl() {
+      const box = $('ctl'); box.innerHTML = '';
+      h3(box, t('scen'), true);
+      const sc = document.createElement('div'); sc.className = 'scen';
+      [['winter', 'sWinter'], ['mild', 'sMild'], ['summer', 'sSummer'], ['unplug', 'sUnplug'], ['quiet', 'sQuiet']].forEach(([k, l]) => { const b = document.createElement('button'); b.type = 'button'; b.className = 'btn'; b.textContent = t(l); b.setAttribute('aria-pressed', S.pre === k); b.addEventListener('click', () => { Object.assign(S, PRE[k]); S.pre = k; renderCtl(); run(); }); sc.appendChild(b); });
+      box.appendChild(sc);
+      h3(box, t('set'));
+      slider(box, t('noise'), S.noise, 0, 3, 0.5, (v) => '± ' + fmt(v, 1) + (lang === 'fr' ? ' point' : ' count'), (v, fin) => { S.noise = v; S.pre = null; if (fin) { renderCtl(); run(); } });
+      slider(box, t('hyst'), S.gap, 0.2, 3, 0.1, (v) => fmt(v, 1) + ' °C', (v, fin) => { S.gap = v; S.pre = null; if (fin) { renderCtl(); run(); } });
+      seg(box, [[300, '×300'], [1200, '×1200'], [3600, '×3600']], S.speed, (v) => { S.speed = v; renderCtl(); });
+    }
+    function run() {
+      const base = { scen: S.scen, noise: S.noise, unplug: S.unplug, hours: 24, every: 30 };
+      A = M.simulate(Object.assign({ version: '2022' }, base));
+      B = M.simulate(Object.assign({ version: '2026', cfg: { hOn: 26 - S.gap, hOff: 26, fOn: 30, fOff: 30 - S.gap } }, base));
+      simT = 0; drawCharts(); review();
+    }
+    function setup(cv) { const dpr = window.devicePixelRatio || 1, w = cv.clientWidth, h = cv.clientHeight; if (cv.width !== Math.round(w * dpr) || cv.height !== Math.round(h * dpr)) { cv.width = Math.round(w * dpr); cv.height = Math.round(h * dpr); } const c = cv.getContext('2d'); c.setTransform(dpr, 0, 0, dpr, 0, 0); return { c, w, h }; }
+    const idxAt = (sim, tt) => Math.min(sim.t.length - 1, Math.floor(tt / 30));
+    function countUntil(sim, k) { let n = 0; for (let i = 1; i <= k; i++) n += (sim.heat[i] !== sim.heat[i - 1]) + (sim.fan[i] !== sim.fan[i - 1]); return n; }
+    function house(cv, sim, k, ang) {
+      const { c, w, h } = setup(cv); c.fillStyle = '#0a0a0b'; c.fillRect(0, 0, w, h);
+      const Tn = sim.T[k], heat = sim.heat[k], fan = sim.fan[k];
+      // pièce : couleur selon la température
+      const x0 = w * 0.08, y0 = h * 0.2, ww = w * 0.84, hh = h * 0.5, f = Math.max(0, Math.min(1, (Tn - 18) / 16));
+      c.fillStyle = 'rgb(' + Math.round(20 + 120 * f) + ',' + Math.round(26 + 10 * (1 - f)) + ',' + Math.round(40 * (1 - f) + 20) + ')'; c.fillRect(x0, y0, ww, hh);
+      c.strokeStyle = '#9b9b9f'; c.lineWidth = 2; c.beginPath(); c.moveTo(x0 - 8, y0); c.lineTo(x0 + ww / 2, y0 - h * 0.13); c.lineTo(x0 + ww + 8, y0); c.stroke(); c.strokeRect(x0, y0, ww, hh);
+      // chauffage
+      const hx = x0 + 14, hy = y0 + hh - 34;
+      if (heat) { c.fillStyle = 'rgba(224,100,40,0.35)'; c.beginPath(); c.arc(hx + 22, hy + 10, 28, 0, 7); c.fill(); }
+      c.strokeStyle = heat ? '#ff7a3a' : '#6c6c70'; c.lineWidth = 2; c.beginPath(); for (let q = 0; q < 5; q++) { c.moveTo(hx + q * 10, hy); c.lineTo(hx + q * 10, hy + 22); } c.stroke();
+      // ventilateur
+      const fx = x0 + ww - 34, fy = y0 + hh / 2;
+      c.strokeStyle = fan ? '#4fb3a9' : '#6c6c70'; c.lineWidth = 2; c.beginPath(); c.arc(fx, fy, 18, 0, 7); c.stroke();
+      for (let q = 0; q < 3; q++) { const a = ang * (fan ? 1 : 0) + (q * 2 * Math.PI) / 3; c.beginPath(); c.moveTo(fx, fy); c.lineTo(fx + 15 * Math.cos(a), fy + 15 * Math.sin(a)); c.stroke(); }
+      c.fillStyle = '#f2f2f2'; c.font = '600 15px Inter, sans-serif'; c.textAlign = 'center'; c.fillText(fmt(Tn, 1) + ' °C', x0 + ww / 2, y0 + hh / 2 + 5);
+      c.font = '10px "JetBrains Mono", monospace'; c.fillStyle = '#9b9b9f'; c.fillText(t('ext') + ' ' + fmt(sim.Text[k], 1) + ' °C', x0 + ww / 2, y0 - h * 0.15 - 4 > 10 ? 12 : 12);
+      // écran LCD 16×2
+      const lx = x0, ly = y0 + hh + 12, lw = ww, lh = Math.min(48, h - ly - 6);
+      c.fillStyle = '#123a8a'; c.fillRect(lx, ly, lw, lh); c.fillStyle = '#7fb2ff'; c.fillRect(lx + 4, ly + 4, lw - 8, lh - 8);
+      c.fillStyle = '#0b1f4a'; c.font = Math.max(10, Math.min(15, (lw - 16) / 16 / 0.62)) + 'px "JetBrains Mono", monospace'; c.textAlign = 'left';
+      const l1 = sim === A ? 'Temperature : ' : 'Maison 2026', l2 = sim.lcd[k] || '';
+      c.fillText(l1, lx + 8, ly + lh * 0.42); c.fillText(l2, lx + 8, ly + lh * 0.82);
+    }
+    function chartT() {
+      const { c, w, h } = setup($('cvT')); c.fillStyle = '#0a0a0b'; c.fillRect(0, 0, w, h);
+      const all = A.T.concat(B.T, A.Text); let lo = Math.min(...all), hi = Math.max(...all); lo = Math.floor(lo - 1); hi = Math.ceil(hi + 1);
+      const pl = 38, pb = 20, t1 = A.t[A.t.length - 1], X = (x) => pl + (x / t1) * (w - pl - 8), Y = (v) => 8 + (1 - (v - lo) / (hi - lo)) * (h - 8 - pb);
+      [[26, 26.1], [29.9, 30]].forEach(([a, b]) => { if (a > lo && b < hi) { c.fillStyle = 'rgba(200,16,46,0.18)'; c.fillRect(pl, Y(b) - 1, w - pl - 8, Math.max(2, Y(a) - Y(b) + 2)); } });
+      c.font = '10px "JetBrains Mono", monospace'; c.fillStyle = '#6c6c70'; c.strokeStyle = '#1e1e21'; c.textAlign = 'right';
+      for (let k = 0; k <= 4; k++) { const v = lo + ((hi - lo) * k) / 4; c.beginPath(); c.moveTo(pl, Y(v)); c.lineTo(w - 8, Y(v)); c.stroke(); c.fillText(fmt(v, 0), pl - 4, Y(v) + 3); }
+      c.textAlign = 'center'; for (let hh = 0; hh <= 24; hh += 3) c.fillText(hh + ' h', X(hh * 3600), h - 5);
+      [[A.Text, '#6c6c70'], [A.T, '#e0a458'], [B.T, '#c8102e']].forEach(([arr, col]) => { c.strokeStyle = col; c.lineWidth = 1.5; c.beginPath(); arr.forEach((v, k) => { const p = [X(A.t[k]), Y(Math.max(lo, Math.min(hi, v)))]; k ? c.lineTo(...p) : c.moveTo(...p); }); c.stroke(); });
+      c.strokeStyle = 'rgba(242,242,242,0.5)'; c.beginPath(); c.moveTo(X(simT), 6); c.lineTo(X(simT), h - pb); c.stroke();
+    }
+    function chartR() {
+      const { c, w, h } = setup($('cvR')); c.fillStyle = '#0a0a0b'; c.fillRect(0, 0, w, h);
+      const pl = 38, t1 = A.t[A.t.length - 1], X = (x) => pl + (x / t1) * (w - pl - 8), rows = [[A.heat, '#ff7a3a', '2022'], [A.fan, '#4fb3a9', ''], [B.heat, '#ff7a3a', '2026'], [B.fan, '#4fb3a9', '']], rh = (h - 10) / 4;
+      c.font = '10px "JetBrains Mono", monospace'; c.textAlign = 'right';
+      rows.forEach(([arr, col, lab], r) => { const y = 5 + r * rh; c.fillStyle = '#6c6c70'; c.fillText(lab, pl - 4, y + rh * 0.7); c.fillStyle = col; arr.forEach((v, k) => { if (v) c.fillRect(X(A.t[k]), y + 3, Math.max(1, X(A.t[Math.min(k + 1, A.t.length - 1)]) - X(A.t[k])), rh - 6); }); });
+      c.strokeStyle = 'rgba(242,242,242,0.5)'; c.beginPath(); c.moveTo(X(simT), 2); c.lineTo(X(simT), h - 2); c.stroke();
+    }
+    function drawCharts() { chartT(); chartR(); }
+    function serial(sim, id, tt) {
+      const rows = []; for (let i = sim.serial.length - 1; i >= 0 && rows.length < 9; i--) if (sim.serial[i][0] <= tt) rows.unshift(sim.serial[i]);
+      const hm = (s) => String(Math.floor(s / 3600)).padStart(2, '0') + ':' + String(Math.floor((s % 3600) / 60)).padStart(2, '0') + ':' + String(Math.floor(s % 60)).padStart(2, '0');
+      $(id).innerHTML = rows.map(([s, m]) => '<span class="t">' + hm(s) + '  </span>' + (m.indexOf('-273') >= 0 || m.startsWith('DEFAUT') ? '<span class="w">' + m + '</span>' : m)).join('\n');
+    }
+    function kpis(kA, kB) {
+      const kpi = (k, v, u, cls) => '<div class="kpi' + (cls ? ' ' + cls : '') + '"><dt>' + k + '</dt><dd>' + v + (u ? '<small>' + u + '</small>' : '') + '</dd></div>';
+      const hA = A.heat.slice(0, kA + 1).reduce((s, v) => s + v, 0) * 30 / 3600, hB = B.heat.slice(0, kB + 1).reduce((s, v) => s + v, 0) * 30 / 3600;
+      const sA = countUntil(A, kA), sB = countUntil(B, kB), tA = Math.max(...A.T.slice(0, kA + 1)), tB = Math.max(...B.T.slice(0, kB + 1));
+      $('kpis').innerHTML = kpi(t('kSw22'), String(sA), '', sA > 200 ? 'bad' : '') + kpi(t('kSw26'), String(sB), '', 'good') + kpi(t('kH22'), fmt(hA, 1), 'h') + kpi(t('kH26'), fmt(hB, 1), 'h') + kpi(t('kT22'), fmt(tA, 1), '°C', tA > 32 ? 'bad' : '') + kpi(t('kT26'), fmt(tB, 1), '°C');
+    }
+    function review() { $('review').innerHTML = T[lang].review.map(([a, b]) => '<li><b>' + a + '</b> ' + b + '</li>').join(''); }
+    let ang = 0;
+    function loop(now) {
+      if (A) {
+        if (last === null) last = now; const dt = Math.min(0.05, (now - last) / 1000); last = now;
+        if (running) { simT = Math.min(A.t[A.t.length - 1], simT + dt * S.speed); ang += dt * 12; }
+        const kA = idxAt(A, simT), kB = idxAt(B, simT);
+        house($('cv22'), A, kA, ang); house($('cv26'), B, kB, ang); drawCharts(); kpis(kA, kB);
+        serial(A, 's22', simT); serial(B, 's26', simT);
+        $('clk').textContent = String(Math.floor(simT / 3600)).padStart(2, '0') + ' h ' + String(Math.floor((simT % 3600) / 60)).padStart(2, '0');
+      }
+      requestAnimationFrame(loop);
+    }
+    $('play').addEventListener('click', () => { running = !running; $('play').textContent = running ? t('pause') : t('play'); });
+    $('restart').addEventListener('click', () => { simT = 0; running = true; $('play').textContent = t('pause'); });
+    function setLang(l) {
+      lang = l; document.documentElement.lang = l;
+      document.querySelectorAll('[data-t]').forEach((el) => { const v = T[l][el.dataset.t]; if (typeof v === 'string') el.textContent = v; });
+      document.querySelectorAll('[data-alt]').forEach((el) => { const v = T[l][el.dataset.alt]; if (typeof v === 'string') el.alt = v; });
+      document.querySelectorAll('.lang button').forEach((b) => b.setAttribute('aria-pressed', b.dataset.lang === l));
+      try { localStorage.setItem('lang', l); } catch (e) {}
+      $('play').textContent = running ? t('pause') : t('play');
+      renderCtl(); if (A) review();
+    }
+    document.querySelectorAll('.lang button').forEach((b) => b.addEventListener('click', () => setLang(b.dataset.lang)));
+    setLang(lang); run();
+    requestAnimationFrame(loop);
+  })();
+  </script>
+</body>
+</html>
