@@ -137,7 +137,7 @@ window.I18N_EN = {
   'p34.date': '2024',
   'p34.title': 'MaxPID: modelling a servo axis (kinematics and motor)',
   'p34.desc': "The MaxPID motorised arm: a DC motor turns a lead screw and the nut pushes the arm. I derived the input-output law by loop closure and screw-nut relation, then modelled the motor in Simscape. Checked in 2026 with Python scripts: the law is not linear (up to 6.4° from the line), the lab table rounds twice, and my 2024 simulation showed a ramp instead of the expected exponential (τm ≈ 97 ms with the datasheet values). The demo replays both models and adds closed-loop control of the arm angle (P and PI).",
-  'p34.img': "Simscape model of the MaxPID DC motor, kinematic diagram of the arm and closed-loop response of the angle",
+  'p34.img': "The school's MaxPID bench, my Simscape model of the DC motor, the kinematic diagram of the arm and the closed-loop angle response",
   'p33.date': 'Apr 2023',
   'p33.title': 'Connected balneotherapy: water temperature control and smartphone monitoring',
   'p33.desc': "Monitoring the water of a balneotherapy pool: a DS18B20 probe measures the temperature, the Arduino drives the heater through a relay and sends the reading over Bluetooth to an App Inventor app. 48 real readings received on the phone. Reviewed in 2026: an unplugged probe reads −127 °C, so the heater stays on; a 20 °C threshold instead of the planned 32 / 36 °C hysteresis; an app that read an integer while the Arduino sends text. The demo replays my 2023 program next to a fixed version, with faults to trigger.",
