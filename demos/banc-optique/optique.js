@@ -285,6 +285,41 @@
   // focale paraxiale en fonction de λ (chromatisme)
   function focalVsLambda(L, ls) { return ls.map((l) => { const pf = paraxialFocus(surfacesOf(L, l)); return { l, f: pf.f, xF: pf.xF }; }); }
 
+  // ---------------------------------------------------------------- réfraction : dioptre plan, prisme, fibre optique
+  // coefficients de Fresnel en intensité (onde polarisée s ou p) ; θ1 en rad ; réflexion totale → R = 1
+  function fresnelRT(n1, n2, th) {
+    const s1 = Math.sin(th), s2 = (n1 / n2) * s1; if (Math.abs(s2) >= 1) return { Rs: 1, Rp: 1, R: 1, T: 0, tir: true, th2: NaN };
+    const c1 = Math.cos(th), th2 = Math.asin(s2), c2 = Math.cos(th2);
+    const rs = (n1 * c1 - n2 * c2) / (n1 * c1 + n2 * c2), rp = (n2 * c1 - n1 * c2) / (n2 * c1 + n1 * c2);
+    const Rs = rs * rs, Rp = rp * rp; return { Rs, Rp, R: (Rs + Rp) / 2, T: 1 - (Rs + Rp) / 2, tir: false, th2 };
+  }
+  const criticalAngle = (n1, n2) => (n1 > n2 ? Math.asin(n2 / n1) : NaN);
+  const brewster = (n1, n2) => Math.atan(n2 / n1);
+  // prisme d'angle au sommet A (rad), indice n, incidence i (rad) : déviation D = i + i′ − A
+  function prism(A, n, i) {
+    const r1 = Math.asin(Math.sin(i) / n), r2 = A - r1, s = n * Math.sin(r2);
+    if (Math.abs(s) >= 1) return { ok: false, r1, r2 };
+    const i2 = Math.asin(s); return { ok: true, r1, r2, i2, D: i + i2 - A };
+  }
+  const prismDmin = (A, n) => 2 * Math.asin(n * Math.sin(A / 2)) - A;
+  const prismN = (A, Dmin) => Math.sin((A + Dmin) / 2) / Math.sin(A / 2); // mesure de l'indice au minimum de déviation
+  // fibre à saut d'indice : cœur n1, gaine n2, milieu extérieur n0
+  function fiber(n1, n2, n0) {
+    const NA = Math.sqrt(Math.max(0, n1 * n1 - n2 * n2)), c = 299792458;
+    const acc = NA / (n0 || 1) >= 1 ? Math.PI / 2 : Math.asin(NA / (n0 || 1));
+    const dtPerM = (n1 * (n1 - n2)) / (c * n2); // écart de temps entre le rayon axial et le rayon le plus incliné (s/m)
+    return { NA, acc, thc: Math.asin(n2 / n1), dtPerM, rate: (L) => 1 / (2 * dtPerM * L) }; // débit maximal ≈ 1/(2Δt)
+  }
+  // trajet d'un rayon dans la fibre (vue en coupe) : entrée au centre avec l'angle θ0 dans l'air ; renvoie les points (m) et la puissance restante
+  function fiberPath(n1, n2, n0, th0, rCore, L, maxBounces) {
+    const th1 = Math.asin((n0 * Math.sin(th0)) / n1), inc = Math.PI / 2 - Math.abs(th1), pts = [[0, 0]];
+    let x = 0, y = 0, dir = Math.sign(th1) || 1, P = 1, k = 0; const t = Math.tan(Math.abs(th1));
+    if (t < 1e-12) return { pts: [[0, 0], [L, 0]], P: 1, bounces: 0, inc: Math.PI / 2 };
+    const fr = fresnelRT(n1, n2, inc);
+    while (x < L && k < (maxBounces || 4000)) { const dy = dir > 0 ? rCore - y : y + rCore, dx = dy / t; if (x + dx > L) { y += dir * t * (L - x); x = L; pts.push([x, y]); break; } x += dx; y = dir * rCore; pts.push([x, y]); P *= fr.R; dir = -dir; k++; }
+    return { pts, P, bounces: k, inc, tir: fr.tir };
+  }
+
   // ---------------------------------------------------------------- diffraction
   // intégrales de Fresnel C(x), S(x) : série pour |x| < 3, développement asymptotique au-delà
   function fresnelCS(x) {
@@ -346,13 +381,24 @@
     }
     if (o.type === 'slit' || o.type === 'hair') return sinc((Math.PI * a * s) / l) ** 2;
     if (o.type === 'hole') { const v = (Math.PI * a * s) / l; return Math.abs(v) < 1e-8 ? 1 : ((2 * besselJ1(v)) / v) ** 2; }
-    if (o.type === 'young') { const b = o.b * 1e-3; return sinc((Math.PI * a * s) / l) ** 2 * Math.cos((Math.PI * b * s) / l) ** 2; }
+    if (o.type === 'young' || o.type === 'youngHoles') {
+      // formule de Fresnel I = I1 + I2 + 2√(I1 I2) cos φ, φ = 2π b sin θ / λ (r = I2/I1), dans l'enveloppe de diffraction d'une fente ou d'un trou ; normalisée à 1
+      const b = o.b * 1e-3, r = o.r === undefined ? 1 : o.r, phi = (2 * Math.PI * b * s) / l, inter = (1 + r + 2 * Math.sqrt(r) * Math.cos(phi)) / (1 + Math.sqrt(r)) ** 2;
+      const v = (Math.PI * a * s) / l, env = o.type === 'young' ? sinc(v) ** 2 : Math.abs(v) < 1e-8 ? 1 : ((2 * besselJ1(v)) / v) ** 2;
+      return env * inter;
+    }
     if (o.type === 'grating') {
       const p = 1 / o.lpmm, N = o.N || 50, w = p / 2, g = (Math.PI * p * s) / l, sg = Math.sin(g);
       const arr = Math.abs(sg) < 1e-9 ? 1 : (Math.sin(N * g) / (N * sg)) ** 2; return sinc((Math.PI * w * s) / l) ** 2 * arr;
     }
     return 0;
   }
+  // facteur de contraste Γ = (Imax − Imin)/(Imax + Imin) pour deux ondes d'intensités I1 et I2 = r·I1
+  const contrast = (r) => (2 * Math.sqrt(r)) / (1 + r);
+  // spectre d'une lampe blanche (pondérations égales de 400 à 700 nm) : [λ, poids]
+  function whiteSpectrum(n) { const N = n || 31, out = []; for (let k = 0; k < N; k++) out.push([400 + (300 * k) / (N - 1), 1 / N]); return out; }
+  // diamètre apparent (rad) d'un astre de diamètre d à la distance D (mêmes unités) et vu à travers une lunette de grossissement G
+  const apparent = (d, D) => 2 * Math.atan(d / (2 * D));
   // largeur de la tache centrale (distance entre les deux premiers minima) : exacte et petits angles
   function centralWidth(o) {
     const l = o.lnm * 1e-6, a = o.a * 1e-3, k = o.type === 'hole' ? 1.2196698912665045 : 1, s = (k * l) / a;
@@ -371,6 +417,7 @@
     mul, freeM, lensM, systemM, imageABCD, conjugate, imageChain, imageInf, admittedY, admitted, onScreen, qProp, wOf, gaussBeam,
     besselPositions, besselF, linfit, rng, focusLatitude, besselMC,
     refract, hitSurface, traceExact, traceParaxial, paraxialFocus, sag, singlet, achromat, surfacesOf, thickLensF, rayParallel, longAberration, spot, bestFocus, maxIncidence, focalVsLambda,
-    fresnelCS, besselJ1, sinc, sinTheta, intensity, centralWidth, gratingOrders, fresnelNumber, hairMeasure,
+    fresnelRT, criticalAngle, brewster, prism, prismDmin, prismN, fiber, fiberPath,
+    fresnelCS, besselJ1, sinc, sinTheta, intensity, contrast, whiteSpectrum, apparent, centralWidth, gratingOrders, fresnelNumber, hairMeasure,
   };
 });
