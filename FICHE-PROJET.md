@@ -63,6 +63,7 @@ Images des cartes (nov. 2026, demandé par Valentin pour alléger) : chaque cart
 - [x] Recherche : stage à l'étranger de 16 semaines
 - [x] Lieu : Périphérie de Paris, France (EN : Paris area, France)
 - [x] Année : 2e année cycle ingénieur (EPISEN ITS, sept. 2025 – juil. 2028)
+- Option de 2e année (nov. 2026, dit par Valentin) : il a choisi l'option IA (plus de maths), PAS l'option cybersécurité. LinkedIn : titre, préférences de stage et compétences orientés réseaux + IA.
 - [x] Parcours (source : LinkedIn de Valentin) : EPISEN ITS 2025–2028 ; CPGE TSI Lycée Robert Doisneau (Corbeil-Essonnes) 2023–2025, crédits ECTS ; Bac STI2D option SIN Lycée Georges Brassens (Évry-Courcouronnes) 2020–2023.
 - [x] Logos du parcours : assets/logos/episen.png, doisneau.png, brassens.png (recadrés des captures LinkedIn de Valentin), affichés en N&B dans un rectangle blanc, SEUL LE NOM de l'établissement est cliquable vers LinkedIn (logos fixes, non cliquables, sans effet au survol — demandé par Valentin) : linkedin.com/school/episen-its, linkedin.com/company/lycee-robert-doisneau (page "entreprise" : pas de page école), linkedin.com/school/lycée-georges-brassens-d-évry-courcouronnes.
 - [x] Expériences (source LinkedIn) : section à part "05 Expérience" avec onglet dans le menu (demandé par Valentin) :
