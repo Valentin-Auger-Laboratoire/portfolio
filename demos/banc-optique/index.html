@@ -1,0 +1,778 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Banc d'optique</title>
+  <meta name="description" content="Banc d'optique simulé : lentilles convergentes et divergentes, conjugaison et matrices de transfert, flou sur l'écran, œil, laser gaussien, mesure de focale (Descartes, Bessel), conditions de Gauss par tracé de rayons exact, aberrations, chromatisme, doublet achromatique, diffraction d'un laser et approximation des petits angles.">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --bg: #0c0c0d; --panel: #161618; --border: #262628; --border-hi: #3a3a3d;
+      --text: #f2f2f2; --dim: #9b9b9f; --muted: #6c6c70; --accent: #c8102e; --line: #c9c9cc; --warn: #e0a458; --ok: #8fd18f;
+      --mono: "JetBrains Mono", ui-monospace, monospace; --sans: "Inter", system-ui, sans-serif;
+      color-scheme: dark;
+    }
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    body { background: var(--bg); color: var(--text); font-family: var(--sans); line-height: 1.55; -webkit-font-smoothing: antialiased; }
+    .wrap { max-width: 1280px; margin: 0 auto; padding: 24px 16px 48px; }
+    .top { display: flex; justify-content: space-between; align-items: center; gap: 12px; flex-wrap: wrap; margin-bottom: 24px; }
+    .back { font-size: 0.9rem; color: var(--dim); text-decoration: none; }
+    .back:hover { color: var(--accent); }
+    .lang { display: flex; border: 1px solid var(--border-hi); }
+    .lang button { font: 500 0.78rem var(--mono); letter-spacing: .05em; background: none; color: var(--dim); border: 0; padding: 5px 10px; cursor: pointer; }
+    .lang button + button { border-left: 1px solid var(--border-hi); }
+    .lang button[aria-pressed="true"] { background: var(--text); color: var(--bg); }
+    .eyebrow { font: 500 0.82rem var(--mono); color: var(--accent); letter-spacing: .04em; }
+    h1 { font-size: clamp(1.6rem, 3.4vw, 2.3rem); line-height: 1.15; margin: 6px 0 10px; text-wrap: balance; }
+    .intro { color: var(--dim); max-width: 82ch; }
+    .intro a { color: var(--line); }
+    .warnbox { border: 1px solid #4a3a20; background: #1a160f; color: var(--warn); border-radius: 6px; padding: 8px 12px; font-size: 0.84rem; margin-top: 12px; }
+    .grid { display: grid; grid-template-columns: 320px minmax(0, 1fr); gap: 20px; align-items: start; margin-top: 20px; }
+    .stack { display: grid; gap: 16px; min-width: 0; }
+    .panel { background: var(--panel); border: 1px solid var(--border); border-radius: 8px; padding: 16px; min-width: 0; }
+    h2 { font: 600 0.78rem var(--mono); letter-spacing: .12em; text-transform: uppercase; color: var(--dim); margin-bottom: 12px; }
+    h3 { font: 600 0.72rem var(--mono); letter-spacing: .08em; text-transform: uppercase; color: var(--dim); margin: 14px 0 10px; padding-top: 12px; border-top: 1px solid var(--border); }
+    button:focus-visible, input:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+    .btn { font: 500 0.82rem var(--sans); background: none; color: var(--text); border: 1px solid var(--border-hi); border-radius: 6px; padding: 6px 11px; cursor: pointer; white-space: nowrap; }
+    .btn:hover { border-color: var(--accent); color: var(--accent); }
+    .btn[aria-pressed="true"] { border-color: var(--accent); color: var(--accent); }
+    .btn.primary { background: var(--accent); border-color: var(--accent); color: #fff; }
+    .seg { display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 10px; }
+    .ctl { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 2px 10px; margin-bottom: 10px; }
+    .ctl label { font: 500 0.76rem var(--mono); color: var(--dim); }
+    .ctl output { font: 0.8rem var(--mono); font-variant-numeric: tabular-nums; text-align: right; }
+    .ctl input[type=range] { grid-column: 1 / -1; width: 100%; accent-color: var(--accent); }
+    .lab { font: 500 0.74rem var(--mono); color: var(--dim); margin: 2px 0 6px; }
+    .hint { font-size: 0.8rem; color: var(--dim); margin-top: 8px; }
+    .kpis { display: grid; grid-template-columns: repeat(6, minmax(0, 1fr)); gap: 10px; }
+    .kpi { border: 1px solid var(--border); border-radius: 6px; padding: 8px 10px; min-width: 0; }
+    .kpi dt { font: 0.66rem var(--mono); color: var(--dim); }
+    .kpi dd { font: 600 1.02rem var(--sans); font-variant-numeric: tabular-nums; margin-top: 2px; }
+    .kpi dd small { font: 400 0.7rem var(--mono); color: var(--dim); margin-left: 3px; }
+    .kpi.bad dd { color: #ff8a8a; } .kpi.good dd { color: var(--ok); }
+    canvas#table { width: 100%; aspect-ratio: 240 / 150; display: block; border: 1px solid var(--border); border-radius: 6px; background: #0a0a0b; margin-top: 12px; cursor: crosshair; touch-action: none; }
+    .controls { display: flex; gap: 8px; flex-wrap: wrap; align-items: center; margin-top: 10px; font: 0.78rem var(--mono); color: var(--dim); }
+    .row2 { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 16px; }
+    .pins { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 6px; font: 0.74rem var(--mono); }
+    .pin { border: 1px solid var(--border); border-radius: 5px; padding: 5px 7px; min-width: 0; }
+    .pin b { display: block; color: var(--dim); font-weight: 500; font-size: 0.68rem; }
+    .pin span { font-variant-numeric: tabular-nums; }
+    .pin.hi { border-color: var(--accent); } .pin.hi span { color: #ff8a8a; }
+    .serial { font: 0.74rem/1.45 var(--mono); background: #0a0a0b; border: 1px solid var(--border); border-radius: 6px; padding: 8px 10px; height: 172px; overflow: hidden; color: var(--line); white-space: pre; }
+    .serial .t { color: var(--muted); }
+    .serial .w { color: #ff8a8a; }
+    .state { font: 0.8rem var(--mono); color: var(--dim); margin-top: 8px; }
+    .state b { color: var(--text); font-weight: 500; }
+    table { width: 100%; border-collapse: collapse; font: 0.8rem var(--mono); font-variant-numeric: tabular-nums; }
+    th, td { text-align: left; padding: 6px 8px; border-bottom: 1px solid var(--border); }
+    td.n, th.n { text-align: right; }
+    th { color: var(--dim); font-weight: 500; }
+    td.bad { color: #ff8a8a; } td.good { color: var(--ok); }
+    .tablewrap { overflow-x: auto; }
+    ol.review { padding-left: 1.2em; display: grid; gap: 6px; font-size: 0.86rem; color: var(--dim); }
+    ol.review b { color: var(--text); font-weight: 600; }
+    .note { font-size: 0.82rem; color: var(--dim); }
+    .note p + p { margin-top: 6px; }
+    .tabs { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 20px; border-bottom: 1px solid var(--border); }
+    .tabs button { font: 500 0.84rem var(--sans); background: none; border: 0; border-bottom: 2px solid transparent; color: var(--dim); padding: 8px 12px; cursor: pointer; }
+    .tabs button[aria-selected="true"] { color: var(--text); border-bottom-color: var(--accent); }
+    .tab[hidden] { display: none; }
+    .scen { display: grid; gap: 6px; margin-bottom: 4px; }
+    .scen .btn { text-align: left; white-space: normal; }
+    select { font: 0.8rem var(--mono); background: #0a0a0b; color: var(--text); border: 1px solid var(--border-hi); border-radius: 5px; padding: 4px 6px; }
+    .lensrow { border: 1px solid var(--border); border-radius: 6px; padding: 8px 10px 2px; margin-bottom: 8px; }
+    .lensrow .hd { display: flex; justify-content: space-between; align-items: center; gap: 8px; margin-bottom: 6px; font: 500 0.76rem var(--mono); color: var(--text); }
+    canvas.view { width: 100%; display: block; border: 1px solid var(--border); border-radius: 6px; background: #0a0a0b; }
+    #cvBench { aspect-ratio: 25 / 9; cursor: ew-resize; touch-action: none; }
+    #cvScreen { aspect-ratio: 1 / 1; max-width: 340px; background: #050505; }
+    #cvGauss { aspect-ratio: 25 / 10; }
+    #cvDiff { aspect-ratio: 25 / 6; background: #000; }
+    .screenrow { display: grid; grid-template-columns: minmax(0, 340px) minmax(0, 1fr); gap: 16px; align-items: start; }
+    .chart p { font: 0.72rem var(--mono); color: var(--dim); margin-bottom: 4px; display: flex; gap: 10px; flex-wrap: wrap; }
+    .chart p i { display: inline-block; width: 12px; height: 2px; vertical-align: 3px; margin-right: 5px; }
+    .chart canvas { width: 100%; height: 200px; display: block; border: 1px solid var(--border); border-radius: 6px; background: #0a0a0b; }
+    ul.issues { list-style: none; display: grid; gap: 6px; margin-top: 12px; font-size: 0.84rem; color: var(--dim); }
+    ul.issues li { padding-left: 14px; position: relative; }
+    ul.issues li::before { content: ''; position: absolute; left: 0; top: 0.55em; width: 6px; height: 6px; border-radius: 50%; background: var(--muted); }
+    ul.issues li.ok::before { background: var(--ok); } ul.issues li.bad::before { background: var(--accent); }
+    .good { color: var(--ok); } .note a { color: var(--text); }
+    .msg { font: 0.78rem var(--mono); color: var(--warn); min-height: 1.2em; margin-top: 6px; }
+    @media (max-width: 1000px) { .grid { grid-template-columns: minmax(0, 1fr); } .main-col { order: -1; } }
+    @media (max-width: 760px) { .screenrow { grid-template-columns: minmax(0, 1fr); } #cvScreen { max-width: none; } .kpis { grid-template-columns: repeat(3, minmax(0, 1fr)); } .row2 { grid-template-columns: minmax(0, 1fr); } .pins { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+  </style>
+</head>
+<body>
+  <div class="wrap">
+    <div class="top">
+      <a class="back" href="../../index.html#projets" data-t="back">← Retour au portfolio</a>
+      <div class="lang" role="group" aria-label="Langue / Language"><button type="button" data-lang="fr">FR</button><button type="button" data-lang="en">EN</button></div>
+    </div>
+    <p class="eyebrow" data-t="eyebrow">Démo · refaite de zéro en 2026, d'après un TP d'optique (banc, lentilles, laser)</p>
+    <h1 data-t="title">Banc d'optique : lentilles, conditions de Gauss et diffraction d'un laser</h1>
+    <p class="intro" data-t="intro"></p>
+    <p class="warnbox" data-t="warn"></p>
+    <div class="tabs" role="tablist">
+      <button type="button" role="tab" data-tab="bench" data-t="tabBench">1 · Banc d'optique</button>
+      <button type="button" role="tab" data-tab="gauss" data-t="tabGauss">2 · Conditions de Gauss</button>
+      <button type="button" role="tab" data-tab="diff" data-t="tabDiff">3 · Laser et diffraction</button>
+      <button type="button" role="tab" data-tab="check" data-t="tabCheck">4 · Vérifications</button>
+    </div>
+
+    <section class="tab" id="tab-bench">
+      <div class="grid">
+        <div class="stack"><div class="panel" id="ctlB"></div></div>
+        <div class="stack main-col">
+          <div class="panel">
+            <dl class="kpis" id="kpiB"></dl>
+            <canvas class="view" id="cvBench" aria-label="Banc d'optique : source, lentilles, écran et rayons"></canvas>
+            <p class="hint" data-t="benchHint"></p>
+          </div>
+          <div class="panel">
+            <h2 id="scrTitle" data-t="scrT">Ce qu'on voit sur l'écran</h2>
+            <div class="screenrow">
+              <canvas class="view" id="cvScreen" aria-label="Image sur l'écran"></canvas>
+              <div><ul class="issues" id="issB" style="margin-top:0"></ul><div class="seg" style="margin-top:12px" id="zoomSeg"></div></div>
+            </div>
+          </div>
+          <div class="panel">
+            <h2 data-t="measT">Mesurer une focale comme en TP</h2>
+            <div class="seg"><button type="button" class="btn" id="bFocus" data-t="bFocus">Placer l'écran au point</button><button type="button" class="btn primary" id="bRead" data-t="bRead">Relever (OA, OA′)</button><button type="button" class="btn" id="bClear" data-t="bClear">Effacer</button><button type="button" class="btn" id="bBessel" data-t="bBessel">Méthode de Bessel (2 000 essais)</button></div>
+            <p class="msg" id="msgM"></p>
+            <div class="row2">
+              <div><div class="tablewrap"><table id="tabM"></table></div><p class="hint" id="fitRes"></p></div>
+              <div class="chart"><p><span><i style="background:var(--accent)"></i><span data-t="lgFit">1/OA′ en fonction de 1/OA (m⁻¹) et droite des moindres carrés</span></span></p><canvas id="cvFit"></canvas></div>
+            </div>
+            <div id="besselBox" style="margin-top:12px"></div>
+            <p class="hint" data-t="measHint"></p>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section class="tab" id="tab-gauss" hidden>
+      <div class="grid">
+        <div class="stack"><div class="panel" id="ctlG"></div></div>
+        <div class="stack main-col">
+          <div class="panel">
+            <dl class="kpis" id="kpiG"></dl>
+            <canvas class="view" id="cvGauss" aria-label="Tracé de rayons exact à travers la lentille"></canvas>
+            <div class="controls"><span id="viewSeg"></span></div>
+            <ul class="issues" id="issG"></ul>
+          </div>
+          <div class="panel">
+            <div class="row2">
+              <div class="chart"><p><span data-t="lgLA">Aberration longitudinale : où le rayon de hauteur h coupe l'axe (mm, 0 = foyer paraxial)</span></p><canvas id="cvLA"></canvas></div>
+              <div class="chart"><p><span data-t="lgFan">Écart transverse dans le meilleur plan (µm) selon la hauteur h</span></p><canvas id="cvFan"></canvas></div>
+            </div>
+            <p class="hint" data-t="laHint"></p>
+          </div>
+          <div class="panel">
+            <h2 data-t="chromT">Chromatisme : position du foyer selon la couleur</h2>
+            <div class="chart"><p><span><i style="background:var(--accent)"></i><span id="lgSing">lentille simple</span></span><span><i style="background:var(--line)"></i><span data-t="lgAch">doublet achromatique N-BK7 + F2</span></span></p><canvas id="cvChrom"></canvas></div>
+            <p class="hint" data-t="chromHint"></p>
+          </div>
+          <div class="panel">
+            <h2 data-t="sinT">Pourquoi « petits angles » : sin θ ≈ θ</h2>
+            <div class="tablewrap"><table id="tabSin"></table></div>
+            <p class="hint" data-t="sinHint"></p>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section class="tab" id="tab-diff" hidden>
+      <div class="grid">
+        <div class="stack"><div class="panel" id="ctlD"></div></div>
+        <div class="stack main-col">
+          <div class="panel">
+            <dl class="kpis" id="kpiD"></dl>
+            <canvas class="view" id="cvDiff" aria-label="Figure de diffraction sur l'écran"></canvas>
+            <div class="chart" style="margin-top:12px"><p><span><i style="background:var(--accent)"></i><span data-t="lgEx">intensité, angles exacts</span></span><span><i style="background:#9b9b9f"></i><span data-t="lgSm">petits angles (sin θ ≈ x/D)</span></span><span id="lgFrW"><i style="background:#4fb3a9"></i><span data-t="lgFr">Fresnel (écran proche)</span></span></p><canvas id="cvProf"></canvas></div>
+            <ul class="issues" id="issD"></ul>
+          </div>
+          <div class="panel">
+            <h2 data-t="smallT">Jusqu'où marche L = 2λD/a ?</h2>
+            <div class="tablewrap"><table id="tabSmall"></table></div>
+            <p class="hint" data-t="smallHint"></p>
+          </div>
+          <div class="panel">
+            <h2 data-t="hairT">Mesurer le diamètre d'un cheveu</h2>
+            <div class="seg"><button type="button" class="btn primary" id="bHair" data-t="bHair">Nouveau cheveu (diamètre caché)</button><button type="button" class="btn" id="bHairM" data-t="bHairM">Mesurer la tache à la règle</button></div>
+            <div id="hairBox" class="note"></div>
+            <p class="hint" data-t="hairHint"></p>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section class="tab" id="tab-check" hidden>
+      <div class="panel" style="margin-top:20px">
+        <h2 data-t="checkT">Vérifications calculées en direct dans ton navigateur</h2>
+        <div class="tablewrap"><table id="tabCheck"></table></div>
+        <p class="hint" data-t="checkHint"></p>
+      </div>
+    </section>
+
+    <div class="panel note" style="margin-top:20px"><p data-t="note1"></p><p data-t="note2"></p><p data-t="note3"></p></div>
+  </div>
+  <script src="optique.js"></script>
+  <script>
+  (function () {
+    'use strict';
+    const O = window.Optique, $ = (id) => document.getElementById(id), DEG = Math.PI / 180;
+    let lang = 'fr';
+    try { lang = localStorage.getItem('lang') || ((navigator.language || 'fr').toLowerCase().startsWith('fr') ? 'fr' : 'en'); } catch (e) {}
+    const T = {
+      fr: {
+        back: '← Retour au portfolio', eyebrow: "Démo · refaite de zéro en 2026, d'après un TP d'optique (banc, lentilles, laser)", title: "Banc d'optique : lentilles, conditions de Gauss et diffraction d'un laser",
+        intro: "En TP d'optique, on travaillait sur un banc : une lampe et un objet, des lentilles convergentes et divergentes qu'on déplace, un écran, puis un laser et des fentes pour la diffraction, toujours « dans l'approximation des petits angles ». Je n'ai plus les photos ni les mesures, alors j'ai refait le banc de zéro et je suis allé plus loin : flou réel sur l'écran, œil qui accommode, faisceau laser gaussien, mesure de focale avec incertitudes, tracé de rayons exact pour voir où s'arrêtent les conditions de Gauss, chromatisme et doublet achromatique, diffraction avec angles exacts et écran proche (Fresnel).",
+        warn: "Simulation refaite en 2026 : aucune photo ni mesure d'origine. Lentilles et lasers du commerce (N-BK7, F2, lasers 405 à 650 nm), indices calculés par la formule de Sellmeier. Ce n'est ni le sujet ni le compte rendu du TP.",
+        tabBench: "1 · Banc d'optique", tabGauss: '2 · Conditions de Gauss', tabDiff: '3 · Laser et diffraction', tabCheck: '4 · Vérifications',
+        benchHint: "Fais glisser la source, les lentilles ou l'écran directement sur le banc (ou utilise les curseurs). Optique paraxiale : lentilles minces, matrices de transfert. Avec une seule lentille, les 3 rayons particuliers (rouge : parallèle à l'axe puis par F′ ; gris : par le centre ; vert : par F puis parallèle) construisent l'image ; « faisceau réel » montre les rayons que laissent passer les montures. Pointillés : plans focaux objet (F) et image (F′) ; un objet à l'infini donne son image dans le plan focal image. Les montures limitent les rayons (flou, vignettage). L'échelle verticale est agrandie pour lire les rayons.",
+        scrT: "Ce qu'on voit sur l'écran", scrEye: "Ce que voit l'œil (champ ±12°)",
+        measT: 'Mesurer une focale comme en TP', bFocus: "Placer l'écran au point", bRead: 'Relever (OA, OA′)', bClear: 'Effacer', bBessel: 'Méthode de Bessel (2 000 essais)',
+        lgFit: '1/OA′ en fonction de 1/OA (m⁻¹) et droite des moindres carrés',
+        measHint: "Méthode de Descartes : déplace l'objet ou la lentille, remets l'écran au point, relève (la lecture tombe quelque part dans la latitude de mise au point, arrondie au mm, comme à l'œil). La droite 1/OA′ = 1/OA + 1/f′ donne f′ par son ordonnée à l'origine. Méthode de Bessel : objet et écran fixes (D ≥ 4f′), deux positions de la lentille donnent une image nette, f′ = (D² − d²)/4D. L'opérateur ne voit pas de différence tant que le flou reste sous 0,5 mm (latitude de mise au point) et lit la règle au mm : la simulation en tire l'incertitude.",
+        lgLA: "Aberration longitudinale : où le rayon de hauteur h coupe l'axe (mm, 0 = foyer paraxial)", lgFan: 'Écart transverse dans le meilleur plan (µm) selon la hauteur h', lgAch: 'doublet achromatique N-BK7 + F2', lgSingle: 'lentille simple',
+        laHint: "En conditions de Gauss (rayons proches de l'axe et peu inclinés), tous les rayons passent par le même foyer. Plus on ouvre le diaphragme, plus les rayons du bord coupent l'axe tôt : c'est l'aberration sphérique, qui croît comme h². Une lentille plan-convexe tournée dans le mauvais sens en a environ 4 fois plus.",
+        chromT: 'Chromatisme : position du foyer selon la couleur', chromHint: "L'indice du verre dépend de la longueur d'onde : le bleu converge avant le rouge (écart ≈ f′/V, V = constringence). Le doublet associe un crown convergent et un flint divergent pour faire coïncider les foyers F (486 nm) et C (656 nm) ; il reste un petit spectre secondaire.",
+        sinT: 'Pourquoi « petits angles » : sin θ ≈ θ', sinHint: "Toute l'optique du TP (Descartes, grandissement, L = 2λD/a) repose sur sin θ ≈ tan θ ≈ θ. L'erreur reste sous 1 % jusqu'à environ 14° pour sin θ, et 10° pour tan θ.",
+        lgEx: 'intensité, angles exacts', lgSm: 'petits angles (sin θ ≈ x/D)', lgFr: 'Fresnel (écran proche)',
+        smallT: "Jusqu'où marche L = 2λD/a ?", smallHint: "Pour une fente de largeur a, le premier minimum est à sin θ = λ/a. Tant que a est grand devant λ, θ est petit et L = 2λD/a est excellent. Pour des fentes de quelques µm, il faut l'angle exact : L = 2D tan(asin(λ/a)).",
+        hairT: "Mesurer le diamètre d'un cheveu", bHair: 'Nouveau cheveu (diamètre caché)', bHairM: 'Mesurer la tache à la règle',
+        hairHint: "Principe de Babinet : un cheveu diffracte comme une fente de même largeur (en dehors du faisceau direct). On mesure la largeur L de la tache centrale, puis a = 2λD/L, avec l'incertitude de lecture (règle au mm) et celle de D (±5 mm).",
+        checkT: 'Vérifications calculées en direct dans ton navigateur', checkHint: "Le dépôt contient en plus un fichier de tests (node tests/test.js) : environ 2 300 vérifications sur le moteur.",
+        note1: "Ce que je retiens : les formules du TP (Descartes, grandissement, L = 2λD/a) sont des approximations de petits angles. Le tracé exact montre précisément quand elles cessent d'être vraies, et pourquoi on diaphragme les lentilles ou on choisit leur sens.",
+        note2: "Modèle : lentilles minces paraxiales sur le banc ; tracé exact (loi de Snell-Descartes vectorielle) dans des lentilles épaisses à faces sphériques, dans le plan méridien seulement ; œil réduit (lentille de 17 mm, accommodation de 25 cm à l'infini, pupille 4 mm) ; faisceau laser gaussien idéal (M² = 1) ; diffraction de Fraunhofer (et Fresnel pour la fente), éclairage cohérent.",
+        note3: "Sources des données : coefficients de Sellmeier du catalogue Schott (N-BK7, F2, N-SF11) et de Malitson (1965) pour la silice. Pas un logiciel de conception optique.",
+        ctlExp: 'Expériences', ctlSrc: 'Source', ctlLens: 'Lentilles', ctlScr: 'Écran ou œil',
+        srcObj: 'Lampe + objet « F »', srcLaser: 'Laser', srcInf: "Objet à l'infini (étoiles)",
+        pos: 'position', focal: 'focale f′', diam: 'diamètre des montures', objH: "hauteur de l'objet", alpha: "angle de l'étoile hors axe", w0: 'rayon du faisceau laser',
+        add: '+ lentille', rem: 'retirer', fpOn: 'plans focaux affichés', fpOff: 'masqués', rThree: '3 rayons particuliers', rFan: 'faisceau réel (montures)', screen: 'Écran', eye: 'Œil',
+        exp: { sharp: 'Image nette, γ = −1 (2f′ – 2f′)', proj: 'Projecteur : grande image, moins lumineuse', loupe: "Loupe : image virtuelle, vue à l'œil", div: 'Lentille divergente seule', assoc: 'Mesurer une divergente (accolée à une convergente)', kepler: 'Lunette de Kepler (afocale)', laserF: 'Focaliser un laser', expand: 'Élargir un faisceau laser (×4)', bessel: 'Méthode de Bessel (D = 600 mm)' },
+        k: { wpos: 'position du col', img: 'image', oa: 'OA′ (dern. lentille)', g: 'grandissement γ', nat: 'nature', blur: 'flou sur l’écran', lum: 'éclairement', spot: 'rayon du spot (1/e²)', waist: 'col (waist)', zr: 'longueur de Rayleigh', acc: 'accommodation', fe: 'focale de l’œil', G: 'grossissement' },
+        real: 'réelle', virt: 'virtuelle', inf: "à l'infini", none: '—',
+        iss: {
+          sharp: "Image nette sur l'écran.", blurry: "L'écran n'est pas au plan image : l'image est floue. Clique « Placer l'écran au point » ou déplace l'écran.", virtual: "Image virtuelle : aucune image sur l'écran, seulement une tache lumineuse. Il faut regarder à travers la lentille (choisis « Œil »).",
+          noLight: "Aucun rayon n'arrive sur l'écran (vignettage par les montures).", inverted: "Image renversée (γ < 0) : le « F » apparaît tourné de 180°.", dim: "Grande image : la même lumière est étalée sur une plus grande surface (éclairement ∝ 1/γ²).",
+          laserEye: "Jamais de laser dans l'œil : en mode laser, seul l'écran est disponible.", eyeOk: "L'œil accommode et voit net.", eyeNear: "Image trop proche de l'œil (moins de 25 cm) : il ne peut pas accommoder, il voit flou.", eyeBehind: "Les rayons convergent derrière l'œil : il ne peut pas voir net (il faudrait un œil hypermétrope corrigé).",
+          afocal: 'Système afocal : un faisceau parallèle ressort parallèle ; grossissement G = −f′1/f′2.', laserWaist: "Le faisceau ne se concentre pas en un point : la diffraction impose un col de rayon λf′/(πw).",
+        },
+        msg: { notSharp: "Image floue (flou > 0,5 mm) : mets d'abord l'écran au point.", oneLens: 'Relevé possible avec une seule lentille et la lampe.', notReal: "Pas d'image réelle sur l'écran.", bessel4f: 'Bessel impossible : il faut D ≥ 4f′ (éloigne l’écran).', besselOne: 'Bessel : une seule lentille convergente et la lampe.' },
+        mCols: ['OA (mm)', 'OA′ (mm)', 'γ = OA′/OA'], fitRes: (f, u, n) => 'f′ = ' + f + ' ± ' + u + ' mm (' + n + ' points, ordonnée à l’origine de la droite)',
+        bes: (p1, p2, l1, l2, m, s, f) => 'Positions nettes de la lentille : ' + p1 + ' mm et ' + p2 + ' mm (depuis l’objet). Latitude de mise au point : ' + l1 + ' mm et ' + l2 + ' mm. Sur 2 000 essais simulés : f′ = ' + m + ' ± ' + s + ' mm (vraie valeur ' + f + ' mm).',
+        g: { shape: 'Forme de la lentille', bi: 'biconvexe', pc: 'plan-convexe, face bombée vers la lumière', cp: 'plan-convexe, face plane vers la lumière', ach: 'doublet achromatique', f: 'focale f′', D: 'diamètre', diaph: 'diaphragme (ouverture utilisée)', alpha: 'inclinaison du faisceau', glass: 'Verre', light: 'Lumière', white: 'blanche (F, d, C)', view: ['vue d’ensemble', 'zoom sur le foyer'] },
+        kg: { f: 'focale f′ (paraxiale)', bfl: 'tirage', la: 'aberration marginale', rms: 'tache RMS (meilleur plan)', airy: 'rayon d’Airy', inc: 'incidence max' },
+        issG: { diff: 'Limité par la diffraction : la tache géométrique est plus petite que la tache d’Airy. Les conditions de Gauss sont respectées.', aber: 'Limité par les aberrations : la tache géométrique dépasse la tache d’Airy. Diaphragme ou retourne la lentille.', far: 'Hors conditions de Gauss : incidence de plus de 20° sur une face, sin θ ≈ θ se trompe de plus de 2 %.', field: 'Faisceau incliné : les rayons ne convergent plus en un point (coma, astigmatisme) même près de l’axe.', chrom: 'Lumière blanche : le bleu et le rouge ne focalisent pas au même endroit.' },
+        sinCols: ['θ', 'sin θ', 'tan θ', 'erreur de sin θ ≈ θ', 'erreur de tan θ ≈ θ'],
+        d: { laser1: 'Laser', lfree: 'ou n’importe quelle longueur d’onde λ', laser2: 'Deuxième laser (superposé)', none: 'aucun', type: 'Obstacle', slit: 'fente', hair: 'cheveu / fil', hole: 'trou circulaire', young: "fentes d'Young", grating: 'réseau', a: 'largeur a (diamètre pour le trou)', b: 'distance entre les fentes b', lpmm: 'traits par mm', N: 'traits éclairés', Dd: 'distance à l’écran D', model: 'Modèle', exact: 'angles exacts', small: 'petits angles', fresnel: 'Fresnel (fente)' },
+        kd: { Lex: 'tache centrale (exacte)', Lsm: 'tache 2λD/a', err: 'écart', th: 'angle θ₁', nf: 'nombre de Fresnel', reg: 'régime', o1: 'ordre 1 (exact)', o1s: 'ordre 1 (petits angles)', nord: 'ordres visibles', i: 'interfrange λD/b' },
+        regF: 'Fraunhofer', regN: 'Fresnel (écran trop proche)', regM: 'intermédiaire',
+        issD: { fresnelNeeded: 'Nombre de Fresnel ≥ 0,3 : l’écran est trop proche pour la formule de Fraunhofer. Choisis le modèle « Fresnel ».', smallBad: 'Grand angle : la formule des petits angles se trompe de plus de 2 %.', noMin: 'a < λ : la lumière est diffractée dans toutes les directions, pas de premier minimum.', grating: 'Réseau : les ordres sont à sin θ = kλ/p ; avec des traits de largeur p/2, les ordres pairs sont éteints.', young: 'Fentes d’Young : franges espacées de λD/b, dans l’enveloppe de diffraction d’une fente.', two: 'Deux lasers : le bleu ou le vert diffractent moins que le rouge (taches plus étroites, ∝ λ).', babinet: 'Cheveu : même figure qu’une fente de même largeur, plus le faisceau direct au centre (principe de Babinet).' },
+        smCols: ['a (µm)', 'θ₁', 'L exacte (mm)', 'L = 2λD/a (mm)', 'écart'],
+        hair1: 'Un cheveu de diamètre inconnu est placé dans le faisceau (λ = 632,8 nm). Mesure la tache centrale.', hair2: (L, a, u, tr, ok) => 'Lecture : L = ' + L + ' mm (±1 mm). Diamètre : a = 2λD/L = ' + a + ' ± ' + u + ' µm. Vraie valeur : ' + tr + ' µm ' + (ok ? '(dans l’incertitude).' : '(hors de l’incertitude : refais la lecture).'),
+        chk: ['Vérification', 'Calcul', 'Attendu', ''],
+      },
+      en: {
+        back: '← Back to portfolio', eyebrow: 'Demo · rebuilt from scratch in 2026, after an optics lab (bench, lenses, laser)', title: 'Optical bench: lenses, paraxial (Gauss) conditions and laser diffraction',
+        intro: "In the optics lab we worked on a bench: a lamp and an object, converging and diverging lenses we moved around, a screen, then a laser and slits for diffraction, always \"in the small-angle approximation\". I no longer have the photos or the measurements, so I rebuilt the bench from scratch and went further: real blur on the screen, an eye that accommodates, a Gaussian laser beam, focal-length measurement with uncertainties, exact ray tracing to see where the paraxial conditions stop, chromatic aberration and an achromatic doublet, diffraction with exact angles and a close screen (Fresnel).",
+        warn: 'Simulation rebuilt in 2026: no original photo or measurement. Off-the-shelf lenses and lasers (N-BK7, F2, 405 to 650 nm lasers), refractive indices from the Sellmeier formula. This is neither the lab handout nor the report.',
+        tabBench: '1 · Optical bench', tabGauss: '2 · Paraxial conditions', tabDiff: '3 · Laser and diffraction', tabCheck: '4 · Checks',
+        benchHint: 'Drag the source, the lenses or the screen directly on the bench (or use the sliders). Paraxial optics: thin lenses, transfer matrices. With a single lens, the 3 principal rays (red: parallel to the axis then through F′; grey: through the centre; green: through F then parallel) construct the image; "real beam" shows the rays the mounts let through. Dotted lines: object (F) and image (F′) focal planes; an object at infinity is imaged in the image focal plane. Lens mounts limit the rays (blur, vignetting). The vertical scale is enlarged so the rays can be read.',
+        scrT: 'What the screen shows', scrEye: 'What the eye sees (±12° field)',
+        measT: 'Measuring a focal length like in the lab', bFocus: 'Focus the screen', bRead: 'Record (OA, OA′)', bClear: 'Clear', bBessel: 'Bessel method (2,000 trials)',
+        lgFit: '1/OA′ versus 1/OA (m⁻¹) and least-squares line',
+        measHint: 'Descartes method: move the object or the lens, refocus the screen, record (the reading falls somewhere within the depth of focus, rounded to the mm, as by eye). The line 1/OA′ = 1/OA + 1/f′ gives f′ from its intercept. Bessel method: object and screen fixed (D ≥ 4f′), two lens positions give a sharp image, f′ = (D² − d²)/4D. The operator sees no difference while the blur stays under 0.5 mm (depth of focus) and reads the ruler to the mm: the simulation derives the uncertainty from that.',
+        lgLA: 'Longitudinal aberration: where the ray at height h crosses the axis (mm, 0 = paraxial focus)', lgFan: 'Transverse error in the best plane (µm) versus height h', lgAch: 'N-BK7 + F2 achromatic doublet', lgSingle: 'single lens',
+        laHint: 'Under paraxial conditions (rays close to the axis and slightly inclined), all rays go through the same focus. The wider the aperture, the earlier the edge rays cross the axis: that is spherical aberration, growing like h². A plano-convex lens turned the wrong way has about 4 times more.',
+        chromT: 'Chromatic aberration: focus position versus colour', chromHint: 'The glass index depends on wavelength: blue converges before red (shift ≈ f′/V, V = Abbe number). The doublet combines a converging crown and a diverging flint so that the F (486 nm) and C (656 nm) foci coincide; a small secondary spectrum remains.',
+        sinT: 'Why "small angles": sin θ ≈ θ', sinHint: 'All the lab optics (Descartes, magnification, L = 2λD/a) relies on sin θ ≈ tan θ ≈ θ. The error stays under 1% up to about 14° for sin θ, and 10° for tan θ.',
+        lgEx: 'intensity, exact angles', lgSm: 'small angles (sin θ ≈ x/D)', lgFr: 'Fresnel (close screen)',
+        smallT: 'How far does L = 2λD/a work?', smallHint: 'For a slit of width a, the first minimum is at sin θ = λ/a. As long as a is large compared with λ, θ is small and L = 2λD/a is excellent. For slits of a few µm the exact angle is needed: L = 2D tan(asin(λ/a)).',
+        hairT: 'Measuring the diameter of a hair', bHair: 'New hair (hidden diameter)', bHairM: 'Measure the spot with a ruler',
+        hairHint: "Babinet's principle: a hair diffracts like a slit of the same width (outside the direct beam). We measure the width L of the central spot, then a = 2λD/L, with the reading uncertainty (ruler to the mm) and that of D (±5 mm).",
+        checkT: 'Checks computed live in your browser', checkHint: 'The repository also contains a test file (node tests/test.js): about 2,300 checks on the engine.',
+        note1: 'What I take away: the lab formulas (Descartes, magnification, L = 2λD/a) are small-angle approximations. Exact ray tracing shows precisely when they stop being true, and why lenses are stopped down or turned the right way.',
+        note2: 'Model: paraxial thin lenses on the bench; exact ray tracing (vector Snell law) in thick spherical lenses, meridional plane only; reduced eye (17 mm lens, accommodation from 25 cm to infinity, 4 mm pupil); ideal Gaussian laser beam (M² = 1); Fraunhofer diffraction (and Fresnel for the slit), coherent illumination.',
+        note3: 'Data sources: Sellmeier coefficients from the Schott catalogue (N-BK7, F2, N-SF11) and Malitson (1965) for fused silica. Not optical design software.',
+        ctlExp: 'Experiments', ctlSrc: 'Source', ctlLens: 'Lenses', ctlScr: 'Screen or eye',
+        srcObj: 'Lamp + "F" object', srcLaser: 'Laser', srcInf: 'Object at infinity (stars)',
+        pos: 'position', focal: 'focal length f′', diam: 'mount diameter', objH: 'object height', alpha: 'off-axis star angle', w0: 'laser beam radius',
+        add: '+ lens', rem: 'remove', fpOn: 'focal planes shown', fpOff: 'hidden', rThree: '3 principal rays', rFan: 'real beam (mounts)', screen: 'Screen', eye: 'Eye',
+        exp: { sharp: 'Sharp image, m = −1 (2f′ – 2f′)', proj: 'Projector: large image, dimmer', loupe: 'Magnifier: virtual image, seen by eye', div: 'Diverging lens alone', assoc: 'Measuring a diverging lens (with a converging one)', kepler: 'Keplerian telescope (afocal)', laserF: 'Focusing a laser', expand: 'Expanding a laser beam (×4)', bessel: 'Bessel method (D = 600 mm)' },
+        k: { wpos: 'position du col', img: 'image', oa: 'OA′ (last lens)', g: 'magnification m', nat: 'nature', blur: 'blur on screen', lum: 'illuminance', spot: 'spot radius (1/e²)', waist: 'waist', zr: 'Rayleigh length', acc: 'accommodation', fe: 'eye focal length', G: 'angular magnification' },
+        real: 'real', virt: 'virtual', inf: 'at infinity', none: '—',
+        iss: {
+          sharp: 'Sharp image on the screen.', blurry: 'The screen is not at the image plane: the image is blurred. Click "Focus the screen" or move the screen.', virtual: 'Virtual image: no image on the screen, only a patch of light. You must look through the lens (choose "Eye").',
+          noLight: 'No ray reaches the screen (vignetting by the mounts).', inverted: 'Inverted image (m < 0): the "F" appears rotated by 180°.', dim: 'Large image: the same light is spread over a larger area (illuminance ∝ 1/m²).',
+          laserEye: 'Never a laser into the eye: in laser mode only the screen is available.', eyeOk: 'The eye accommodates and sees sharply.', eyeNear: 'Image too close to the eye (under 25 cm): it cannot accommodate and sees a blur.', eyeBehind: 'The rays converge behind the eye: it cannot focus (it would take a corrected long-sighted eye).',
+          afocal: 'Afocal system: a parallel beam comes out parallel; angular magnification G = −f′1/f′2.', laserWaist: 'The beam does not focus to a point: diffraction sets a waist of radius λf′/(πw).',
+        },
+        msg: { notSharp: 'Blurred image (blur > 0.5 mm): focus the screen first.', oneLens: 'Recording needs a single lens and the lamp.', notReal: 'No real image on the screen.', bessel4f: 'Bessel impossible: D ≥ 4f′ is needed (move the screen away).', besselOne: 'Bessel: a single converging lens and the lamp.' },
+        mCols: ['OA (mm)', 'OA′ (mm)', 'm = OA′/OA'], fitRes: (f, u, n) => 'f′ = ' + f + ' ± ' + u + ' mm (' + n + ' points, intercept of the line)',
+        bes: (p1, p2, l1, l2, m, s, f) => 'Sharp lens positions: ' + p1 + ' mm and ' + p2 + ' mm (from the object). Depth of focus: ' + l1 + ' mm and ' + l2 + ' mm. Over 2,000 simulated trials: f′ = ' + m + ' ± ' + s + ' mm (true value ' + f + ' mm).',
+        g: { shape: 'Lens shape', bi: 'biconvex', pc: 'plano-convex, curved side towards the light', cp: 'plano-convex, flat side towards the light', ach: 'achromatic doublet', f: 'focal length f′', D: 'diameter', diaph: 'stop (aperture used)', alpha: 'beam tilt', glass: 'Glass', light: 'Light', white: 'white (F, d, C)', view: ['overview', 'zoom on the focus'] },
+        kg: { f: 'focal length f′ (paraxial)', bfl: 'back focal length', la: 'marginal aberration', rms: 'RMS spot (best plane)', airy: 'Airy radius', inc: 'max incidence' },
+        issG: { diff: 'Diffraction-limited: the geometric spot is smaller than the Airy disc. Paraxial conditions hold.', aber: 'Aberration-limited: the geometric spot is larger than the Airy disc. Stop down or turn the lens around.', far: 'Outside paraxial conditions: incidence above 20° on a surface, sin θ ≈ θ is off by more than 2%.', field: 'Tilted beam: rays no longer converge to a point (coma, astigmatism) even close to the axis.', chrom: 'White light: blue and red do not focus at the same place.' },
+        sinCols: ['θ', 'sin θ', 'tan θ', 'error of sin θ ≈ θ', 'error of tan θ ≈ θ'],
+        d: { laser1: 'Laser', lfree: 'or any wavelength λ', laser2: 'Second laser (superimposed)', none: 'none', type: 'Obstacle', slit: 'slit', hair: 'hair / wire', hole: 'circular hole', young: "Young's slits", grating: 'grating', a: 'width a (diameter for the hole)', b: 'slit spacing b', lpmm: 'lines per mm', N: 'illuminated lines', Dd: 'distance to screen D', model: 'Model', exact: 'exact angles', small: 'small angles', fresnel: 'Fresnel (slit)' },
+        kd: { Lex: 'central spot (exact)', Lsm: 'spot 2λD/a', err: 'error', th: 'angle θ₁', nf: 'Fresnel number', reg: 'regime', o1: 'order 1 (exact)', o1s: 'order 1 (small angles)', nord: 'visible orders', i: 'fringe spacing λD/b' },
+        regF: 'Fraunhofer', regN: 'Fresnel (screen too close)', regM: 'intermediate',
+        issD: { fresnelNeeded: 'Fresnel number ≥ 0.3: the screen is too close for the Fraunhofer formula. Choose the "Fresnel" model.', smallBad: 'Large angle: the small-angle formula is off by more than 2%.', noMin: 'a < λ: light is diffracted in every direction, no first minimum.', grating: 'Grating: orders at sin θ = kλ/p; with lines of width p/2, even orders vanish.', young: "Young's slits: fringes spaced by λD/b, inside the single-slit diffraction envelope.", two: 'Two lasers: blue or green diffract less than red (narrower spots, ∝ λ).', babinet: "Hair: same pattern as a slit of the same width, plus the direct beam in the centre (Babinet's principle)." },
+        smCols: ['a (µm)', 'θ₁', 'exact L (mm)', 'L = 2λD/a (mm)', 'error'],
+        hair1: 'A hair of unknown diameter is placed in the beam (λ = 632.8 nm). Measure the central spot.', hair2: (L, a, u, tr, ok) => 'Reading: L = ' + L + ' mm (±1 mm). Diameter: a = 2λD/L = ' + a + ' ± ' + u + ' µm. True value: ' + tr + ' µm ' + (ok ? '(within the uncertainty).' : '(outside the uncertainty: read again).'),
+        chk: ['Check', 'Computed', 'Expected', ''],
+      },
+    };
+    const t = (k) => (T[lang][k] !== undefined ? T[lang][k] : T.fr[k]);
+    const fmt = (v, d) => (isFinite(v) ? (Math.abs(v) < 0.5 * Math.pow(10, -d) ? 0 : v).toFixed(d) : '—').replace('.', lang === 'fr' ? ',' : '.');
+    function setup(cv) { const dpr = window.devicePixelRatio || 1, w = cv.clientWidth, h = cv.clientHeight; if (cv.width !== Math.round(w * dpr) || cv.height !== Math.round(h * dpr)) { cv.width = Math.round(w * dpr); cv.height = Math.round(h * dpr); } const c = cv.getContext('2d'); c.setTransform(dpr, 0, 0, dpr, 0, 0); return { c, w, h, dpr }; }
+    function seg(box, list, cur, onPick) { const s = document.createElement('div'); s.className = 'seg'; list.forEach(([v, l]) => { const b = document.createElement('button'); b.type = 'button'; b.className = 'btn'; b.textContent = l; b.setAttribute('aria-pressed', String(v) === String(cur)); b.addEventListener('click', () => onPick(v)); s.appendChild(b); }); box.appendChild(s); return s; }
+    function slider(box, label, val, min, max, step, show, onInput) { const d = document.createElement('div'); d.className = 'ctl'; const id = 'r' + Math.random().toString(36).slice(2, 7); d.innerHTML = '<label for="' + id + '">' + label + '</label><output></output><input type="range" id="' + id + '" min="' + min + '" max="' + max + '" step="' + step + '">'; const i = d.querySelector('input'), o = d.querySelector('output'); i.value = val; o.textContent = show(+i.value); i.addEventListener('input', () => { o.textContent = show(+i.value); onInput(+i.value); }); box.appendChild(d); return { i, o, set: (v) => { i.value = v; o.textContent = show(+i.value); } }; }
+    const h3 = (box, txt, first) => { const h = document.createElement('h3'); h.textContent = txt; if (first) h.style.cssText = 'margin-top:0;padding-top:0;border:0'; box.appendChild(h); };
+    const kpi = (k, v, u, cls) => '<div class="kpi' + (cls ? ' ' + cls : '') + '"><dt>' + k + '</dt><dd>' + v + (u ? '<small>' + u + '</small>' : '') + '</dd></div>';
+    const rgb = (l, a) => { const c = O.rgbOf(l); return 'rgba(' + c[0] + ',' + c[1] + ',' + c[2] + ',' + (a === undefined ? 1 : a) + ')'; };
+    const lasName = (l) => fmt(l, l % 1 ? 1 : 0) + ' nm';
+
+    // =========================================================== 1. BANC
+    const FOCALS = [-300, -200, -100, -50, 50, 100, 150, 200, 300, 500], RAIL = 1000, EYE_F = 17, EYE_PP = 250, EYE_PUP = 4;
+    const B = { rays: 'three', showFP: true, src: 'obj', xo: 50, H: 20, lnm: 632.8, w0: 0.5, alpha: 1, D: 40, lenses: [{ x: 250, f: 100 }], xs: 450, scr: 'screen', zoom: 1, pts: [] };
+    const PRE = {
+      sharp: { src: 'obj', xo: 50, H: 20, lenses: [{ x: 250, f: 100 }], xs: 450, scr: 'screen', zoom: 1 },
+      proj: { src: 'obj', xo: 50, H: 10, lenses: [{ x: 170, f: 100 }], xs: 770, scr: 'screen', zoom: 1 },
+      loupe: { src: 'obj', xo: 165, H: 10, lenses: [{ x: 260, f: 100 }], xs: 280, scr: 'eye', zoom: 1 },
+      div: { src: 'obj', xo: 50, H: 20, lenses: [{ x: 250, f: -100 }], xs: 500, scr: 'screen', zoom: 1 },
+      assoc: { src: 'obj', xo: 50, H: 20, lenses: [{ x: 200, f: 100 }, { x: 330, f: -300 }], xs: 722, scr: 'screen', zoom: 1 },
+      kepler: { src: 'inf', alpha: 1, lenses: [{ x: 150, f: 200 }, { x: 400, f: 50 }], xs: 420, scr: 'eye', zoom: 1 },
+      laserF: { src: 'laser', xo: 40, w0: 0.5, lnm: 632.8, lenses: [{ x: 300, f: 100 }], xs: 400, scr: 'screen', zoom: 5 },
+      expand: { src: 'laser', xo: 40, w0: 0.5, lnm: 532, lenses: [{ x: 200, f: -50 }, { x: 350, f: 200 }], xs: 950, scr: 'screen', zoom: 5 },
+      bessel: { src: 'obj', xo: 50, H: 20, lenses: [{ x: 50 + (600 - Math.sqrt(600 * 600 - 4 * 600 * 100)) / 2, f: 100 }], xs: 650, scr: 'screen', zoom: 1 },
+    };
+    let curExp = 'sharp';
+    function applyPreset(k) { curExp = k; const p = JSON.parse(JSON.stringify(PRE[k])); Object.assign(B, p); B.lenses.forEach((L) => { L.x = Math.round(L.x * 10) / 10; }); renderCtlB(); computeB(); }
+    const x0of = () => (B.src === 'inf' ? 0 : B.xo);
+    // calcul du banc
+    let RB = null;
+    function eyeFocal(xi) { // focale de l'œil pour une image finale en xi ; [fe, état]
+      if (!isFinite(xi)) return [EYE_F, 'ok'];
+      const p = xi - B.xs; if (p > 0) return [EYE_F, 'behind'];
+      if (-p < EYE_PP) return [1 / (1 / EYE_F + 1 / EYE_PP), 'near'];
+      return [1 / (1 / EYE_F - 1 / p), 'ok'];
+    }
+    function computeB() {
+      if (B.src === 'laser' && B.scr === 'eye') B.scr = 'screen';
+      const x0 = x0of(), act = B.lenses.filter((L) => L.x > x0 + 0.1 && L.x < B.xs - 0.1).map((L) => ({ x: L.x, f: L.f, D: B.D })).sort((a, b) => a.x - b.x);
+      const R = { act, x0 };
+      if (B.src === 'obj') { R.im = O.imageABCD(act, B.xo); R.chain = O.imageChain(act, B.xo, B.H / 2); }
+      else if (B.src === 'inf') { R.im = O.imageInf(act, -B.alpha * DEG); R.chain = act.length ? O.imageChain(act, -Infinity, 0, -B.alpha * DEG) : []; }
+      else { R.g = O.gaussBeam(act, B.xo, B.w0, B.lnm, B.scr === 'eye' ? B.xs : B.xs); }
+      let sys = act, xScr = B.xs;
+      if (B.scr === 'eye' && B.src !== 'laser') { const xi = R.im ? R.im.x : Infinity, [fe, st] = eyeFocal(xi); R.fe = fe; R.eyeState = st; sys = act.concat([{ x: B.xs, f: fe, D: EYE_PUP }]); xScr = B.xs + EYE_F; }
+      R.sys = sys; R.xScr = xScr;
+      if (B.src === 'obj') { R.scr = O.onScreen(sys, B.xo, xScr); }
+      else if (B.src === 'inf') {
+        R.stars = [0, -B.alpha * DEG].map((u) => { const M = O.systemM(sys, x0, xScr), ay = O.admittedY(sys, x0, u); if (!ay) return null; return { y: M[0] * (ay[0] + ay[1]) / 2 + M[1] * u, blur: Math.abs(M[0]) * (ay[1] - ay[0]), dy: ay[1] - ay[0], u }; });
+      } else { const pts = R.g.pts, last = pts[pts.length - 1]; R.wScr = last[1]; }
+      RB = R; kpisB(); issuesB(); drawBench(); drawScreen(); drawFit();
+    }
+    function natOf(im) { if (!im || !isFinite(im.x)) return t('inf'); return im.real ? t('real') : t('virt'); }
+    function kpisB() {
+      const R = RB, last = R.act.length ? R.act[R.act.length - 1].x : null; let h = '';
+      if (B.src === 'laser') {
+        h = kpi(t('k').spot, R.wScr < 0.1 ? fmt(R.wScr * 1000, 0) : fmt(R.wScr, 2), R.wScr < 0.1 ? 'µm' : 'mm') + kpi(t('k').waist, R.g.waistW < 0.1 ? fmt(R.g.waistW * 1000, 1) : fmt(R.g.waistW, 2), R.g.waistW < 0.1 ? 'µm' : 'mm') + kpi(t('k').wpos, fmt(R.g.waistAt, 0), 'mm') + kpi(t('k').zr, fmt(R.g.zR, R.g.zR < 10 ? 2 : 0), 'mm') + kpi('λ', lasName(B.lnm), '') + kpi(t('k').nat, R.act.length ? (R.act.length === 2 && Math.abs(R.act[1].x - R.act[0].x - (R.act[0].f + R.act[1].f)) < 1 ? 'afocal' : '—') : '—', '');
+      } else {
+        const im = R.im, g = im && isFinite(im.g) ? im.g : (B.src === 'inf' && im && im.afocal ? im.G : NaN);
+        const lum = B.src === 'obj' && R.scr.lit && B.scr === 'screen' ? Math.pow(R.scr.du / 0.2, 2) / Math.max(1e-6, R.scr.A * R.scr.A) : NaN;
+        h = kpi(t('k').img, im && isFinite(im.x) ? fmt(im.x, 0) : '∞', im && isFinite(im.x) ? 'mm' : '') + kpi(t('k').oa, im && isFinite(im.x) && last !== null ? fmt(im.x - last, 0) : '—', im && isFinite(im.x) && last !== null ? 'mm' : '') + kpi(B.src === 'inf' ? t('k').G : t('k').g, fmt(g, 2), '') + kpi(t('k').nat, natOf(im), '');
+        if (B.scr === 'eye') h += kpi(t('k').acc, R.eyeState === 'ok' ? (isFinite(im ? im.x : Infinity) ? fmt((B.xs - im.x) / 10, 0) : '∞') : '—', R.eyeState === 'ok' && isFinite(im ? im.x : Infinity) ? 'cm' : '', R.eyeState === 'ok' ? 'good' : 'bad') + kpi(t('k').fe, fmt(R.fe, 2), 'mm');
+        else { const bl = B.src === 'obj' ? (R.scr.lit ? R.scr.blur : NaN) : (R.stars[0] ? R.stars[0].blur : NaN); h += kpi(t('k').blur, fmt(bl, 2), 'mm', bl < 0.5 ? 'good' : 'bad') + kpi(t('k').lum, isFinite(lum) ? fmt(Math.min(999, lum * 100), 0) : '—', isFinite(lum) ? '%' : ''); }
+      }
+      $('kpiB').innerHTML = h;
+    }
+    function issuesB() {
+      const R = RB, L = [];
+      if (B.src === 'laser') { if (B._eyeAsked) L.push(['bad', t('iss').laserEye]); if (R.act.length) L.push(['ok', t('iss').laserWaist]); }
+      else if (B.scr === 'eye') { L.push(R.eyeState === 'ok' ? ['ok', t('iss').eyeOk] : ['bad', R.eyeState === 'near' ? t('iss').eyeNear : t('iss').eyeBehind]); if (B.src === 'inf' && R.im && R.im.afocal) L.push(['ok', t('iss').afocal]); }
+      else if (B.src === 'obj') {
+        if (!R.scr.lit) L.push(['bad', t('iss').noLight]);
+        else if (R.im && !R.im.real) L.push(['bad', t('iss').virtual]);
+        else if (R.scr.blur < 0.5) L.push(['ok', t('iss').sharp]); else L.push(['bad', t('iss').blurry]);
+        if (R.im && R.im.real && R.im.g < 0) L.push(['', t('iss').inverted]);
+        if (R.im && R.im.real && Math.abs(R.im.g) > 2.5) L.push(['', t('iss').dim]);
+      } else { if (R.im && R.im.afocal) L.push(['ok', t('iss').afocal]); const s = R.stars[0]; if (s) L.push(s.blur < 0.5 ? ['ok', t('iss').sharp] : ['bad', t('iss').blurry]); }
+      $('issB').innerHTML = L.map(([c, x]) => '<li class="' + c + '">' + x + '</li>').join('');
+    }
+    // --- dessin du banc
+    let BG = null; // géométrie du dernier dessin (pour la souris)
+    function drawBench() {
+      const { c, w, h } = setup($('cvBench')), R = RB; c.fillStyle = '#0a0a0b'; c.fillRect(0, 0, w, h);
+      const pl = 18, pr = 18, X = (x) => pl + (x / RAIL) * (w - pl - pr), hs = (w - pl - pr) / RAIL;
+      let ymax;
+      if (B.src === 'laser') ymax = Math.max(0.3, ...R.g.pts.map((p) => p[1])) * 1.25;
+      else { ymax = Math.max(B.D / 2, B.src === 'obj' ? B.H / 2 : 5); (R.chain || []).forEach((s) => { if (isFinite(s.h) && Math.abs(s.h) < 60) ymax = Math.max(ymax, Math.abs(s.h)); }); ymax *= 1.18; }
+      const vs = (h / 2 - 22) / ymax, Y = (y) => h / 2 - 6 - y * vs; BG = { X, w, pl, pr };
+      // rail et graduations
+      c.strokeStyle = '#3a3a3d'; c.lineWidth = 1; c.beginPath(); c.moveTo(X(0), Y(0)); c.lineTo(X(RAIL), Y(0)); c.stroke();
+      c.font = '10px "JetBrains Mono", monospace'; c.fillStyle = '#6c6c70'; c.textAlign = 'center';
+      for (let x = 0; x <= RAIL; x += 100) { c.fillRect(X(x), h - 16, 1, 5); c.fillText(x + (x === RAIL ? ' mm' : ''), X(x), h - 3); }
+      c.textAlign = 'right'; c.fillText((lang === 'fr' ? 'échelle verticale ×' : 'vertical scale ×') + fmt(vs / hs, vs / hs < 10 ? 1 : 0), w - 6, 12);
+      // foyers
+      R.act.forEach((L) => { [L.x - L.f, L.x + L.f].forEach((xf, j) => { if (xf < 0 || xf > RAIL) return; if (B.showFP) { c.strokeStyle = 'rgba(155,155,159,0.35)'; c.setLineDash([2, 4]); c.beginPath(); c.moveTo(X(xf), Y(ymax * 0.95)); c.lineTo(X(xf), Y(-ymax * 0.95)); c.stroke(); c.setLineDash([]); } c.fillStyle = '#6c6c70'; c.fillRect(X(xf) - 1, Y(0) - 3, 2, 6); c.textAlign = 'center'; c.fillText(j ? 'F′' : 'F', X(xf), Y(0) + 14); }); });
+      // rayons
+      c.save(); c.beginPath(); c.rect(X(0), 0, X(RAIL) - X(0), h - 18); c.clip();
+      const prop = (y, u, x, xEnd, Ls) => { const pts = [[x, y]]; for (const L of Ls) { if (L.x <= x || L.x >= xEnd) continue; y += u * (L.x - x); x = L.x; pts.push([x, y]); if (Math.abs(y) > L.D / 2 + 1e-9) return { pts, blocked: true }; u -= y / L.f; } y += u * (xEnd - x); pts.push([xEnd, y]); return { pts, u, y }; };
+      const xEnd = B.scr === 'eye' ? R.xScr : B.xs;
+      const drawRay = (pts, col, lw, dash) => { c.strokeStyle = col; c.lineWidth = lw; c.setLineDash(dash || []); c.beginPath(); pts.forEach(([x, y], k) => (k ? c.lineTo(X(x), Y(y)) : c.moveTo(X(x), Y(y)))); c.stroke(); c.setLineDash([]); };
+      if (B.src === 'obj' && B.rays === 'three' && R.act.length === 1) {
+        const L = R.act[0], yA = B.H / 2, xo = B.xo, f = L.f, img = R.im, dl = (pts, col) => drawRay(pts, col, 1.6);
+        const back = (p, u, col) => { if (img && isFinite(img.x) && !img.real) drawRay([p, [img.x, p[1] + u * (img.x - p[0])]], col, 1, [4, 4]); };
+        // 1 : parallèle à l'axe, ressort en passant par F′
+        let u = -yA / f; dl([[xo, yA], [L.x, yA], [xEnd, yA + u * (xEnd - L.x)]], '#c8102e'); back([L.x, yA], u, 'rgba(200,16,46,0.6)');
+        // 2 : par le centre optique, non dévié
+        u = -yA / (L.x - xo); dl([[xo, yA], [xEnd, yA + u * (xEnd - xo)]], '#c9c9cc'); back([L.x, yA + u * (L.x - xo)], u, 'rgba(201,201,204,0.6)');
+        // 3 : passe par F (ou se dirige vers F), ressort parallèle à l'axe
+        if (Math.abs(L.x - f - xo) > 1e-6) { const s3 = -yA / (L.x - f - xo), yL = yA + s3 * (L.x - xo); dl([[xo, yA], [L.x, yL], [xEnd, yL]], '#4fb3a9'); back([L.x, yL], 0, 'rgba(79,179,169,0.6)'); }
+      } else if (B.src === 'obj') {
+        [[B.H / 2, 'rgba(200,16,46,0.85)'], [0, 'rgba(201,201,204,0.55)']].forEach(([y0, col]) => {
+          const ad = O.admitted(R.sys.filter((L) => L.x < xEnd), B.xo, y0); if (!ad) return;
+          for (let k = 0; k < 7; k++) { const u = ad[0] + ((ad[1] - ad[0]) * (k + 0.5)) / 7, r = prop(y0, u, B.xo, xEnd, R.sys); drawRay(r.pts, col, 1);
+            // prolongements vers une image virtuelle
+            if (R.im && isFinite(R.im.x) && !R.im.real && R.act.length && y0 > 0) { const lastL = R.act[R.act.length - 1], p = r.pts.find((q) => Math.abs(q[0] - lastL.x) < 1e-9); if (p && !r.blocked) { const uu = (r.pts[r.pts.indexOf(p) + 1][1] - p[1]) / (r.pts[r.pts.indexOf(p) + 1][0] - p[0]); drawRay([p, [R.im.x, p[1] + uu * (R.im.x - p[0])]], 'rgba(200,16,46,0.45)', 1, [4, 4]); } } }
+        });
+      } else if (B.src === 'inf') {
+        [[0, 'rgba(201,201,204,0.55)'], [-B.alpha * DEG, 'rgba(200,16,46,0.85)']].forEach(([u, col]) => { const ay = O.admittedY(R.sys.filter((L) => L.x < xEnd), 0, u); if (!ay) return; for (let k = 0; k < 7; k++) { const y = ay[0] + ((ay[1] - ay[0]) * (k + 0.5)) / 7; drawRay(prop(y, u, 0, xEnd, R.sys).pts, col, 1); } });
+      } else {
+        const col = rgb(B.lnm, 0.35), pts = R.g.pts.filter((p) => p[0] <= xEnd + 1e-6); c.fillStyle = col; c.beginPath(); pts.forEach(([x, wv], k) => (k ? c.lineTo(X(x), Y(wv)) : c.moveTo(X(x), Y(wv)))); for (let k = pts.length - 1; k >= 0; k--) c.lineTo(X(pts[k][0]), Y(-pts[k][1])); c.closePath(); c.fill();
+        c.strokeStyle = rgb(B.lnm, 0.9); c.lineWidth = 1; [1, -1].forEach((s) => { c.beginPath(); pts.forEach(([x, wv], k) => (k ? c.lineTo(X(x), Y(s * wv)) : c.moveTo(X(x), Y(s * wv)))); c.stroke(); });
+      }
+      c.restore();
+      // objet / source
+      if (B.src === 'obj') {
+        c.fillStyle = '#2a2a2d'; c.fillRect(X(B.xo) - 26, Y(B.H / 2 + 4), 20, (B.H + 8) * vs); c.fillStyle = '#e8d9a8'; c.beginPath(); c.arc(X(B.xo) - 16, Y(0), 4, 0, 7); c.fill();
+        arrow(c, X(B.xo), Y(-B.H / 2), Y(B.H / 2), '#f2f2f2', false); c.fillStyle = '#f2f2f2'; c.textAlign = 'center'; c.fillText('F', X(B.xo) + 9, Y(B.H / 2) + 4);
+      } else if (B.src === 'laser') { c.fillStyle = '#2a2a2d'; c.fillRect(X(B.xo) - 34, Y(0) - 9, 34, 18); c.fillStyle = rgb(B.lnm); c.fillRect(X(B.xo) - 4, Y(0) - 3, 4, 6); c.fillStyle = '#9b9b9f'; c.textAlign = 'center'; c.fillText(lasName(B.lnm), X(B.xo) - 17, Y(0) - 13); }
+      else { c.fillStyle = '#9b9b9f'; c.textAlign = 'left'; c.fillText(lang === 'fr' ? '← objet à l’infini' : '← object at infinity', X(0) + 4, 24); }
+      // images intermédiaires et finale
+      (R.chain || []).forEach((s, k) => { if (!isFinite(s.x) || s.x < 0 || s.x > RAIL || !isFinite(s.h) || Math.abs(s.h) > ymax * 1.5) return; const fin = k === R.chain.length - 1; arrow(c, X(s.x), Y(0), Y(s.h), fin ? '#c8102e' : '#9b9b9f', !s.real || (k < R.chain.length - 1 && false), fin ? 2 : 1.2); if (!s.real) { c.fillStyle = '#9b9b9f'; c.textAlign = 'center'; c.fillText(lang === 'fr' ? 'virtuelle' : 'virtual', X(s.x), Y(s.h) + (s.h > 0 ? -6 : 14)); } });
+      // lentilles
+      const lh = Math.min(B.D / 2, (h / 2 - 30) / vs); B.lenses.forEach((L, i) => { const on = R.act.some((a) => Math.abs(a.x - L.x) < 1e-9); lensGlyph(c, X(L.x), Y(lh), Y(-lh), L.f > 0, on ? '#f2f2f2' : '#55555a'); c.fillStyle = on ? '#c9c9cc' : '#55555a'; c.textAlign = 'center'; c.fillText('L' + (i + 1) + ' ' + (L.f > 0 ? '+' : '') + L.f, X(L.x), Y(lh) - 6); });
+      // écran ou œil
+      if (B.scr === 'eye') { const ex = X(B.xs), ey = Y(0), r = Math.max(10, 12 * vs / 4); c.strokeStyle = '#c9c9cc'; c.lineWidth = 1.5; c.beginPath(); c.ellipse(ex + r * 0.9, ey, r, r * 0.8, 0, 0, 7); c.stroke(); c.fillStyle = '#c8102e'; c.fillRect(ex - 1, ey - 4, 2, 8); c.fillStyle = '#9b9b9f'; c.textAlign = 'center'; c.fillText(lang === 'fr' ? 'œil' : 'eye', ex + r, ey - r - 4); }
+      else { c.fillStyle = '#c9c9cc'; c.fillRect(X(B.xs) - 2, Y(ymax * 0.92), 4, ymax * 1.84 * vs); c.fillStyle = '#9b9b9f'; c.textAlign = 'center'; c.fillText(lang === 'fr' ? 'écran' : 'screen', X(B.xs), Y(ymax * 0.92) - 5); }
+    }
+    function arrow(c, x, y0, y1, col, dash, lw) { c.strokeStyle = col; c.fillStyle = col; c.lineWidth = lw || 2; c.setLineDash(dash ? [4, 3] : []); c.beginPath(); c.moveTo(x, y0); c.lineTo(x, y1); c.stroke(); c.setLineDash([]); const s = y1 < y0 ? 1 : -1; c.beginPath(); c.moveTo(x, y1); c.lineTo(x - 4, y1 + 7 * s); c.lineTo(x + 4, y1 + 7 * s); c.closePath(); c.fill(); }
+    function lensGlyph(c, x, yt, yb, conv, col) { c.strokeStyle = col; c.fillStyle = col; c.lineWidth = 2; c.beginPath(); c.moveTo(x, yt); c.lineTo(x, yb); c.stroke(); [[yt, 1], [yb, -1]].forEach(([y, s]) => { c.beginPath(); if (conv) { c.moveTo(x, y - 2 * s); c.lineTo(x - 6, y + 6 * s); c.lineTo(x + 6, y + 6 * s); } else { c.moveTo(x, y + 6 * s); c.lineTo(x - 6, y - 2 * s); c.lineTo(x + 6, y - 2 * s); } c.closePath(); c.fill(); }); }
+    // --- image sur l'écran
+    const FGLYPH = [[-0.3, -0.5, 0.2, 1], [-0.1, 0.3, 0.4, 0.2], [-0.1, -0.05, 0.3, 0.17]]; // [x, y, largeur, hauteur] en unités de H, y vers le haut
+    const disk = (() => { const p = []; const N = 64; for (let k = 0; k < N; k++) { const r = Math.sqrt((k + 0.5) / N), a = k * 2.399963; p.push([r * Math.cos(a), r * Math.sin(a)]); } return p; })();
+    let off = null;
+    function drawScreen() {
+      const cv = $('cvScreen'), { c, w, h, dpr } = setup(cv), R = RB; c.fillStyle = '#050505'; c.fillRect(0, 0, w, h);
+      const eye = B.scr === 'eye' && B.src !== 'laser'; $('scrTitle').textContent = eye ? t('scrEye') : t('scrT');
+      // échelle : écran → ±50 mm / zoom ; œil → ±12° (rétine : y = 17 mm · angle)
+      const half = eye ? EYE_F * Math.tan(12 * DEG) : 50 / B.zoom, ppm = w / (2 * half), cx = w / 2, cy = h / 2;
+      if (!off) off = document.createElement('canvas'); off.width = cv.width; off.height = cv.height; const o = off.getContext('2d'); o.setTransform(dpr, 0, 0, dpr, 0, 0); o.clearRect(0, 0, w, h);
+      c.save(); c.globalCompositeOperation = 'lighter';
+      if (B.src === 'obj' && R.scr.lit) {
+        const fl = eye ? -1 : 1, A = R.scr.A * fl, H = B.H, sh = R.scr.center * fl; // centre de la tache du point axial ; œil : le cerveau redresse l'image de la rétine
+        o.fillStyle = '#fff3d6'; FGLYPH.forEach(([x, y, ww, hh]) => { const xa = x * H * A, xb = (x + ww) * H * A, ya = y * H * A + sh, yb = (y + hh) * H * A + sh; o.fillRect(cx + Math.min(xa, xb) * ppm, cy - Math.max(ya, yb) * ppm, Math.abs(xb - xa) * ppm, Math.abs(yb - ya) * ppm); });
+        let lum = eye ? 1 : Math.pow(R.scr.du / 0.2, 2) / Math.max(1e-6, A * A); lum = Math.min(1.6, lum);
+        const rad = (R.scr.blur / 2) * ppm;
+        if (rad < 0.6) { c.globalAlpha = Math.min(1, lum); c.drawImage(off, 0, 0, w, h); }
+        else { const n = disk.length, area = Math.max(1, Math.PI * rad * rad); c.globalAlpha = Math.min(1, lum / n * Math.max(1, Math.min(4, 1))); disk.forEach(([dx, dy]) => c.drawImage(off, dx * rad, dy * rad, w, h)); void area; }
+      } else if (B.src === 'inf') {
+        R.stars.forEach((s, k) => { if (!s) return; const rad = Math.max(2.5, (s.blur / 2) * ppm), a = Math.min(1, 20 / (rad * rad)); c.globalAlpha = 1; c.fillStyle = k ? 'rgba(255,170,170,' + a + ')' : 'rgba(255,243,214,' + a + ')'; c.beginPath(); c.arc(cx, cy - (eye ? -1 : 1) * s.y * ppm, rad, 0, 7); c.fill(); });
+      } else if (B.src === 'laser') {
+        const r = Math.max(1.5, R.wScr * ppm), g = c.createRadialGradient(cx, cy, 0, cx, cy, r * 1.6), col = O.rgbOf(B.lnm), a = Math.min(1, 0.4 + 30 / (r * r));
+        g.addColorStop(0, 'rgba(255,255,255,' + a + ')'); g.addColorStop(0.35, 'rgba(' + col.join(',') + ',' + a + ')'); g.addColorStop(1, 'rgba(' + col.join(',') + ',0)'); c.fillStyle = g; c.beginPath(); c.arc(cx, cy, r * 1.6, 0, 7); c.fill();
+      }
+      c.restore(); c.globalAlpha = 1;
+      // graduations
+      c.strokeStyle = 'rgba(255,255,255,0.08)'; c.lineWidth = 1; c.font = '10px "JetBrains Mono", monospace'; c.fillStyle = '#6c6c70'; c.textAlign = 'left';
+      if (eye) { for (let a = -10; a <= 10; a += 5) { const p = EYE_F * Math.tan(a * DEG) * ppm; c.beginPath(); c.moveTo(cx + p, 0); c.lineTo(cx + p, h); c.moveTo(0, cy - p); c.lineTo(w, cy - p); c.stroke(); } c.fillText('5°', cx + EYE_F * Math.tan(5 * DEG) * ppm + 3, h - 6);
+        // repère : l'objet vu à 25 cm sans instrument
+        if (B.src === 'obj') { const s = (B.H / EYE_PP) * EYE_F * ppm; c.strokeStyle = 'rgba(201,201,204,0.5)'; c.setLineDash([3, 3]); c.strokeRect(cx - 0.3 * s, cy - 0.5 * s, 0.6 * s, s); c.setLineDash([]); c.fillText(lang === 'fr' ? 'pointillés : objet vu à 25 cm à l’œil nu' : 'dashed: object seen at 25 cm with the naked eye', 6, 14); } }
+      else { const step = B.zoom > 1 ? 1 : 10; for (let v = -50; v <= 50; v += step) { const p = v * ppm; if (Math.abs(p) > w) continue; c.beginPath(); c.moveTo(cx + p, 0); c.lineTo(cx + p, h); c.moveTo(0, cy - p); c.lineTo(w, cy - p); c.stroke(); } c.fillText((B.zoom > 1 ? '1 mm' : '10 mm') + (lang === 'fr' ? ' par carreau' : ' per square'), 6, h - 6); }
+    }
+    // --- mesures
+    function measCtx() { return RB && B.src === 'obj' && B.scr === 'screen' && RB.act.length === 1 && B.lenses.length === 1 ? RB.act[0] : null; }
+    $('bFocus').addEventListener('click', () => { const R = RB; let x = null; if (B.src === 'obj' && R.im && R.im.real) x = R.im.x; else if (B.src === 'inf' && R.im && R.im.real) x = R.im.x; else if (B.src === 'laser') x = R.g.waistAt; if (x === null || !isFinite(x) || x > RAIL || x <= (R.act.length ? R.act[R.act.length - 1].x : 0)) { $('msgM').textContent = t('msg').notReal; return; } B.xs = Math.round(x); $('msgM').textContent = ''; renderCtlB(); computeB(); });
+    $('bRead').addEventListener('click', () => { const L = measCtx(); if (!L) { $('msgM').textContent = t('msg').oneLens; return; } if (!RB.im.real || !RB.scr.lit) { $('msgM').textContent = t('msg').notReal; return; } if (RB.scr.blur >= 0.5) { $('msgM').textContent = t('msg').notSharp; return; } const lat = O.focusLatitude(RB.sys, B.xo, RB.im.x, 0.5), xr = RB.im.x + lat[0] + Math.random() * (lat[1] - lat[0]); B.pts.push({ p: Math.round(B.xo - L.x), pp: Math.round(xr - L.x), f: L.f }); /* l'œil ne distingue pas les positions de l'écran où le flou reste < 0,5 mm : la lecture tombe au hasard dans cette latitude, arrondie au mm */ $('msgM').textContent = ''; drawFit(); });
+    $('bClear').addEventListener('click', () => { B.pts = []; $('besselBox').innerHTML = ''; drawFit(); });
+    $('bBessel').addEventListener('click', () => {
+      const L = measCtx(); if (!L || L.f < 0) { $('msgM').textContent = t('msg').besselOne; return; } const D = B.xs - B.xo; if (D < 4 * L.f) { $('msgM').textContent = t('msg').bessel4f; return; }
+      $('msgM').textContent = ''; const m = O.besselMC({ D, f: L.f, Dl: B.D, eps: 0.5, ruler: 1, n: 2000, seed: 1 + Math.floor(Math.random() * 1e6) });
+      $('besselBox').innerHTML = '<p class="note">' + t('bes')(fmt(m.positions[0], 1), fmt(m.positions[1], 1), '±' + fmt((m.latitude[0][1] - m.latitude[0][0]) / 2, 1), '±' + fmt((m.latitude[1][1] - m.latitude[1][0]) / 2, 1), fmt(m.mean, 2), fmt(m.sd, 2), fmt(L.f, 0)) + '</p><div class="chart" style="margin-top:8px"><canvas id="cvHist" style="height:120px"></canvas></div>';
+      const { c, w, h } = setup($('cvHist')); c.fillStyle = '#0a0a0b'; c.fillRect(0, 0, w, h); const lo = m.mean - 4 * m.sd, hi = m.mean + 4 * m.sd, nb = 40, bins = new Array(nb).fill(0); m.fs.forEach((v) => { const k = Math.floor(((v - lo) / (hi - lo)) * nb); if (k >= 0 && k < nb) bins[k]++; }); const mx = Math.max(...bins);
+      bins.forEach((b, k) => { c.fillStyle = '#c8102e'; const bw = (w - 20) / nb; c.fillRect(10 + k * bw, h - 18 - (b / mx) * (h - 30), bw - 1, (b / mx) * (h - 30)); });
+      c.fillStyle = '#9b9b9f'; c.font = '10px "JetBrains Mono", monospace'; c.textAlign = 'center'; [lo, m.mean, hi].forEach((v, k) => { c.textAlign = ['left', 'center', 'right'][k]; c.fillText(fmt(v, 2) + ' mm', 10 + (k / 2) * (w - 20), h - 4); }); c.strokeStyle = '#c9c9cc'; const xt = 10 + ((L.f - lo) / (hi - lo)) * (w - 20); c.beginPath(); c.moveTo(xt, 4); c.lineTo(xt, h - 18); c.stroke();
+    });
+    function drawFit() {
+      const P = B.pts; $('tabM').innerHTML = '<thead><tr>' + t('mCols').map((x) => '<th class="n">' + x + '</th>').join('') + '</tr></thead><tbody>' + P.map((q) => '<tr><td class="n">' + q.p + '</td><td class="n">' + q.pp + '</td><td class="n">' + fmt(q.pp / q.p, 2) + '</td></tr>').join('') + '</tbody>';
+      const { c, w, h } = setup($('cvFit')); c.fillStyle = '#0a0a0b'; c.fillRect(0, 0, w, h); $('fitRes').textContent = '';
+      if (!P.length) return; const xs = P.map((q) => 1000 / q.p), ys = P.map((q) => 1000 / q.pp);
+      const xlo = Math.min(...xs, 0) - 1, xhi = Math.max(...xs, 0) + 1, fit = P.length >= 2 ? O.linfit(xs, ys) : null, yl = fit ? [fit.b, fit.a * xlo + fit.b] : [];
+      const ylo = Math.min(...ys, ...yl, 0) - 1, yhi = Math.max(...ys, ...yl, 0) + 1, X = (v) => 36 + ((v - xlo) / (xhi - xlo)) * (w - 46), Y = (v) => 8 + (1 - (v - ylo) / (yhi - ylo)) * (h - 30);
+      c.strokeStyle = '#2a2a2d'; c.beginPath(); c.moveTo(X(xlo), Y(0)); c.lineTo(X(xhi), Y(0)); c.moveTo(X(0), Y(ylo)); c.lineTo(X(0), Y(yhi)); c.stroke();
+      c.font = '10px "JetBrains Mono", monospace'; c.fillStyle = '#6c6c70'; c.textAlign = 'center'; c.fillText('1/OA (m⁻¹)', X(xlo + (xhi - xlo) * 0.15), h - 6); c.textAlign = 'left'; c.fillText('1/OA′', X(0) + 4, 14);
+      if (fit) { c.strokeStyle = 'rgba(201,201,204,0.7)'; c.beginPath(); c.moveTo(X(xlo), Y(fit.a * xlo + fit.b)); c.lineTo(X(xhi), Y(fit.a * xhi + fit.b)); c.stroke(); const f = 1000 / fit.b, u = (1000 * fit.ub) / (fit.b * fit.b); $('fitRes').textContent = t('fitRes')(fmt(f, 1), P.length > 2 ? fmt(u, 1) : '?', P.length); }
+      c.fillStyle = '#c8102e'; xs.forEach((x, k) => { c.beginPath(); c.arc(X(x), Y(ys[k]), 3.5, 0, 7); c.fill(); });
+    }
+    // --- commandes
+    let sl = {};
+    function renderCtlB() {
+      const box = $('ctlB'); box.innerHTML = ''; sl = {};
+      h3(box, t('ctlExp'), true); const sc = document.createElement('div'); sc.className = 'scen';
+      Object.keys(PRE).forEach((k) => { const b = document.createElement('button'); b.type = 'button'; b.className = 'btn'; b.textContent = t('exp')[k]; b.setAttribute('aria-pressed', curExp === k); b.addEventListener('click', () => applyPreset(k)); sc.appendChild(b); }); box.appendChild(sc);
+      h3(box, t('ctlSrc')); seg(box, [['obj', t('srcObj')], ['laser', t('srcLaser')], ['inf', t('srcInf')]], B.src, (v) => { B.src = v; B._eyeAsked = false; curExp = null; renderCtlB(); computeB(); });
+      if (B.src !== 'inf') sl.xo = slider(box, t('pos'), B.xo, 0, 400, 1, (v) => fmt(v, 0) + ' mm', (v) => { B.xo = v; computeB(); });
+      if (B.src === 'obj') slider(box, t('objH'), B.H, 4, 40, 1, (v) => fmt(v, 0) + ' mm', (v) => { B.H = v; computeB(); });
+      if (B.src === 'inf') slider(box, t('alpha'), B.alpha, 0.2, 5, 0.1, (v) => fmt(v, 1) + '°', (v) => { B.alpha = v; computeB(); });
+      if (B.src === 'laser') { const s = document.createElement('div'); s.className = 'seg'; O.LASERS.forEach((L) => { const b = document.createElement('button'); b.type = 'button'; b.className = 'btn'; b.textContent = lasName(L.nm); b.style.borderColor = rgb(L.nm, 0.7); b.setAttribute('aria-pressed', B.lnm === L.nm); b.addEventListener('click', () => { B.lnm = L.nm; renderCtlB(); computeB(); }); s.appendChild(b); }); box.appendChild(s); slider(box, t('w0'), B.w0, 0.2, 2, 0.05, (v) => fmt(v, 2) + ' mm', (v) => { B.w0 = v; computeB(); }); }
+      h3(box, t('ctlLens'));
+      B.lenses.forEach((L, i) => {
+        const r = document.createElement('div'); r.className = 'lensrow'; const hd = document.createElement('div'); hd.className = 'hd'; hd.innerHTML = '<span>L' + (i + 1) + '</span>';
+        const se = document.createElement('select'); se.setAttribute('aria-label', t('focal') + ' L' + (i + 1)); FOCALS.forEach((f) => { const o = document.createElement('option'); o.value = f; o.textContent = (f > 0 ? '+' : '') + f + ' mm (' + (f > 0 ? '+' : '') + fmt(1000 / f, 1) + ' δ)'; if (f === L.f) o.selected = true; se.appendChild(o); });
+        se.addEventListener('change', () => { L.f = +se.value; curExp = null; computeB(); }); hd.appendChild(se);
+        if (B.lenses.length > 1) { const x = document.createElement('button'); x.type = 'button'; x.className = 'btn'; x.textContent = t('rem'); x.style.padding = '2px 8px'; x.addEventListener('click', () => { B.lenses.splice(i, 1); renderCtlB(); computeB(); }); hd.appendChild(x); }
+        r.appendChild(hd); sl['L' + i] = slider(r, t('pos'), L.x, 0, RAIL, 0.5, (v) => fmt(v, 1) + ' mm', (v) => { L.x = v; curExp = null; computeB(); }); box.appendChild(r);
+      });
+      if (B.lenses.length < 3) { const a = document.createElement('button'); a.type = 'button'; a.className = 'btn'; a.textContent = t('add'); a.addEventListener('click', () => { const last = B.lenses[B.lenses.length - 1]; B.lenses.push({ x: Math.min(RAIL - 50, (last ? last.x : 200) + 100), f: 100 }); renderCtlB(); computeB(); }); box.appendChild(a); }
+      if (B.src === 'obj') seg(box, [['three', t('rThree')], ['fan', t('rFan')]], B.rays, (v) => { B.rays = v; renderCtlB(); drawBench(); });
+      seg(box, [[1, t('fpOn')], [0, t('fpOff')]], B.showFP ? 1 : 0, (v) => { B.showFP = !!v; renderCtlB(); drawBench(); });
+      slider(box, t('diam'), B.D, 5, 60, 1, (v) => fmt(v, 0) + ' mm', (v) => { B.D = v; computeB(); });
+      h3(box, t('ctlScr')); seg(box, [['screen', t('screen')], ['eye', t('eye')]], B.scr, (v) => { if (v === 'eye' && B.src === 'laser') { B._eyeAsked = true; computeB(); return; } B.scr = v; renderCtlB(); computeB(); });
+      sl.xs = slider(box, t('pos'), B.xs, 0, RAIL, 1, (v) => fmt(v, 0) + ' mm', (v) => { B.xs = v; curExp = null; computeB(); });
+      const zs = $('zoomSeg'); zs.innerHTML = ''; if (!(B.scr === 'eye' && B.src !== 'laser')) seg(zs, [[1, '×1'], [5, '×5']], B.zoom, (v) => { B.zoom = v; renderCtlB(); drawScreen(); });
+    }
+    // glisser sur le banc
+    (function () {
+      const cv = $('cvBench'); let drag = null;
+      const pick = (ev) => { const r = cv.getBoundingClientRect(), px = ev.clientX - r.left, xmm = ((px - BG.pl) / (BG.w - BG.pl - BG.pr)) * RAIL, cand = [];
+        if (B.src !== 'inf') cand.push(['xo', B.xo]); B.lenses.forEach((L, i) => cand.push(['L' + i, L.x])); cand.push(['xs', B.xs]);
+        let best = null, bd = 1e9; cand.forEach(([k, x]) => { const d = Math.abs(x - xmm); if (d < bd) { bd = d; best = k; } }); return bd * ((BG.w - BG.pl - BG.pr) / RAIL) < 24 ? best : null; };
+      const move = (ev) => { if (!drag) return; const r = cv.getBoundingClientRect(), px = ev.clientX - r.left; let xmm = Math.round(((px - BG.pl) / (BG.w - BG.pl - BG.pr)) * RAIL); xmm = Math.max(0, Math.min(RAIL, xmm)); curExp = null;
+        if (drag === 'xo') { B.xo = Math.min(400, xmm); sl.xo && sl.xo.set(B.xo); } else if (drag === 'xs') { B.xs = xmm; sl.xs.set(xmm); } else { const i = +drag.slice(1); B.lenses[i].x = xmm; sl[drag] && sl[drag].set(xmm); } computeB(); };
+      cv.addEventListener('pointerdown', (ev) => { drag = pick(ev); if (drag) { cv.setPointerCapture(ev.pointerId); ev.preventDefault(); } });
+      cv.addEventListener('pointermove', move); cv.addEventListener('pointerup', () => { drag = null; }); cv.addEventListener('pointercancel', () => { drag = null; });
+    })();
+
+    // =========================================================== 2. CONDITIONS DE GAUSS
+    const G = { shape: 'pc', f: 100, D: 30, diaph: 100, alpha: 0, glass: 'BK7', light: 'd', view: 0 };
+    const lensG = () => (G.shape === 'ach' ? O.achromat({ f: G.f, D: G.D, x: 0 }) : O.singlet({ shape: G.shape, f: G.f, D: G.D, glass: G.glass, x: 0 }));
+    const lamG = () => (G.light === 'white' ? [486.1327, 587.5618, 656.2725] : [G.light === 'd' ? 587.5618 : +G.light]);
+    let RG = null;
+    function computeG() {
+      const L = lensG(), ls = lamG(), l0 = ls.length === 3 ? ls[1] : ls[0], hmax = (G.D / 2) * (G.diaph / 100) * 0.98, a = G.alpha * DEG, S0 = O.surfacesOf(L, l0), pf = O.paraxialFocus(S0);
+      const bf = O.bestFocus(L, l0, hmax, a), la = O.longAberration(L, l0, [hmax])[0], inc = O.maxIncidence(L, l0, hmax, a), Neff = Math.abs(pf.f) / (2 * hmax), airy = 1.22 * l0 * 1e-6 * Neff;
+      RG = { L, ls, l0, hmax, a, pf, bf, la, inc, airy }; kpisG(); issuesG(); drawGauss(); drawLA(); drawChrom(); drawSin();
+    }
+    function kpisG() { const R = RG; $('kpiG').innerHTML = kpi(t('kg').f, fmt(R.pf.f, 2), 'mm') + kpi(t('kg').bfl, fmt(R.pf.bfl, 2), 'mm') + kpi(t('kg').la, fmt(R.la, 3), 'mm') + kpi(t('kg').rms, fmt(R.bf.rms * 1000, 1), 'µm', R.bf.rms < R.airy ? 'good' : 'bad') + kpi(t('kg').airy, fmt(R.airy * 1000, 1), 'µm') + kpi(t('kg').inc, fmt(R.inc / DEG, 1), '°', R.inc > 20 * DEG ? 'bad' : ''); }
+    function issuesG() { const R = RG, L = []; L.push(R.bf.rms < R.airy ? ['ok', t('issG').diff] : ['bad', t('issG').aber]); if (R.inc > 20 * DEG) L.push(['bad', t('issG').far]); if (G.alpha > 0.5) L.push(['bad', t('issG').field]); if (G.light === 'white') L.push(['', t('issG').chrom]); $('issG').innerHTML = L.map(([c, x]) => '<li class="' + c + '">' + x + '</li>').join(''); }
+    function drawGauss() {
+      const { c, w, h } = setup($('cvGauss')), R = RG; c.fillStyle = '#0a0a0b'; c.fillRect(0, 0, w, h);
+      const S = O.surfacesOf(R.L, R.l0), xEndL = S[S.length - 1].x; let x0, x1, y0, y1;
+      if (G.view === 0) { x0 = -0.25 * Math.abs(R.pf.f) - 5; x1 = R.pf.xF + 0.15 * Math.abs(R.pf.f); const hy = G.D / 2 + 3; const sx = (w - 20) / (x1 - x0), sy = (h - 20) / (2 * hy); y0 = -hy; y1 = hy; if (sy > sx) { y0 = -(h - 20) / sx / 2; y1 = -y0; } }
+      else { const span = Math.max(0.5, Math.abs(R.la) * 1.6, 0.03 * Math.abs(R.pf.f)); x0 = R.pf.xF - span * 1.1; x1 = R.pf.xF + span * 0.4; const sp = O.spot(R.L, R.l0, R.hmax, R.a, x0, 21); const ym = Math.max(0.05, ...sp.map((p) => Math.abs(p.y))) * 1.1 + Math.abs(R.pf.f * Math.tan(R.a)); y0 = -ym; y1 = ym; if (R.a) { const yc = R.pf.f * Math.tan(R.a); y0 = yc - ym * 0.6; y1 = yc + ym * 0.6; } }
+      const X = (x) => 10 + ((x - x0) / (x1 - x0)) * (w - 20), Y = (y) => 10 + (1 - (y - y0) / (y1 - y0)) * (h - 20);
+      c.strokeStyle = '#2a2a2d'; c.beginPath(); c.moveTo(0, Y(0)); c.lineTo(w, Y(0)); c.stroke();
+      // lentille
+      if (G.view === 0) {
+        const outline = (Sa, Sb, fill) => { c.fillStyle = fill; c.beginPath(); for (let k = 0; k <= 40; k++) { const y = -G.D / 2 + (G.D * k) / 40; const x = Sa.x + O.sag(Sa.R, y); k ? c.lineTo(X(x), Y(y)) : c.moveTo(X(x), Y(y)); } for (let k = 40; k >= 0; k--) { const y = -G.D / 2 + (G.D * k) / 40; c.lineTo(X(Sb.x + O.sag(Sb.R, y)), Y(y)); } c.closePath(); c.fill(); c.strokeStyle = 'rgba(201,201,204,0.5)'; c.lineWidth = 1; c.stroke(); };
+        outline(S[0], S[1], 'rgba(120,160,190,0.18)'); if (S.length === 3) outline(S[1], S[2], 'rgba(190,150,110,0.22)');
+        // diaphragme
+        if (G.diaph < 100) { c.fillStyle = '#55555a'; const xd = S[0].x - 3; c.fillRect(X(xd) - 2, Y(G.D / 2 + 2), 4, Y(R.hmax / 0.98) - Y(G.D / 2 + 2)); c.fillRect(X(xd) - 2, Y(-R.hmax / 0.98), 4, Y(-G.D / 2 - 2) - Y(-R.hmax / 0.98)); }
+      }
+      // rayons
+      c.save(); c.beginPath(); c.rect(0, 0, w, h); c.clip();
+      R.ls.forEach((l) => {
+        const col = R.ls.length > 1 || G.light !== 'd' ? rgb(l, 0.75) : 'rgba(200,16,46,0.75)', N = G.view === 0 ? 15 : 31;
+        for (let k = 0; k < N; k++) { const hh = -R.hmax + (2 * R.hmax * k) / (N - 1), r = O.rayParallel(R.L, l, hh, R.a, Math.min(x0 - 1, R.L.x - 40)); if (!r.ok) continue; const p = r.path.concat([[x1 + 1, r.p[1] + ((x1 + 1 - r.p[0]) * r.d[1]) / r.d[0]]]); c.strokeStyle = col; c.lineWidth = 0.9; c.beginPath(); p.forEach(([x, y], j) => (j ? c.lineTo(X(x), Y(y)) : c.moveTo(X(x), Y(y)))); c.stroke(); }
+      });
+      c.restore();
+      // foyers
+      const mark = (x, col, txt, dy) => { c.strokeStyle = col; c.setLineDash([4, 3]); c.beginPath(); c.moveTo(X(x), 8); c.lineTo(X(x), h - 8); c.stroke(); c.setLineDash([]); c.fillStyle = col; c.font = '10px "JetBrains Mono", monospace'; c.textAlign = 'left'; c.fillText(txt, X(x) + 4, dy); };
+      mark(R.pf.xF, '#c9c9cc', lang === 'fr' ? 'foyer paraxial' : 'paraxial focus', 16); mark(R.bf.x, '#4fb3a9', lang === 'fr' ? 'meilleur plan' : 'best plane', 30);
+      c.fillStyle = '#6c6c70'; c.textAlign = 'right'; c.fillText(G.view === 0 ? '' : (lang === 'fr' ? 'échelle verticale ×' : 'vertical scale ×') + fmt(((h - 20) / (y1 - y0)) / ((w - 20) / (x1 - x0)), 0), w - 8, h - 8); void xEndL;
+    }
+    function lineChart(cv, series, xlo, xhi, ylo, yhi, xl, yl, nd) {
+      const { c, w, h } = setup(cv); c.fillStyle = '#0a0a0b'; c.fillRect(0, 0, w, h);
+      const pl = 46, pb = 22, X = (x) => pl + ((x - xlo) / (xhi - xlo)) * (w - pl - 10), Y = (y) => 8 + (1 - (y - ylo) / (yhi - ylo)) * (h - 8 - pb);
+      c.font = '10px "JetBrains Mono", monospace'; c.fillStyle = '#6c6c70'; c.strokeStyle = '#1e1e21'; c.lineWidth = 1;
+      for (let k = 0; k <= 4; k++) { const v = ylo + ((yhi - ylo) * k) / 4; c.beginPath(); c.moveTo(pl, Y(v)); c.lineTo(w - 10, Y(v)); c.stroke(); c.textAlign = 'right'; c.fillText(fmt(v, nd ? nd[1] : 1), pl - 4, Y(v) + 3); }
+      for (let k = 0; k <= 4; k++) { const v = xlo + ((xhi - xlo) * k) / 4; c.textAlign = 'center'; c.fillText(fmt(v, nd ? nd[0] : 1), X(v), h - 8); }
+      if (xlo < 0 && xhi > 0) { c.strokeStyle = '#3a3a3d'; c.beginPath(); c.moveTo(X(0), 8); c.lineTo(X(0), h - pb); c.stroke(); }
+      c.textAlign = 'right'; c.fillStyle = '#9b9b9f'; c.fillText(xl, w - 12, h - 8 - 12); c.textAlign = 'left'; c.fillText(yl, pl + 4, 18);
+      series.forEach(([xs, ys, col, lw, dash]) => { c.strokeStyle = col; c.lineWidth = lw || 1.6; c.setLineDash(dash || []); c.beginPath(); let st = false; xs.forEach((x, k) => { const y = ys[k]; if (!isFinite(x) || !isFinite(y)) { st = false; return; } const p = [X(x), Y(Math.max(ylo, Math.min(yhi, y)))]; st ? c.lineTo(...p) : c.moveTo(...p); st = true; }); c.stroke(); c.setLineDash([]); });
+      return { c, X, Y };
+    }
+    function drawLA() {
+      const R = RG, hs = []; for (let k = 1; k <= 40; k++) hs.push((R.hmax * k) / 40);
+      const xr = O.paraxialFocus(O.surfacesOf(R.L, R.l0)).xF, ser = [], ext = [0];
+      R.ls.forEach((l) => { const pf = O.paraxialFocus(O.surfacesOf(R.L, l)), la = O.longAberration(R.L, l, hs).map((v) => v + pf.xF - xr); ext.push(...la.filter(isFinite)); ser.push([la, hs, R.ls.length > 1 || G.light !== 'd' ? rgb(l) : '#c8102e', 1.8]); });
+      let lo = Math.min(...ext), hi = Math.max(...ext); const m = Math.max(0.01, (hi - lo) * 0.1); lo -= m; hi += m;
+      lineChart($('cvLA'), ser, lo, hi, 0, R.hmax, 'Δx (mm)', 'h (mm)', [lo > -0.1 && hi < 0.1 ? 3 : 2, 1]);
+      // éventail transverse au meilleur plan
+      const fan = [], fx = []; let ym = 0.1; R.ls.forEach((l) => { const sp = O.spot(R.L, l, R.hmax, R.a, R.bf.x, 61), yc = R.a ? sp.reduce((s, p) => s + p.y, 0) / Math.max(1, sp.length) : 0; const ys = sp.map((p) => (p.y - yc) * 1000); ym = Math.max(ym, ...ys.map(Math.abs)); fan.push([sp.map((p) => p.h), ys, R.ls.length > 1 || G.light !== 'd' ? rgb(l) : '#c8102e', 1.8]); });
+      const airy = R.airy * 1000; ym = Math.max(ym, airy) * 1.15;
+      fan.push([[-R.hmax, R.hmax], [airy, airy], 'rgba(79,179,169,0.7)', 1, [4, 3]], [[-R.hmax, R.hmax], [-airy, -airy], 'rgba(79,179,169,0.7)', 1, [4, 3]]);
+      const g = lineChart($('cvFan'), fan, -R.hmax, R.hmax, -ym, ym, 'h (mm)', 'µm', [1, ym < 10 ? 1 : 0]); g.c.fillStyle = '#4fb3a9'; g.c.textAlign = 'left'; g.c.fillText(lang === 'fr' ? '± rayon d’Airy' : '± Airy radius', g.X(-R.hmax) + 4, g.Y(airy) - 4); void fx;
+    }
+    function drawChrom() {
+      const ls = []; for (let l = 400; l <= 700; l += 5) ls.push(l);
+      const sg = O.singlet({ shape: G.shape === 'ach' ? 'bi' : G.shape, f: G.f, D: G.D, glass: G.glass, x: 0 }), ac = O.achromat({ f: G.f, D: G.D, x: 0 });
+      const a = O.focalVsLambda(sg, ls), b = O.focalVsLambda(ac, ls), a0 = O.paraxialFocus(O.surfacesOf(sg, 587.5618)).xF, b0 = O.paraxialFocus(O.surfacesOf(ac, 587.5618)).xF;
+      const ya = a.map((p) => p.xF - a0), yb = b.map((p) => p.xF - b0), lo = Math.min(...ya, ...yb), hi = Math.max(...ya, ...yb), m = (hi - lo) * 0.08;
+      $('lgSing').textContent = t('lgSingle') + ' ' + O.GLASS[G.glass].name + (G.shape === 'ach' ? ' (' + t('g').bi + ')' : '');
+      const g = lineChart($('cvChrom'), [[ls, ya, '#c8102e', 1.8], [ls, yb, '#c9c9cc', 1.8]], 400, 700, lo - m, hi + m, 'λ (nm)', 'Δx (mm)', [0, 2]);
+      O.LASERS.forEach((L) => { g.c.fillStyle = rgb(L.nm); g.c.fillRect(g.X(L.nm) - 2, g.Y(lo - m) - 6, 4, 6); });
+    }
+    function drawSin() {
+      const rows = [1, 2, 5, 10, 14, 20, 30, 45].map((d) => { const r = d * DEG; return '<tr><td class="n">' + d + '°</td><td class="n">' + fmt(Math.sin(r), 4) + '</td><td class="n">' + fmt(Math.tan(r), 4) + '</td><td class="n' + ((r / Math.sin(r) - 1) * 100 > 1 ? ' bad' : '') + '">' + fmt((r / Math.sin(r) - 1) * 100, 2) + ' %</td><td class="n' + ((1 - r / Math.tan(r)) * 100 > 1 ? ' bad' : '') + '">' + fmt((1 - r / Math.tan(r)) * 100, 2) + ' %</td></tr>'; });
+      $('tabSin').innerHTML = '<thead><tr>' + t('sinCols').map((x) => '<th class="n">' + x + '</th>').join('') + '</tr></thead><tbody>' + rows.join('') + '</tbody>';
+    }
+    function renderCtlG() {
+      const box = $('ctlG'); box.innerHTML = ''; const g = t('g');
+      h3(box, g.shape, true); const s = document.createElement('div'); s.className = 'scen'; ['pc', 'cp', 'bi', 'ach'].forEach((k) => { const b = document.createElement('button'); b.type = 'button'; b.className = 'btn'; b.textContent = g[k]; b.setAttribute('aria-pressed', G.shape === k); b.addEventListener('click', () => { G.shape = k; renderCtlG(); computeG(); }); s.appendChild(b); }); box.appendChild(s);
+      slider(box, g.f, G.f, 40, 300, 5, (v) => fmt(v, 0) + ' mm', (v) => { G.f = v; computeG(); });
+      slider(box, g.D, G.D, 6, 50, 1, (v) => fmt(v, 0) + ' mm', (v) => { G.D = v; computeG(); });
+      slider(box, g.diaph, G.diaph, 5, 100, 1, (v) => fmt(v, 0) + ' %', (v) => { G.diaph = v; computeG(); });
+      slider(box, g.alpha, G.alpha, 0, 15, 0.5, (v) => fmt(v, 1) + '°', (v) => { G.alpha = v; computeG(); });
+      if (G.shape !== 'ach') { h3(box, g.glass); seg(box, Object.keys(O.GLASS).map((k) => [k, O.GLASS[k].name + ' (n = ' + fmt(O.nGlass(k, 587.5618), 3) + ')']), G.glass, (v) => { G.glass = v; renderCtlG(); computeG(); }); }
+      h3(box, g.light); const ls = document.createElement('div'); ls.className = 'seg';
+      [['d', 'd 587,6 nm'], ...O.LASERS.filter((L) => L.nm !== 589.3).map((L) => [String(L.nm), lasName(L.nm)]), ['white', g.white]].forEach(([v, lab]) => { const b = document.createElement('button'); b.type = 'button'; b.className = 'btn'; b.textContent = lang === 'en' ? lab.replace(',', '.') : lab; if (v !== 'd' && v !== 'white') b.style.borderColor = rgb(+v, 0.7); b.setAttribute('aria-pressed', G.light === v); b.addEventListener('click', () => { G.light = v; renderCtlG(); computeG(); }); ls.appendChild(b); }); box.appendChild(ls);
+      const vs = $('viewSeg'); vs.innerHTML = ''; seg(vs, [[0, g.view[0]], [1, g.view[1]]], G.view, (v) => { G.view = v; renderCtlG(); drawGauss(); });
+    }
+
+    // =========================================================== 3. DIFFRACTION
+    const F = { l1: 632.8, l2: 0, type: 'slit', a: 100, b: 300, lpmm: 300, N: 30, D: 2000, model: 'exact', hair: null, hairRead: null };
+    const optD = (l, model) => ({ type: F.type, a: F.hair ? F.hair : F.a, b: F.b, lpmm: F.lpmm, N: F.N, lnm: l, D: F.D, model: model || F.model });
+    let RD = null;
+    function spanD() {
+      const o = optD(F.l1, 'exact'); let half;
+      if (F.type === 'grating') { const s = Math.min(0.95, (3.3 * F.l1 * 1e-6) * F.lpmm); half = F.D * Math.tan(Math.asin(s)) * 1.1; if (F.lpmm * F.l1 * 1e-6 >= 1) half = F.D * 2; }
+      else { const cw = O.centralWidth(o); half = isFinite(cw.exact) ? cw.exact * (F.type === 'young' ? 1.4 : 2.2) : F.D * 2; if (F.type === 'young') half = Math.max(half, (6 * F.l1 * 1e-6 * F.D) / (F.b * 1e-3)); }
+      return Math.max(2, Math.min(half, F.D * 4));
+    }
+    function computeD() {
+      const half = spanD(), o = optD(F.l1, 'exact'), cw = O.centralWidth(o), nf = O.fresnelNumber(o);
+      RD = { half, cw, nf, o }; kpisD(); issuesD(); drawDiff(); drawProf(); drawSmall(); renderHair();
+    }
+    function kpisD() {
+      const R = RD, k = t('kd'), hidden = !!F.hair; let h = '';
+      if (F.type === 'grating') { const od = O.gratingOrders(R.o), o1 = od.find((q) => q.k === 1); h = kpi(k.nord, String(od.length), '') + kpi(k.o1, o1 ? fmt(o1.x, 1) : '—', o1 ? 'mm' : '') + kpi(k.o1s, o1 ? fmt(o1.xSmall, 1) : '—', o1 ? 'mm' : '') + kpi(k.err, o1 ? fmt((o1.xSmall / o1.x - 1) * 100, 1) : '—', o1 ? '%' : '', o1 && Math.abs(o1.xSmall / o1.x - 1) > 0.02 ? 'bad' : '') + kpi(k.th, o1 ? fmt(o1.theta / DEG, 2) : '—', o1 ? '°' : '') + kpi('p', fmt(1000 / F.lpmm, 2), 'µm'); }
+      else {
+        const e = (R.cw.approx / R.cw.exact - 1) * 100;
+        h = kpi(k.Lex, hidden ? '?' : fmt(R.cw.exact, R.cw.exact < 10 ? 2 : 1), hidden ? '' : 'mm') + kpi(k.Lsm, hidden ? '?' : fmt(R.cw.approx, R.cw.approx < 10 ? 2 : 1), hidden ? '' : 'mm') + kpi(k.err, hidden ? '?' : fmt(e, 2), hidden ? '' : '%', !hidden && Math.abs(e) > 2 ? 'bad' : '') + kpi(k.th, hidden ? '?' : fmt(R.cw.theta / DEG, 3), hidden ? '' : '°');
+        h += F.type === 'young' ? kpi(k.i, fmt((F.l1 * 1e-6 * F.D) / (F.b * 1e-3), 2), 'mm') : kpi(k.nf, fmt(R.nf, R.nf < 0.01 ? 4 : 2), '', R.nf >= 0.3 && F.model !== 'fresnel' ? 'bad' : '');
+        h += kpi(k.reg, R.nf < 0.1 ? t('regF') : R.nf < 1 ? t('regM') : t('regN'), '');
+      }
+      $('kpiD').innerHTML = h;
+    }
+    function issuesD() {
+      const R = RD, L = [], d = t('issD');
+      if (F.type === 'grating') L.push(['', d.grating]);
+      else { if (!isFinite(R.cw.exact)) L.push(['bad', d.noMin]); else if (Math.abs(R.cw.approx / R.cw.exact - 1) > 0.02) L.push(['bad', d.smallBad]); if ((F.type === 'slit' || F.type === 'hair') && R.nf >= 0.3 && F.model !== 'fresnel') L.push(['bad', d.fresnelNeeded]); }
+      if (F.type === 'young') L.push(['', d.young]); if (F.type === 'hair') L.push(['', d.babinet]); if (F.l2) L.push(['', d.two]);
+      $('issD').innerHTML = L.map(([c, x]) => '<li class="' + c + '">' + x + '</li>').join('');
+    }
+    function drawDiff() {
+      const cv = $('cvDiff'), { c, w, h, dpr } = setup(cv), R = RD, W = cv.width, Hh = cv.height, img = c.createImageData(W, Hh), half = R.half, mmpp = (2 * half) / W, beam = Math.max(1, 7 * mmpp * dpr);
+      const lams = [F.l1].concat(F.l2 ? [F.l2] : []), model = F.model === 'fresnel' && !(F.type === 'slit' || F.type === 'hair') ? 'exact' : F.model;
+      const cols = lams.map((l) => O.rgbOf(l)), prof = lams.map((l) => { const o = optD(l, model), arr = new Float64Array(W); let mx = 0; for (let i = 0; i < W; i++) { const x = (i + 0.5) * mmpp - half; arr[i] = F.type === 'hole' ? 0 : O.intensity(x, o); mx = Math.max(mx, arr[i]); } if (mx > 0) for (let i = 0; i < W; i++) arr[i] /= mx; return arr; });
+      const holeO = lams.map((l) => optD(l, model));
+      for (let j = 0; j < Hh; j++) {
+        const y = (Hh / 2 - j - 0.5) * mmpp, gy = Math.exp((-2 * y * y) / (beam * beam));
+        for (let i = 0; i < W; i++) {
+          let r = 0, g = 0, b = 0; const x = (i + 0.5) * mmpp - half;
+          lams.forEach((l, k) => { let I; if (F.type === 'hole') { const rr = Math.hypot(x, y); I = O.intensity(rr, holeO[k]); } else I = prof[k][i] * gy; if (F.type === 'hair') I += Math.exp((-2 * (x * x + y * y)) / (beam * beam)) * 1.5; const v = Math.pow(Math.min(1, I), 0.42); r += cols[k][0] * v; g += cols[k][1] * v; b += cols[k][2] * v; });
+          const p = (j * W + i) * 4; img.data[p] = Math.min(255, r); img.data[p + 1] = Math.min(255, g); img.data[p + 2] = Math.min(255, b); img.data[p + 3] = 255;
+        }
+      }
+      c.setTransform(1, 0, 0, 1, 0, 0); c.putImageData(img, 0, 0); c.setTransform(dpr, 0, 0, dpr, 0, 0);
+      // règle
+      const nice = [0.1, 0.2, 0.5, 1, 2, 5, 10, 20, 50, 100, 200, 500, 1000, 2000], step = nice.find((s) => (half * 2) / s <= 12) || 5000;
+      c.fillStyle = 'rgba(201,201,204,0.75)'; c.font = '10px "JetBrains Mono", monospace'; c.textAlign = 'center';
+      for (let v = -Math.floor(half / step) * step; v <= half; v += step) { const px = ((v + half) / (2 * half)) * w; c.fillRect(px, h - 10, 1, 10); if (!F.hair) c.fillText(fmt(v, step < 1 ? 1 : 0), px, h - 13); }
+      c.textAlign = 'left'; c.fillText('mm', 4, h - 13);
+    }
+    function drawProf() {
+      const R = RD, n = 600, xs = [], ex = [], sm = [], fr = []; let mfr = 0;
+      const slitLike = F.type === 'slit' || F.type === 'hair', oE = optD(F.l1, 'exact'), oS = optD(F.l1, 'small'), oF = optD(F.l1, 'fresnel');
+      for (let k = 0; k <= n; k++) { const x = -R.half + (2 * R.half * k) / n; xs.push(x); ex.push(O.intensity(x, oE)); sm.push(O.intensity(x, oS)); if (slitLike) { const v = O.intensity(x, oF); fr.push(v); mfr = Math.max(mfr, v); } }
+      const ser = [[xs, sm, '#9b9b9f', 1.2, [5, 4]], [xs, ex, '#c8102e', 1.8]];
+      $('lgFrW').style.display = slitLike && F.model === 'fresnel' ? '' : 'none';
+      if (slitLike && F.model === 'fresnel') ser.push([xs, fr.map((v) => v / mfr), '#4fb3a9', 1.6]);
+      lineChart($('cvProf'), ser, -R.half, R.half, 0, 1.05, F.hair ? '' : 'x (mm)', 'I / I₀', [R.half < 5 ? 1 : 0, 1]);
+    }
+    function drawSmall() {
+      const k = F.type === 'hole' ? 1.22 : 1, rows = [0.8, 1, 2, 5, 10, 20, 50, 100, 200].map((a) => { const cw = O.centralWidth({ type: F.type === 'hole' ? 'hole' : 'slit', a, lnm: F.l1, D: F.D }), e = (cw.approx / cw.exact - 1) * 100; return '<tr><td class="n">' + fmt(a, a < 1 ? 1 : 0) + '</td><td class="n">' + (isFinite(cw.theta) ? fmt(cw.theta / DEG, 2) + '°' : '—') + '</td><td class="n">' + (isFinite(cw.exact) ? fmt(cw.exact, 1) : '∞') + '</td><td class="n">' + fmt(cw.approx, 1) + '</td><td class="n' + (!isFinite(e) || Math.abs(e) > 2 ? ' bad' : ' good') + '">' + (isFinite(cw.exact) ? fmt(e, 2) + ' %' : '—') + '</td></tr>'; });
+      $('tabSmall').innerHTML = '<thead><tr>' + t('smCols').map((x) => '<th class="n">' + x + '</th>').join('') + '</tr></thead><tbody>' + rows.join('') + '</tbody>'; void k;
+    }
+    function renderHair() {
+      const box = $('hairBox'); if (!F.hair) { box.innerHTML = ''; return; }
+      if (!F.hairRead) { box.innerHTML = '<p>' + t('hair1') + '</p>'; return; }
+      const r = F.hairRead; box.innerHTML = '<p>' + t('hair2')(fmt(r.L, 0), fmt(r.a, 0), fmt(r.ua, 0), fmt(F.hair, 0), Math.abs(r.a - F.hair) <= 2 * r.ua) + '</p>';
+    }
+    $('bHair').addEventListener('click', () => { F.hair = Math.round(50 + Math.random() * 60); F.hairRead = null; F.type = 'hair'; F.l1 = 632.8; F.l2 = 0; F.model = 'exact'; renderCtlD(); computeD(); });
+    $('bHairM').addEventListener('click', () => { if (!F.hair) { F.hair = Math.round(50 + Math.random() * 60); F.type = 'hair'; F.l1 = 632.8; F.l2 = 0; renderCtlD(); } const cw = O.centralWidth({ type: 'slit', a: F.hair, lnm: 632.8, D: F.D }), L = Math.round(cw.exact + (Math.random() + Math.random() - 1) * 0.8), m = O.hairMeasure(L, F.D, 632.8, 1, 5); F.hairRead = { L, a: m.a, ua: m.ua }; computeD(); });
+    function renderCtlD() {
+      const box = $('ctlD'); box.innerHTML = ''; const d = t('d');
+      const lasSeg = (cur, withNone, onPick) => { const s = document.createElement('div'); s.className = 'seg'; (withNone ? [0] : []).concat(O.LASERS.map((L) => L.nm)).forEach((nm) => { const b = document.createElement('button'); b.type = 'button'; b.className = 'btn'; b.textContent = nm ? lasName(nm) : d.none; if (nm) b.style.borderColor = rgb(nm, 0.7); b.setAttribute('aria-pressed', cur === nm); b.addEventListener('click', () => onPick(nm)); s.appendChild(b); }); box.appendChild(s); };
+      h3(box, d.laser1, true); lasSeg(F.l1, false, (v) => { F.l1 = v; if (F.hair) { F.hair = null; F.hairRead = null; } renderCtlD(); computeD(); });
+      slider(box, d.lfree, F.l1, 380, 750, 1, (v) => fmt(v, 0) + ' nm', (v) => { F.l1 = v; if (F.hair) { F.hair = null; F.hairRead = null; } computeD(); });
+      h3(box, d.laser2); lasSeg(F.l2, true, (v) => { F.l2 = v; renderCtlD(); computeD(); });
+      h3(box, d.type); seg(box, ['slit', 'hair', 'hole', 'young', 'grating'].map((k) => [k, d[k]]), F.type, (v) => { F.type = v; F.hair = null; F.hairRead = null; renderCtlD(); computeD(); });
+      if (F.type !== 'grating' && !F.hair) slider(box, d.a, Math.log10(F.a), Math.log10(0.8), Math.log10(500), 0.005, (v) => fmt(Math.pow(10, v), Math.pow(10, v) < 10 ? 1 : 0) + ' µm', (v) => { F.a = Math.round(Math.pow(10, v) * 10) / 10; computeD(); });
+      if (F.type === 'young') slider(box, d.b, F.b, 50, 1000, 10, (v) => fmt(v, 0) + ' µm', (v) => { F.b = Math.max(v, F.a + 5); computeD(); });
+      if (F.type === 'grating') { slider(box, d.lpmm, F.lpmm, 50, 1200, 10, (v) => fmt(v, 0), (v) => { F.lpmm = v; computeD(); }); slider(box, d.N, F.N, 2, 80, 1, (v) => fmt(v, 0), (v) => { F.N = v; computeD(); }); }
+      slider(box, d.Dd, F.D, 50, 5000, 10, (v) => (v < 1000 ? fmt(v / 10, 0) + ' cm' : fmt(v / 1000, 2) + ' m'), (v) => { F.D = v; computeD(); });
+      h3(box, d.model); seg(box, [['exact', d.exact], ['small', d.small]].concat(F.type === 'slit' || F.type === 'hair' ? [['fresnel', d.fresnel]] : []), F.model, (v) => { F.model = v; renderCtlD(); computeD(); });
+    }
+
+    // =========================================================== 4. VÉRIFICATIONS EN DIRECT
+    function runChecks() {
+      const rows = [], add = (name, got, exp, ok) => rows.push([name, got, exp, ok]);
+      add('n_d N-BK7 (Sellmeier)', fmt(O.nGlass('BK7', 587.5618), 5), '1,51680', Math.abs(O.nGlass('BK7', 587.5618) - 1.5168) < 1e-4);
+      add('V_d F2', fmt(O.abbe('F2'), 2), '36,37', Math.abs(O.abbe('F2') - 36.37) < 0.05);
+      const im = O.imageABCD([{ x: 250, f: 100, D: 40 }], 50); add(lang === 'fr' ? 'Descartes 2f′–2f′ : γ' : 'Descartes 2f′–2f′: m', fmt(im.g, 6), '−1', Math.abs(im.g + 1) < 1e-12);
+      const M = O.systemM([{ x: 200, f: 80, D: 40 }, { x: 330, f: -60, D: 40 }], 0, 700); add(lang === 'fr' ? 'déterminant de la matrice de transfert' : 'transfer matrix determinant', fmt(M[0] * M[3] - M[1] * M[2], 12), '1', Math.abs(M[0] * M[3] - M[1] * M[2] - 1) < 1e-12);
+      const P = O.besselPositions(600, 100); add('Bessel : (D² − d²)/4D', fmt(O.besselF(600, P[1] - P[0]), 9) + ' mm', '100 mm', Math.abs(O.besselF(600, P[1] - P[0]) - 100) < 1e-9);
+      const L = O.singlet({ shape: 'bi', f: 100, D: 30 }), n = O.nGlass('BK7', 587.5618), pf = O.paraxialFocus(O.surfacesOf(L, 587.5618)), tk = O.thickLensF(L.R1, L.R2, L.e, n); add(lang === 'fr' ? 'lentille épaisse : tracé paraxial = formule' : 'thick lens: paraxial trace = formula', fmt(pf.f, 6) + ' mm', fmt(tk.f, 6) + ' mm', Math.abs(pf.f - tk.f) < 1e-9);
+      const la = O.longAberration(L, 587.5618, [0.001, 0.5, 1]); add(lang === 'fr' ? 'exact → paraxial quand h → 0' : 'exact → paraxial as h → 0', fmt(la[0] * 1e6, 3) + ' nm', '≈ 0', Math.abs(la[0]) < 1e-6);
+      add(lang === 'fr' ? 'aberration sphérique ∝ h² : LA(1)/LA(0,5)' : 'spherical aberration ∝ h²: LA(1)/LA(0.5)', fmt(la[2] / la[1], 4), '4', Math.abs(la[2] / la[1] - 4) < 0.02);
+      const a1 = O.longAberration(O.singlet({ shape: 'pc', f: 100, D: 30 }), 587.5618, [10])[0], a2 = O.longAberration(O.singlet({ shape: 'cp', f: 100, D: 30 }), 587.5618, [10])[0]; add(lang === 'fr' ? 'plan-convexe : mauvais sens / bon sens' : 'plano-convex: wrong way / right way', fmt(a2 / a1, 2), '≈ 4', a2 / a1 > 3.5);
+      const A = O.achromat({ f: 100, D: 30 }), fF = O.paraxialFocus(O.surfacesOf(A, 486.1327)).xF, fC = O.paraxialFocus(O.surfacesOf(A, 656.2725)).xF; add(lang === 'fr' ? 'doublet : foyer F − foyer C' : 'doublet: F focus − C focus', fmt((fF - fC) * 1000, 3) + ' µm', '0', Math.abs(fF - fC) < 1e-4);
+      const th = 0.4, ns = 1.5, tr = O.refract([Math.cos(th), Math.sin(th)], [-1, 0], 1, ns); add(lang === 'fr' ? 'loi de Snell : n₁ sin θ₁ − n₂ sin θ₂' : 'Snell: n₁ sin θ₁ − n₂ sin θ₂', fmt(Math.sin(th) - ns * tr[1], 15), '0', Math.abs(Math.sin(th) - ns * tr[1]) < 1e-14);
+      const fc = O.fresnelCS(1); add('C(1), S(1)', fmt(fc[0], 7) + ' ; ' + fmt(fc[1], 7), '0,7798934 ; 0,4382591', Math.abs(fc[0] - 0.7798934) < 2e-7 && Math.abs(fc[1] - 0.4382591) < 2e-7);
+      add(lang === 'fr' ? 'premier zéro de J₁' : 'first zero of J₁', fmt(O.besselJ1(3.8317059702), 9), '0', Math.abs(O.besselJ1(3.8317059702)) < 1e-7);
+      const o = { type: 'slit', a: 100, lnm: 632.8, D: 2000, model: 'exact' }, cw = O.centralWidth(o); add(lang === 'fr' ? 'fente : intensité au 1er minimum exact' : 'slit: intensity at exact first minimum', fmt(O.intensity(cw.exact / 2, o), 20), '0', O.intensity(cw.exact / 2, o) < 1e-20);
+      const w = { type: 'slit', a: 20000, lnm: 632.8, D: 1000, model: 'fresnel' }; add(lang === 'fr' ? 'Fresnel : bord d’ombre (demi-plan) = 1/4' : 'Fresnel: shadow edge (half-plane) = 1/4', fmt(O.intensity(10, w), 4), '0,25', Math.abs(O.intensity(10, w) - 0.25) < 0.02);
+      const fa = { type: 'slit', a: 50, lnm: 632.8, D: 20000, model: 'fresnel' }, kk = (0.05 ** 2) / (632.8e-6 * 20000); add(lang === 'fr' ? 'Fresnel → Fraunhofer loin de la fente' : 'Fresnel → Fraunhofer far from the slit', fmt(O.intensity(120, fa) / kk, 4), fmt(O.intensity(120, Object.assign({}, fa, { model: 'exact' })), 4), Math.abs(O.intensity(120, fa) / kk - O.intensity(120, Object.assign({}, fa, { model: 'exact' }))) < 0.01);
+      const q = O.gaussBeam([{ x: 0.0001, f: 100, D: 40 }], 0, 1, 632.8, 400); add(lang === 'fr' ? 'laser : col au foyer ≈ λf′/(πw)' : 'laser: waist ≈ λf′/(πw)', fmt(q.waistW * 1000, 3) + ' µm', fmt((632.8e-6 * 100) / Math.PI * 1000, 3) + ' µm', Math.abs(q.waistW - 632.8e-6 * 100 / Math.PI) < 1e-5);
+      $('tabCheck').innerHTML = '<thead><tr>' + t('chk').map((x, j) => '<th' + (j && j < 3 ? ' class="n"' : '') + '>' + x + '</th>').join('') + '</tr></thead><tbody>' + rows.map(([a, b, c2, ok]) => '<tr><td>' + a + '</td><td class="n">' + b + '</td><td class="n">' + c2 + '</td><td class="' + (ok ? 'good' : 'bad') + '">' + (ok ? '✓' : '✗') + '</td></tr>').join('') + '</tbody>';
+    }
+
+    // =========================================================== onglets, langue
+    let tab = 'bench';
+    function showTab(k) { tab = k; document.querySelectorAll('[role=tab]').forEach((b) => b.setAttribute('aria-selected', b.dataset.tab === k)); ['bench', 'gauss', 'diff', 'check'].forEach((x) => { $('tab-' + x).hidden = x !== k; }); try { history.replaceState(null, '', '#' + k); } catch (e) {} redraw(); }
+    function redraw() { if (tab === 'bench') { renderCtlB(); computeB(); } else if (tab === 'gauss') { renderCtlG(); computeG(); } else if (tab === 'diff') { renderCtlD(); computeD(); } else runChecks(); }
+    document.querySelectorAll('[role=tab]').forEach((b) => b.addEventListener('click', () => showTab(b.dataset.tab)));
+    function setLang(l) {
+      lang = l; document.documentElement.lang = l;
+      document.querySelectorAll('[data-t]').forEach((el) => { const v = T[l][el.dataset.t]; if (typeof v === 'string') el.textContent = v; });
+      document.querySelectorAll('.lang button').forEach((b) => b.setAttribute('aria-pressed', b.dataset.lang === l));
+      try { localStorage.setItem('lang', l); } catch (e) {}
+      redraw(); drawFit();
+    }
+    document.querySelectorAll('.lang button').forEach((b) => b.addEventListener('click', () => setLang(b.dataset.lang)));
+    let rz = null; window.addEventListener('resize', () => { clearTimeout(rz); rz = setTimeout(redraw, 120); });
+    const h0 = (location.hash || '').slice(1); tab = ['bench', 'gauss', 'diff', 'check'].includes(h0) ? h0 : 'bench';
+    setLang(lang); showTab(tab);
+  })();
+  </script>
+</body>
+</html>
