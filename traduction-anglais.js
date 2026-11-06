@@ -33,9 +33,9 @@ window.I18N_EN = {
   'status.locationValue': 'Paris area, France',
 
   'about.title': '<span>01</span> About',
-  'about.p1': 'I come from hands-on engineering. A technology-track baccalaureate in digital systems, then two years of preparatory classes: I worked with electronics, computer science and mechanics before choosing my path. That mix taught me to see a system as a whole, from the sensor to the network that carries its data.',
-  'about.p2': 'Now in the 2<sup>nd</sup> year of the Health Technologies engineering program at EPISEN, I focus on networks and network security. On the side, AI, electronics and robotics remain my playground. Health is the context of my school, and a good testing ground for all of this: sensitive data, connected devices, and no room for approximation.',
-  'about.p3': 'I am looking for a 16-week internship abroad to put all of this into practice within a real team.',
+  'about.p1': "I have a technical background: a technology baccalaureate in digital systems, then two years of engineering preparatory classes. There I worked on electronics, computer science and mechanics, which taught me to look at a system as a whole, from the sensor to the network that carries its data.",
+  'about.p2': "I am now in the 2<sup>nd</sup> year of the Health Technologies engineering program at EPISEN, where I specialise in networks and network security. Alongside, I keep experimenting with AI, electronics and robotics. Healthcare, my school's field, is a good fit for all of this: the data is sensitive, the devices are connected, and there is no room for approximation.",
+  'about.p3': "I am looking for a 16-week internship abroad to put these skills into practice within a team.",
   'about.photoAlt': 'Hand in front of a computer screen showing code',
 
   'projects.title': '<span>02</span> Projects',
