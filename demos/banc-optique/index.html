@@ -730,7 +730,7 @@
     const specD = () => (F.white ? O.whiteSpectrum(31) : [[F.l1, 1]].concat(F.l2 ? [[F.l2, 1]] : []));
     const is2D = () => F.type === 'hole' || F.type === 'youngHoles';
     function drawDiff() {
-      const cv = $('cvDiff'), { c, w, h, dpr } = setup(cv), R = RD, W = cv.width, Hh = cv.height, img = c.createImageData(W, Hh), half = R.half, mmpp = (2 * half) / W, beam = Math.max(1, 7 * mmpp * dpr);
+      const cv = $('cvDiff'); if (!cv.clientWidth) return; const { c, w, h, dpr } = setup(cv), R = RD, W = cv.width, Hh = cv.height, img = c.createImageData(W, Hh), half = R.half, mmpp = (2 * half) / W, beam = Math.max(1, 7 * mmpp * dpr);
       const sp = specD(), model = F.model === 'fresnel' && !(F.type === 'slit' || F.type === 'hair') ? 'exact' : F.model, rmax = Math.hypot(W, Hh) / 2 + 2;
       // tables : par colonne (figure 1D ou facteur d'interférence) et par rayon (enveloppe d'un trou)
       const tabs = sp.map(([l]) => {
