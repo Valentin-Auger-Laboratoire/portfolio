@@ -1,0 +1,315 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Résonance RLC</title>
+  <meta name="description" content="Résonance d'un circuit RLC série : oscilloscope virtuel, courbes de résonance, bande passante et régime libre, avec les valeurs de mon TP de CPGE TSI.">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --bg: #0c0c0d; --panel: #161618; --border: #262628; --border-hi: #3a3a3d;
+      --text: #f2f2f2; --dim: #9b9b9f; --muted: #6c6c70; --accent: #c8102e; --line: #c9c9cc; --warn: #e0a458; --ok: #8fd18f;
+      --mono: "JetBrains Mono", ui-monospace, monospace; --sans: "Inter", system-ui, sans-serif;
+      color-scheme: dark;
+    }
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    body { background: var(--bg); color: var(--text); font-family: var(--sans); line-height: 1.55; -webkit-font-smoothing: antialiased; }
+    .wrap { max-width: 1280px; margin: 0 auto; padding: 24px 16px 48px; }
+    .top { display: flex; justify-content: space-between; align-items: center; gap: 12px; flex-wrap: wrap; margin-bottom: 24px; }
+    .back { font-size: 0.9rem; color: var(--dim); text-decoration: none; }
+    .back:hover { color: var(--accent); }
+    .lang { display: flex; border: 1px solid var(--border-hi); }
+    .lang button { font: 500 0.78rem var(--mono); letter-spacing: .05em; background: none; color: var(--dim); border: 0; padding: 5px 10px; cursor: pointer; }
+    .lang button + button { border-left: 1px solid var(--border-hi); }
+    .lang button[aria-pressed="true"] { background: var(--text); color: var(--bg); }
+    .eyebrow { font: 500 0.82rem var(--mono); color: var(--accent); letter-spacing: .04em; }
+    h1 { font-size: clamp(1.6rem, 3.4vw, 2.3rem); line-height: 1.15; margin: 6px 0 10px; text-wrap: balance; }
+    .intro { color: var(--dim); max-width: 82ch; }
+    .intro a { color: var(--line); }
+    .warnbox { border: 1px solid #4a3a20; background: #1a160f; color: var(--warn); border-radius: 6px; padding: 8px 12px; font-size: 0.84rem; margin-top: 12px; }
+    .grid { display: grid; grid-template-columns: 320px minmax(0, 1fr); gap: 20px; align-items: start; margin-top: 20px; }
+    .stack { display: grid; gap: 16px; min-width: 0; }
+    .panel { background: var(--panel); border: 1px solid var(--border); border-radius: 8px; padding: 16px; min-width: 0; }
+    h2 { font: 600 0.78rem var(--mono); letter-spacing: .12em; text-transform: uppercase; color: var(--dim); margin-bottom: 12px; }
+    h3 { font: 600 0.72rem var(--mono); letter-spacing: .08em; text-transform: uppercase; color: var(--dim); margin: 14px 0 10px; padding-top: 12px; border-top: 1px solid var(--border); }
+    button:focus-visible, input:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+    .btn { font: 500 0.82rem var(--sans); background: none; color: var(--text); border: 1px solid var(--border-hi); border-radius: 6px; padding: 6px 11px; cursor: pointer; white-space: nowrap; }
+    .btn:hover { border-color: var(--accent); color: var(--accent); }
+    .btn[aria-pressed="true"] { border-color: var(--accent); color: var(--accent); }
+    .btn.primary { background: var(--accent); border-color: var(--accent); color: #fff; }
+    .seg { display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 10px; }
+    .ctl { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 2px 10px; margin-bottom: 10px; }
+    .ctl label { font: 500 0.76rem var(--mono); color: var(--dim); }
+    .ctl output { font: 0.8rem var(--mono); font-variant-numeric: tabular-nums; text-align: right; }
+    .ctl input[type=range] { grid-column: 1 / -1; width: 100%; accent-color: var(--accent); }
+    .lab { font: 500 0.74rem var(--mono); color: var(--dim); margin: 2px 0 6px; }
+    .hint { font-size: 0.8rem; color: var(--dim); margin-top: 8px; }
+    .kpis { display: grid; grid-template-columns: repeat(6, minmax(0, 1fr)); gap: 10px; }
+    .kpi { border: 1px solid var(--border); border-radius: 6px; padding: 8px 10px; min-width: 0; }
+    .kpi dt { font: 0.66rem var(--mono); color: var(--dim); }
+    .kpi dd { font: 600 1.02rem var(--sans); font-variant-numeric: tabular-nums; margin-top: 2px; }
+    .kpi dd small { font: 400 0.7rem var(--mono); color: var(--dim); margin-left: 3px; }
+    .kpi.bad dd { color: #ff8a8a; } .kpi.good dd { color: var(--ok); }
+    canvas#table { width: 100%; aspect-ratio: 240 / 150; display: block; border: 1px solid var(--border); border-radius: 6px; background: #0a0a0b; margin-top: 12px; cursor: crosshair; touch-action: none; }
+    .controls { display: flex; gap: 8px; flex-wrap: wrap; align-items: center; margin-top: 10px; font: 0.78rem var(--mono); color: var(--dim); }
+    .row2 { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 16px; }
+    .pins { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 6px; font: 0.74rem var(--mono); }
+    .pin { border: 1px solid var(--border); border-radius: 5px; padding: 5px 7px; min-width: 0; }
+    .pin b { display: block; color: var(--dim); font-weight: 500; font-size: 0.68rem; }
+    .pin span { font-variant-numeric: tabular-nums; }
+    .pin.hi { border-color: var(--accent); } .pin.hi span { color: #ff8a8a; }
+    .serial { font: 0.74rem/1.45 var(--mono); background: #0a0a0b; border: 1px solid var(--border); border-radius: 6px; padding: 8px 10px; height: 172px; overflow: hidden; color: var(--line); white-space: pre; }
+    .serial .t { color: var(--muted); }
+    .serial .w { color: #ff8a8a; }
+    .state { font: 0.8rem var(--mono); color: var(--dim); margin-top: 8px; }
+    .state b { color: var(--text); font-weight: 500; }
+    table { width: 100%; border-collapse: collapse; font: 0.8rem var(--mono); font-variant-numeric: tabular-nums; }
+    th, td { text-align: left; padding: 6px 8px; border-bottom: 1px solid var(--border); }
+    td.n, th.n { text-align: right; }
+    th { color: var(--dim); font-weight: 500; }
+    td.bad { color: #ff8a8a; } td.good { color: var(--ok); }
+    .tablewrap { overflow-x: auto; }
+    ol.review { padding-left: 1.2em; display: grid; gap: 6px; font-size: 0.86rem; color: var(--dim); }
+    ol.review b { color: var(--text); font-weight: 600; }
+    .note { font-size: 0.82rem; color: var(--dim); }
+    .note p + p { margin-top: 6px; }
+    .scen { display: grid; gap: 6px; margin-bottom: 4px; }
+    .scen .btn { text-align: left; white-space: normal; }
+    .scopebox { margin-top: 12px; border: 1px solid var(--border-hi); border-radius: 8px; background: #05080a; padding: 8px; }
+    canvas#scope { width: 100%; aspect-ratio: 10 / 7; display: block; }
+    .cal { display: flex; gap: 14px; flex-wrap: wrap; font: 0.74rem var(--mono); color: var(--dim); margin-top: 6px; }
+    .cal i { display: inline-block; width: 12px; height: 2px; vertical-align: 3px; margin-right: 5px; }
+    .chart p { font: 0.72rem var(--mono); color: var(--dim); margin-bottom: 4px; display: flex; gap: 10px; flex-wrap: wrap; }
+    .chart p i { display: inline-block; width: 12px; height: 2px; vertical-align: 3px; margin-right: 5px; }
+    .chart canvas { width: 100%; height: 200px; display: block; border: 1px solid var(--border); border-radius: 6px; background: #0a0a0b; cursor: crosshair; }
+    #cvFree { height: 230px; cursor: default; }
+    .row3 { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 12px; }
+    .note a { color: var(--text); }
+    @media (max-width: 1150px) { .row3 { grid-template-columns: minmax(0, 1fr); } }
+    @media (max-width: 1000px) { .grid { grid-template-columns: minmax(0, 1fr); } .main-col { order: -1; } }
+    @media (max-width: 760px) { .kpis { grid-template-columns: repeat(3, minmax(0, 1fr)); } .row2 { grid-template-columns: minmax(0, 1fr); } .pins { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+  </style>
+</head>
+<body>
+  <div class="wrap">
+    <div class="top">
+      <a class="back" href="../../index.html#projets" data-t="back">← Retour au portfolio</a>
+      <div class="lang" role="group" aria-label="Langue / Language"><button type="button" data-lang="fr">FR</button><button type="button" data-lang="en">EN</button></div>
+    </div>
+    <p class="eyebrow" data-t="eyebrow">Démo · TP de physique, CPGE TSI (mars 2024)</p>
+    <h1 data-t="title">Résonance d'un circuit RLC série</h1>
+    <p class="intro" data-t="intro"></p>
+    <p class="warnbox" data-t="warn"></p>
+    <div class="grid">
+      <div class="stack"><div class="panel" id="ctl"></div></div>
+      <div class="stack main-col">
+        <div class="panel">
+          <dl class="kpis" id="kpis"></dl>
+          <div class="scopebox">
+            <canvas id="scope" aria-label="Oscilloscope"></canvas>
+            <div class="cal" id="cal"></div>
+          </div>
+          <p class="hint" data-t="scopeHint"></p>
+        </div>
+        <div class="panel">
+          <div class="row3">
+            <div class="chart"><p><span data-t="cGain">Amplitude de u_C (U_Cm / E_m)</span></p><canvas id="cvGain"></canvas></div>
+            <div class="chart"><p><span data-t="cCur">Intensité (I_m / I_max) et bande passante</span></p><canvas id="cvCur"></canvas></div>
+            <div class="chart"><p><span data-t="cPh">Déphasage de u_C (rad)</span></p><canvas id="cvPh"></canvas></div>
+          </div>
+          <p class="hint" data-t="bodeHint"></p>
+        </div>
+        <div class="panel">
+          <div class="chart"><p id="lgFree"></p><canvas id="cvFree"></canvas></div>
+          <p class="hint" data-t="freeHint"></p>
+        </div>
+        <div class="panel"><h2 data-t="tabT">Ce que montre le TP, recalculé</h2><div class="tablewrap"><table id="tab"></table></div></div>
+        <div class="panel note"><p data-t="note1"></p><p data-t="note2"></p><p><a href="https://github.com/Valentin-Auger-Laboratoire/resonance-rlc" target="_blank" rel="noopener" data-t="repo">Dépôt : photos du TP, script Python recréé, tests ↗</a></p></div>
+      </div>
+    </div>
+  </div>
+  <script src="rlc.js"></script>
+  <script>
+  (function () {
+    'use strict';
+    const R = window.RLC, $ = (id) => document.getElementById(id);
+    let lang = 'fr';
+    try { lang = localStorage.getItem('lang') || ((navigator.language || 'fr').toLowerCase().startsWith('fr') ? 'fr' : 'en'); } catch (e) {}
+    const T = {
+      fr: {
+        back: '← Retour au portfolio', eyebrow: 'Démo · TP de physique, CPGE TSI (mars 2024)', title: "Résonance d'un circuit RLC série",
+        intro: "Un générateur alimente une résistance, une bobine et un condensateur en série ; l'oscilloscope affiche la tension du générateur (voie 1) et celle du condensateur (voie 2). Selon la fréquence, u_C suit le générateur, le dépasse largement à la résonance, ou s'effondre. La démo reprend le montage de mon TP (L = 0,1 H, C = 100 nF, R = 100 Ω ou 10 kΩ, générateur de 50 Ω) et recalcule tout : courbes de résonance, bande passante, régime libre, et l'écran de l'oscilloscope de ma photo.",
+        warn: "Calculs : formules exactes en régime sinusoïdal ; signal carré et régime libre résolus par Runge-Kutta, vérifiés contre les solutions exactes. Hypothèses : composants idéaux (résistance de la bobine réglable, nulle par défaut comme dans le TP), sonde d'oscilloscope parfaite.",
+        scopeHint: "Voie 1 (gris) : tension à la sortie du générateur, qui baisse un peu à la résonance à cause de ses 50 Ω internes. Voie 2 (rouge) : u_C. Les calibres sont choisis automatiquement dans la suite 1-2-5, comme on le ferait à la main.",
+        cGain: 'Amplitude de u_C (U_Cm / E_m)', cCur: 'Intensité (I_m / I_max) et bande passante', cPh: 'Déphasage de u_C (rad)',
+        bodeHint: "En gris : Q = 0,5 ; 1 ; 2 ; 3 ; 5 ; 6,67 (de la plus plate à la plus pointue). En rouge : le circuit réglé. Le trait pointillé marque la fréquence actuelle ; cliquer sur un graphique la change. Bande passante : là où I ≥ I_max/√2, de largeur Δω = ω₀/Q.",
+        freeHint: "Régime libre : le condensateur chargé sous E se décharge dans le circuit. C'est la figure de mon script Python de 2024 (Q = 0,1 ; 0,5 ; 100), recréée ici car le script d'origine est perdu : apériodique, critique à Q = 0,5, pseudo-périodique au-delà.",
+        tabT: 'Ce que montre le TP, recalculé',
+        note1: "Le TP : relever u_C et l'intensité selon la fréquence, montrer qu'il y a toujours résonance en intensité à f₀, mais résonance en tension seulement si Q > 1/√2, et la voir disparaître avec R = 10 kΩ (Q ≈ 0,1). J'ai fait le montage et les mesures seul. Ni le sujet ni la correction ne sont publiés : tout ici est recalculé à partir des lois du circuit.",
+        note2: "Formules : u_C = E / (1 − x² + j·x/Q) avec x = ω/ω₀, ω₀ = 1/√(LC), Q = √(L/C) / R_t et R_t = R + R_générateur + r. Résonance en tension en x = √(1 − 1/(2Q²)) ; résonance en intensité en x = 1, bande passante x₊ − x₋ = 1/Q.",
+        repo: 'Dépôt : photos du TP, script Python recréé, tests ↗',
+        pre: 'Expériences', preLow: 'f ≪ f₀ (10 Hz)', preHigh: 'f ≫ f₀ (100 kHz)', preRes: 'À la résonance', pre10k: 'R = 10 kΩ : plus de résonance', preSq: 'Carré 24,88 Hz (ma photo)',
+        gen: 'Générateur', sig: 'Signal', sine: 'sinus', square: 'carré', freq: 'Fréquence', amp: 'Amplitude E', circ: 'Circuit (valeurs du TP par défaut)', res: 'Résistance R', ind: 'Inductance L', cap: 'Capacité C', rl: 'Résistance de la bobine r', reset: 'Valeurs du TP',
+        kF0: 'f₀', kQ: 'Facteur de qualité Q', kX: 'f / f₀', kUc: 'U_Cm', kPh: 'Déphasage u_C', kRes: 'Résonance en tension',
+        yesAt: 'oui, à', no: 'non (Q < 1/√2)', ch1: 'voie 1', ch2: 'voie 2', base: 'base de temps', div: '/div',
+        lgFree: 'u_C(t), décharge depuis E', cur: 'circuit réglé',
+        tabCols: ['Situation', 'Attendu (TP)', 'Calculé ici'],
+        rows: { low: ['10 Hz', 'u_C = e, en phase'], high: ['100 kHz', 'u_C ≪ e, en opposition de phase'], res: ['f₀, R = 100 Ω', 'résonance : U_C ≈ Q·E'], r10k: ['R = 10 kΩ', 'Q ≈ 0,1 < 1/√2 : pas de résonance en tension'], band: ['bande passante, R = 100 Ω', 'Δf = f₀/Q'] },
+      },
+      en: {
+        back: '← Back to portfolio', eyebrow: 'Demo · physics lab, CPGE TSI (March 2024)', title: 'Resonance of a series RLC circuit',
+        intro: "A signal generator drives a resistor, an inductor and a capacitor in series; the oscilloscope shows the generator voltage (channel 1) and the capacitor voltage (channel 2). Depending on the frequency, u_C follows the generator, overshoots it widely at resonance, or collapses. The demo uses the circuit from my lab (L = 0.1 H, C = 100 nF, R = 100 Ω or 10 kΩ, 50 Ω generator) and recomputes everything: resonance curves, bandwidth, free response, and the oscilloscope screen from my photo.",
+        warn: 'Computation: exact formulas for sinusoidal steady state; square wave and free response solved by Runge-Kutta, checked against exact solutions. Assumptions: ideal components (inductor resistance adjustable, zero by default as in the lab), perfect oscilloscope probe.',
+        scopeHint: 'Channel 1 (grey): voltage at the generator output, which drops a little at resonance because of its 50 Ω internal resistance. Channel 2 (red): u_C. Scales are chosen automatically in the 1-2-5 sequence, as one would by hand.',
+        cGain: 'Amplitude of u_C (U_Cm / E_m)', cCur: 'Current (I_m / I_max) and bandwidth', cPh: 'Phase of u_C (rad)',
+        bodeHint: 'Grey: Q = 0.5; 1; 2; 3; 5; 6.67 (flattest to sharpest). Red: the current circuit. The dashed line marks the current frequency; click a chart to change it. Bandwidth: where I ≥ I_max/√2, width Δω = ω₀/Q.',
+        freeHint: 'Free response: the capacitor charged to E discharges through the circuit. This is the figure from my 2024 Python script (Q = 0.1; 0.5; 100), recreated here because the original script is lost: overdamped, critical at Q = 0.5, underdamped above.',
+        tabT: 'What the lab shows, recomputed',
+        note1: 'The lab: measure u_C and the current versus frequency, show that there is always current resonance at f₀ but voltage resonance only if Q > 1/√2, and watch it disappear with R = 10 kΩ (Q ≈ 0.1). I built the circuit and took the measurements on my own. Neither the lab sheet nor its answers are published: everything here is recomputed from the circuit laws.',
+        note2: 'Formulas: u_C = E / (1 − x² + j·x/Q) with x = ω/ω₀, ω₀ = 1/√(LC), Q = √(L/C) / R_t and R_t = R + R_generator + r. Voltage resonance at x = √(1 − 1/(2Q²)); current resonance at x = 1, bandwidth x₊ − x₋ = 1/Q.',
+        repo: 'Repository: lab photos, recreated Python script, tests ↗',
+        pre: 'Experiments', preLow: 'f ≪ f₀ (10 Hz)', preHigh: 'f ≫ f₀ (100 kHz)', preRes: 'At resonance', pre10k: 'R = 10 kΩ: no more resonance', preSq: 'Square 24.88 Hz (my photo)',
+        gen: 'Generator', sig: 'Signal', sine: 'sine', square: 'square', freq: 'Frequency', amp: 'Amplitude E', circ: 'Circuit (lab values by default)', res: 'Resistance R', ind: 'Inductance L', cap: 'Capacitance C', rl: 'Inductor resistance r', reset: 'Lab values',
+        kF0: 'f₀', kQ: 'Quality factor Q', kX: 'f / f₀', kUc: 'U_Cm', kPh: 'Phase of u_C', kRes: 'Voltage resonance',
+        yesAt: 'yes, at', no: 'no (Q < 1/√2)', ch1: 'ch 1', ch2: 'ch 2', base: 'timebase', div: '/div',
+        lgFree: 'u_C(t), discharge from E', cur: 'current circuit',
+        tabCols: ['Case', 'Expected (lab)', 'Computed here'],
+        rows: { low: ['10 Hz', 'u_C = e, in phase'], high: ['100 kHz', 'u_C ≪ e, in phase opposition'], res: ['f₀, R = 100 Ω', 'resonance: U_C ≈ Q·E'], r10k: ['R = 10 kΩ', 'Q ≈ 0.1 < 1/√2: no voltage resonance'], band: ['bandwidth, R = 100 Ω', 'Δf = f₀/Q'] },
+      },
+    };
+    const t = (k) => (T[lang][k] !== undefined ? T[lang][k] : T.fr[k]);
+    const fmt = (v, d) => (isFinite(v) ? v.toFixed(d) : '—').replace('.', lang === 'fr' ? ',' : '.');
+    const eng = (v, unit) => { const a = Math.abs(v); const [s, p] = a >= 1e3 ? [1e-3, 'k'] : a >= 1 || a === 0 ? [1, ''] : a >= 1e-3 ? [1e3, 'm'] : a >= 1e-6 ? [1e6, 'µ'] : [1e9, 'n']; const x = v * s; return fmt(x, Math.abs(x) >= 100 ? 0 : Math.abs(x) >= 10 ? 1 : 2) + ' ' + p + unit; };
+    const S = { sig: 'sine', f: 1000, E: 5, R: 100, Rg: 50, r: 0, L: 0.1, C: 100e-9 };
+    const P = () => ({ R: S.R, Rg: S.Rg, r: S.r, L: S.L, C: S.C });
+    const logS = (min, max) => ({ to: (v) => Math.log(v / min) / Math.log(max / min), from: (u) => min * Math.pow(max / min, u) });
+    const FS = logS(1, 200000), RS = logS(1, 20000), LS = logS(0.01, 1), CS = logS(1e-9, 1e-5);
+    const nice3 = (v) => { const e = Math.floor(Math.log10(v)), m = v / 10 ** e; return Math.round(m * 100) / 100 * 10 ** e; };
+    function seg(box, list, cur, onPick) { const s = document.createElement('div'); s.className = 'seg'; list.forEach(([v, l]) => { const b = document.createElement('button'); b.type = 'button'; b.className = 'btn'; b.textContent = l; b.setAttribute('aria-pressed', String(v) === String(cur)); b.addEventListener('click', () => onPick(v)); s.appendChild(b); }); box.appendChild(s); }
+    function slider(box, label, val, show, onInput) { const d = document.createElement('div'); d.className = 'ctl'; const id = 'r' + Math.random().toString(36).slice(2, 7); d.innerHTML = '<label for="' + id + '">' + label + '</label><output></output><input type="range" id="' + id + '" min="0" max="1" step="0.001">'; const i = d.querySelector('input'), o = d.querySelector('output'); i.value = val; o.textContent = show(+i.value); i.addEventListener('input', () => { o.textContent = show(+i.value); onInput(+i.value); }); box.appendChild(d); }
+    const h3 = (box, txt, first) => { const h = document.createElement('h3'); h.textContent = txt; if (first) h.style.cssText = 'margin-top:0;padding-top:0;border:0'; box.appendChild(h); };
+    const PRE = { low: { sig: 'sine', f: 10, R: 100 }, high: { sig: 'sine', f: 100000, R: 100 }, res: { sig: 'sine', f: null, R: 100 }, r10k: { sig: 'sine', f: 300, R: 10000 }, sq: { sig: 'square', f: 24.88, R: 100 } };
+    let preOn = null;
+    function renderCtl() {
+      const box = $('ctl'); box.innerHTML = '';
+      h3(box, t('pre'), true);
+      const sc = document.createElement('div'); sc.className = 'scen';
+      [['low', 'preLow'], ['high', 'preHigh'], ['res', 'preRes'], ['r10k', 'pre10k'], ['sq', 'preSq']].forEach(([k, l]) => { const b = document.createElement('button'); b.type = 'button'; b.className = 'btn'; b.textContent = t(l); b.setAttribute('aria-pressed', preOn === k); b.addEventListener('click', () => { Object.assign(S, { E: 5, L: 0.1, C: 100e-9, r: 0 }, PRE[k]); if (k === 'res') S.f = R.derived(P()).f0; preOn = k; renderCtl(); draw(); }); sc.appendChild(b); });
+      box.appendChild(sc);
+      const free = () => { preOn = null; box.querySelectorAll('.scen .btn').forEach((b) => b.setAttribute('aria-pressed', 'false')); };
+      h3(box, t('gen'));
+      seg(box, [['sine', t('sine')], ['square', t('square')]], S.sig, (v) => { S.sig = v; free(); renderCtl(); draw(); });
+      slider(box, t('freq'), FS.to(S.f), (u) => eng(nice3(FS.from(u)), 'Hz'), (u) => { S.f = nice3(FS.from(u)); free(); draw(); });
+      slider(box, t('amp'), (S.E - 0.5) / 9.5, (u) => fmt(0.5 + 9.5 * u, 1) + ' V', (u) => { S.E = Math.round((0.5 + 9.5 * u) * 10) / 10; free(); draw(); });
+      h3(box, t('circ'));
+      slider(box, t('res'), RS.to(Math.max(1, S.R)), (u) => eng(nice3(RS.from(u)), 'Ω'), (u) => { S.R = nice3(RS.from(u)); free(); draw(); });
+      slider(box, t('ind'), LS.to(S.L), (u) => eng(nice3(LS.from(u)), 'H'), (u) => { S.L = nice3(LS.from(u)); free(); draw(); });
+      slider(box, t('cap'), CS.to(S.C), (u) => eng(nice3(CS.from(u)), 'F'), (u) => { S.C = nice3(CS.from(u)); free(); draw(); });
+      slider(box, t('rl'), S.r / 100, (u) => fmt(100 * u, 0) + ' Ω', (u) => { S.r = Math.round(100 * u); free(); draw(); });
+      const rb = document.createElement('button'); rb.type = 'button'; rb.className = 'btn'; rb.textContent = t('reset'); rb.addEventListener('click', () => { Object.assign(S, { R: 100, r: 0, L: 0.1, C: 100e-9 }); free(); renderCtl(); draw(); }); box.appendChild(rb);
+    }
+    function setup(cv) { const dpr = window.devicePixelRatio || 1, w = cv.clientWidth, h = cv.clientHeight; if (cv.width !== Math.round(w * dpr) || cv.height !== Math.round(h * dpr)) { cv.width = Math.round(w * dpr); cv.height = Math.round(h * dpr); } const c = cv.getContext('2d'); c.setTransform(dpr, 0, 0, dpr, 0, 0); return { c, w, h }; }
+    const STEPS = []; for (let e = -9; e <= 3; e++) [1, 2, 5].forEach((m) => STEPS.push(m * 10 ** e));
+    const calib = (amp, div) => STEPS.find((s) => s * div >= amp * 1.05) || STEPS[STEPS.length - 1];
+    // ------------------------------------------------------------ oscilloscope
+    function scopeData() {
+      const p = P(), Tp = 1 / S.f, span = 10 * calib(2 * Tp, 10);
+      if (S.sig === 'sine') {
+        const s = R.sine(p, S.f, S.E), n = 900, w = 2 * Math.PI * S.f, ts = [], ch1 = [], ch2 = [];
+        for (let k = 0; k <= n; k++) { const tt = (k / n) * span; ts.push(tt); ch1.push(s.Uout * Math.cos(w * tt + s.phiOut)); ch2.push(s.Uc * Math.cos(w * tt + s.phiC)); }
+        return { ts, ch1, ch2, span, s };
+      }
+      const sq = R.square(p, S.f, S.E, Math.ceil(span / Tp)), Rg = p.Rg;
+      return { ts: sq.t, ch1: sq.e.map((e, k) => e - Rg * sq.i[k]), ch2: sq.uc, span };
+    }
+    function drawScope() {
+      const { c, w, h } = setup($('scope')), D = scopeData();
+      c.fillStyle = '#05080a'; c.fillRect(0, 0, w, h);
+      const nx = 10, ny = 8;
+      c.strokeStyle = 'rgba(201,201,204,0.14)'; c.lineWidth = 1;
+      for (let i = 0; i <= nx; i++) { const x = (i / nx) * w; c.beginPath(); c.moveTo(x, 0); c.lineTo(x, h); c.stroke(); }
+      for (let j = 0; j <= ny; j++) { const y = (j / ny) * h; c.beginPath(); c.moveTo(0, y); c.lineTo(w, y); c.stroke(); }
+      c.strokeStyle = 'rgba(201,201,204,0.3)'; c.beginPath(); c.moveTo(0, h / 2); c.lineTo(w, h / 2); c.moveTo(w / 2, 0); c.lineTo(w / 2, h); c.stroke();
+      const a1 = Math.max(...D.ch1.map(Math.abs)), a2 = Math.max(...D.ch2.map(Math.abs));
+      const v1 = calib(a1, ny / 2), v2 = calib(a2, ny / 2), span = D.span, tb = span / nx;
+      [[D.ch1, v1, '#c9c9cc'], [D.ch2, v2, '#ff3b4f']].forEach(([arr, v, col]) => {
+        c.strokeStyle = col; c.lineWidth = 1.8; c.beginPath(); let st = false;
+        D.ts.forEach((tt, k) => { if (tt > span) return; const x = (tt / span) * w, y = h / 2 - (arr[k] / v) * (h / ny); st ? c.lineTo(x, y) : c.moveTo(x, y); st = true; }); c.stroke();
+      });
+      $('cal').innerHTML = '<span><i style="background:#c9c9cc"></i>' + t('ch1') + ' ' + eng(v1, 'V') + t('div') + '</span><span><i style="background:#ff3b4f"></i>' + t('ch2') + ' ' + eng(v2, 'V') + t('div') + '</span><span>' + t('base') + ' ' + eng(tb, 's') + t('div') + '</span><span>' + (S.sig === 'sine' ? t('sine') : t('square')) + ' ' + eng(S.f, 'Hz') + '</span>';
+      return D;
+    }
+    // ------------------------------------------------------------ courbes de résonance
+    const QS = [0.5, 1, 2, 3, 5, 6.67];
+    function chart(cv, fnY, ymin, ymax, opts) {
+      const { c, w, h } = setup(cv); c.fillStyle = '#0a0a0b'; c.fillRect(0, 0, w, h);
+      const pl = 40, pb = 22, x0 = 0, x1 = 3, X = (x) => pl + ((x - x0) / (x1 - x0)) * (w - pl - 8), Y = (v) => 8 + (1 - (v - ymin) / (ymax - ymin)) * (h - 8 - pb);
+      c.font = '10px "JetBrains Mono", monospace'; c.fillStyle = '#6c6c70'; c.strokeStyle = '#1e1e21'; c.textAlign = 'right';
+      for (let k = 0; k <= 4; k++) { const v = ymin + ((ymax - ymin) * k) / 4; c.beginPath(); c.moveTo(pl, Y(v)); c.lineTo(w - 8, Y(v)); c.stroke(); c.fillText(fmt(v, Math.abs(ymax - ymin) < 5 ? 1 : 0), pl - 4, Y(v) + 3); }
+      c.textAlign = 'center'; [0, 0.5, 1, 1.5, 2, 2.5, 3].forEach((x) => c.fillText(fmt(x, 1), X(x), h - 6));
+      const d = R.derived(P());
+      const curve = (Q, col, lw) => { c.strokeStyle = col; c.lineWidth = lw; c.beginPath(); for (let k = 0; k <= 400; k++) { const x = 0.0005 + (k / 400) * 3; const v = Math.max(ymin, Math.min(ymax, fnY(x, Q))); k ? c.lineTo(X(x), Y(v)) : c.moveTo(X(x), Y(v)); } c.stroke(); };
+      QS.forEach((Q) => curve(Q, 'rgba(155,155,159,0.45)', 1));
+      if (opts && opts.band) { const b = R.band(d.Q); c.fillStyle = 'rgba(200,16,46,0.12)'; c.fillRect(X(Math.min(3, b.lo)), Y(ymax), X(Math.min(3, b.hi)) - X(Math.min(3, b.lo)), Y(ymin) - Y(ymax)); c.strokeStyle = 'rgba(242,242,242,0.4)'; c.setLineDash([3, 3]); c.beginPath(); c.moveTo(pl, Y(Math.SQRT1_2)); c.lineTo(w - 8, Y(Math.SQRT1_2)); c.stroke(); c.setLineDash([]); c.fillStyle = '#9b9b9f'; c.textAlign = 'left'; c.fillText('1/√2', pl + 4, Y(Math.SQRT1_2) - 3); }
+      curve(d.Q, '#c8102e', 2.2);
+      const xc = (2 * Math.PI * S.f) / d.w0;
+      if (xc <= 3) { c.strokeStyle = '#f2f2f2'; c.setLineDash([4, 3]); c.beginPath(); c.moveTo(X(xc), 6); c.lineTo(X(xc), h - pb); c.stroke(); c.setLineDash([]); }
+      c.fillStyle = '#6c6c70'; c.textAlign = 'right'; c.fillText('x = f/f₀', w - 10, h - 6 - 12);
+      cv.onclick = (e) => { const r = cv.getBoundingClientRect(), x = Math.max(0.01, ((e.clientX - r.left - pl) / (r.width - pl - 8)) * 3); S.f = nice3(x * d.f0); S.sig = 'sine'; preOn = null; renderCtl(); draw(); };
+    }
+    function drawFree() {
+      const { c, w, h } = setup($('cvFree')); c.fillStyle = '#0a0a0b'; c.fillRect(0, 0, w, h);
+      const p0 = P(), d0 = R.derived(p0), E = S.E;
+      // résistance donnant un Q voulu (mêmes L et C)
+      // courbes de référence : Q imposé par R seule (générateur et bobine idéaux), mêmes L et C
+      const pq = (Q) => Object.assign({}, p0, { Rg: 0, r: 0, R: Math.sqrt(p0.L / p0.C) / Q });
+      const list = [[0.1, '#6c6c70'], [0.5, '#e0a458'], [100, '#4fb3a9'], [d0.Q, '#c8102e']];
+      const t1 = Math.min(30 / d0.f0, Math.max(6 * d0.tau, 8 / d0.f0)), pl = 44, pb = 22, X = (tt) => pl + (tt / t1) * (w - pl - 8), Y = (v) => 8 + (1 - (v + E) / (2 * E)) * (h - 8 - pb);
+      c.font = '10px "JetBrains Mono", monospace'; c.fillStyle = '#6c6c70'; c.strokeStyle = '#1e1e21'; c.textAlign = 'right';
+      for (let k = 0; k <= 4; k++) { const v = -E + (2 * E * k) / 4; c.beginPath(); c.moveTo(pl, Y(v)); c.lineTo(w - 8, Y(v)); c.stroke(); c.fillText(fmt(v, 1) + ' V', pl - 4, Y(v) + 3); }
+      c.textAlign = 'center'; for (let k = 0; k <= 4; k++) c.fillText(eng((t1 * k) / 4, 's'), X((t1 * k) / 4), h - 6);
+      list.forEach(([Q, col], i) => { const p = i === 3 ? p0 : pq(Q); if (p.R < 0) return; c.strokeStyle = col; c.lineWidth = i === 3 ? 2.2 : 1.4; c.beginPath(); for (let k = 0; k <= 1200; k++) { const tt = (k / 1200) * t1, v = R.free(p, E, tt); k ? c.lineTo(X(tt), Y(v)) : c.moveTo(X(tt), Y(v)); } c.stroke(); });
+      $('lgFree').innerHTML = '<span>' + t('lgFree') + '</span>' + list.map(([Q, col], i) => '<span><i style="background:' + col + '"></i>' + (i === 3 ? t('cur') + ' (Q = ' + fmt(Q, 2) + ')' : 'Q = ' + fmt(Q, Q < 1 ? 1 : 0)) + '</span>').join('');
+    }
+    function kpis() {
+      const p = P(), d = R.derived(p), s = R.sine(p, S.f, S.E), vr = R.voltRes(d.Q);
+      const kpi = (k, v, u, main) => '<div class="kpi' + (main ? ' main' : '') + '"><dt>' + k + '</dt><dd>' + v + (u ? '<small>' + u + '</small>' : '') + '</dd></div>';
+      $('kpis').innerHTML = kpi(t('kF0'), eng(d.f0, 'Hz'), '') + kpi(t('kQ'), fmt(d.Q, d.Q < 1 ? 3 : 2), '', true) + kpi(t('kX'), fmt(s.x, s.x < 0.1 ? 4 : 3), '') + kpi(t('kUc'), S.sig === 'sine' ? eng(s.Uc, 'V') : '—', '') + kpi(t('kPh'), S.sig === 'sine' ? fmt(s.phiC, 2) : '—', S.sig === 'sine' ? 'rad' : '') + kpi(t('kRes'), vr ? t('yesAt') + ' ' + eng(vr.x * d.f0, 'Hz') : t('no'), '');
+    }
+    function table() {
+      const p = Object.assign({}, R.TP), d = R.derived(p), lo = R.sine(p, 10, 5), hi = R.sine(p, 1e5, 5), rs = R.sine(p, d.f0, 5), p2 = Object.assign({}, p, { R: 10000 }), Q2 = R.derived(p2).Q, b = R.band(d.Q);
+      const rows = [
+        [t('rows').low, 'U_Cm = ' + eng(lo.Uc, 'V') + ', φ = ' + fmt(lo.phiC, 4) + ' rad'],
+        [t('rows').high, 'U_Cm = ' + eng(hi.Uc, 'V') + ', φ = ' + fmt(hi.phiC, 3) + ' rad'],
+        [t('rows').res, 'U_Cm = ' + eng(rs.Uc, 'V') + ' = ' + fmt(rs.Uc / 5, 2) + ' × E'],
+        [t('rows').r10k, 'Q = ' + fmt(Q2, 4)],
+        [t('rows').band, 'Δf = ' + eng(b.width * d.f0, 'Hz') + ' (' + eng(b.lo * d.f0, 'Hz') + ' → ' + eng(b.hi * d.f0, 'Hz') + ')'],
+      ];
+      $('tab').innerHTML = '<thead><tr>' + t('tabCols').map((x) => '<th>' + x + '</th>').join('') + '</tr></thead><tbody>' + rows.map(([[a, b2], c2]) => '<tr><td>' + a + '</td><td>' + b2 + '</td><td class="good">' + c2 + '</td></tr>').join('') + '</tbody>';
+    }
+    function draw() {
+      kpis(); drawScope();
+      const d = R.derived(P()), gmax = Math.max(1.2, Math.ceil(Math.max(7, R.gainC(R.voltRes(d.Q) ? R.voltRes(d.Q).x : 0.001, d.Q)) + 0.5));
+      chart($('cvGain'), (x, Q) => R.gainC(x, Q), 0, Math.min(gmax, 40));
+      chart($('cvCur'), (x, Q) => R.gainI(x, Q), 0, 1.05, { band: true });
+      chart($('cvPh'), (x, Q) => R.phaseC(x, Q), -Math.PI, 0);
+      drawFree();
+    }
+    function setLang(l) {
+      lang = l; document.documentElement.lang = l;
+      document.querySelectorAll('[data-t]').forEach((el) => { const v = T[l][el.dataset.t]; if (typeof v === 'string') el.textContent = v; });
+      document.querySelectorAll('.lang button').forEach((b) => b.setAttribute('aria-pressed', b.dataset.lang === l));
+      try { localStorage.setItem('lang', l); } catch (e) {}
+      renderCtl(); table(); draw();
+    }
+    document.querySelectorAll('.lang button').forEach((b) => b.addEventListener('click', () => setLang(b.dataset.lang)));
+    window.addEventListener('resize', draw);
+    Object.assign(S, PRE.sq); preOn = 'sq';
+    setLang(lang);
+  })();
+  </script>
+</body>
+</html>
