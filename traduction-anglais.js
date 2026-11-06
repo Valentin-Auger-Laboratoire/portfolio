@@ -52,7 +52,7 @@ window.I18N_EN = {
   'tag.web': 'Web',
   'tag.ai': 'AI',
   'projects.contextVision': 'Computer vision · gesture interaction',
-  'p40.date': 'Nov 2026',
+  'p40.date': 'Jan 2026',
   'p40.title': 'A neural network written by hand',
   'p40.desc': "A multilayer perceptron written entirely by hand, with no library: forward pass, gradient back-propagation, optimisers (gradient descent, momentum, RMSprop, Adam) and L2 regularisation. Watch it learn live: the decision boundary takes shape, each neuron shows what it computes, and experiments show what a network can or cannot do (XOR, spiral, overfitting). One tab walks through back-propagation calculation by calculation on a 2-2-1 network, each gradient compared with finite differences. Trained on 1,797 real handwritten digits (UCI), it recognises about 96 % of those it has never seen, and reads the ones you draw. 526 tests.",
   'p40.img': 'Neural network written by hand: decision boundary learned on a spiral, network diagram where each neuron shows its map, a drawn digit recognised and first-layer weights',
