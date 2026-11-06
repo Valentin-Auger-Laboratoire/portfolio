@@ -1,0 +1,354 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Drone en tangage</title>
+  <meta name="description" content="Drone en tangage : modèle physique d'un banc à un axe, capteurs et fusion (complémentaire, Kalman), PID, cascade et LQR, diagramme de Bode et marges, identification par moindres carrés et variables instrumentales.">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --bg: #0c0c0d; --panel: #161618; --border: #262628; --border-hi: #3a3a3d;
+      --text: #f2f2f2; --dim: #9b9b9f; --muted: #6c6c70; --accent: #c8102e; --line: #c9c9cc; --warn: #e0a458; --ok: #8fd18f;
+      --mono: "JetBrains Mono", ui-monospace, monospace; --sans: "Inter", system-ui, sans-serif;
+      color-scheme: dark;
+    }
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    body { background: var(--bg); color: var(--text); font-family: var(--sans); line-height: 1.55; -webkit-font-smoothing: antialiased; }
+    .wrap { max-width: 1280px; margin: 0 auto; padding: 24px 16px 48px; }
+    .top { display: flex; justify-content: space-between; align-items: center; gap: 12px; flex-wrap: wrap; margin-bottom: 24px; }
+    .back { font-size: 0.9rem; color: var(--dim); text-decoration: none; }
+    .back:hover { color: var(--accent); }
+    .lang { display: flex; border: 1px solid var(--border-hi); }
+    .lang button { font: 500 0.78rem var(--mono); letter-spacing: .05em; background: none; color: var(--dim); border: 0; padding: 5px 10px; cursor: pointer; }
+    .lang button + button { border-left: 1px solid var(--border-hi); }
+    .lang button[aria-pressed="true"] { background: var(--text); color: var(--bg); }
+    .eyebrow { font: 500 0.82rem var(--mono); color: var(--accent); letter-spacing: .04em; }
+    h1 { font-size: clamp(1.6rem, 3.4vw, 2.3rem); line-height: 1.15; margin: 6px 0 10px; text-wrap: balance; }
+    .intro { color: var(--dim); max-width: 82ch; }
+    .intro a { color: var(--line); }
+    .warnbox { border: 1px solid #4a3a20; background: #1a160f; color: var(--warn); border-radius: 6px; padding: 8px 12px; font-size: 0.84rem; margin-top: 12px; }
+    .grid { display: grid; grid-template-columns: 320px minmax(0, 1fr); gap: 20px; align-items: start; margin-top: 20px; }
+    .stack { display: grid; gap: 16px; min-width: 0; }
+    .panel { background: var(--panel); border: 1px solid var(--border); border-radius: 8px; padding: 16px; min-width: 0; }
+    h2 { font: 600 0.78rem var(--mono); letter-spacing: .12em; text-transform: uppercase; color: var(--dim); margin-bottom: 12px; }
+    h3 { font: 600 0.72rem var(--mono); letter-spacing: .08em; text-transform: uppercase; color: var(--dim); margin: 14px 0 10px; padding-top: 12px; border-top: 1px solid var(--border); }
+    button:focus-visible, input:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+    .btn { font: 500 0.82rem var(--sans); background: none; color: var(--text); border: 1px solid var(--border-hi); border-radius: 6px; padding: 6px 11px; cursor: pointer; white-space: nowrap; }
+    .btn:hover { border-color: var(--accent); color: var(--accent); }
+    .btn[aria-pressed="true"] { border-color: var(--accent); color: var(--accent); }
+    .btn.primary { background: var(--accent); border-color: var(--accent); color: #fff; }
+    .seg { display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 10px; }
+    .ctl { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 2px 10px; margin-bottom: 10px; }
+    .ctl label { font: 500 0.76rem var(--mono); color: var(--dim); }
+    .ctl output { font: 0.8rem var(--mono); font-variant-numeric: tabular-nums; text-align: right; }
+    .ctl input[type=range] { grid-column: 1 / -1; width: 100%; accent-color: var(--accent); }
+    .lab { font: 500 0.74rem var(--mono); color: var(--dim); margin: 2px 0 6px; }
+    .hint { font-size: 0.8rem; color: var(--dim); margin-top: 8px; }
+    .kpis { display: grid; grid-template-columns: repeat(6, minmax(0, 1fr)); gap: 10px; }
+    .kpi { border: 1px solid var(--border); border-radius: 6px; padding: 8px 10px; min-width: 0; }
+    .kpi dt { font: 0.66rem var(--mono); color: var(--dim); }
+    .kpi dd { font: 600 1.02rem var(--sans); font-variant-numeric: tabular-nums; margin-top: 2px; }
+    .kpi dd small { font: 400 0.7rem var(--mono); color: var(--dim); margin-left: 3px; }
+    .kpi.bad dd { color: #ff8a8a; } .kpi.good dd { color: var(--ok); }
+    canvas#table { width: 100%; aspect-ratio: 240 / 150; display: block; border: 1px solid var(--border); border-radius: 6px; background: #0a0a0b; margin-top: 12px; cursor: crosshair; touch-action: none; }
+    .controls { display: flex; gap: 8px; flex-wrap: wrap; align-items: center; margin-top: 10px; font: 0.78rem var(--mono); color: var(--dim); }
+    .row2 { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 16px; }
+    .pins { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 6px; font: 0.74rem var(--mono); }
+    .pin { border: 1px solid var(--border); border-radius: 5px; padding: 5px 7px; min-width: 0; }
+    .pin b { display: block; color: var(--dim); font-weight: 500; font-size: 0.68rem; }
+    .pin span { font-variant-numeric: tabular-nums; }
+    .pin.hi { border-color: var(--accent); } .pin.hi span { color: #ff8a8a; }
+    .serial { font: 0.74rem/1.45 var(--mono); background: #0a0a0b; border: 1px solid var(--border); border-radius: 6px; padding: 8px 10px; height: 172px; overflow: hidden; color: var(--line); white-space: pre; }
+    .serial .t { color: var(--muted); }
+    .serial .w { color: #ff8a8a; }
+    .state { font: 0.8rem var(--mono); color: var(--dim); margin-top: 8px; }
+    .state b { color: var(--text); font-weight: 500; }
+    table { width: 100%; border-collapse: collapse; font: 0.8rem var(--mono); font-variant-numeric: tabular-nums; }
+    th, td { text-align: left; padding: 6px 8px; border-bottom: 1px solid var(--border); }
+    td.n, th.n { text-align: right; }
+    th { color: var(--dim); font-weight: 500; }
+    td.bad { color: #ff8a8a; } td.good { color: var(--ok); }
+    .tablewrap { overflow-x: auto; }
+    ol.review { padding-left: 1.2em; display: grid; gap: 6px; font-size: 0.86rem; color: var(--dim); }
+    ol.review b { color: var(--text); font-weight: 600; }
+    .note { font-size: 0.82rem; color: var(--dim); }
+    .note p + p { margin-top: 6px; }
+    .scen { display: grid; gap: 6px; margin-bottom: 4px; }
+    .scen .btn { text-align: left; white-space: normal; }
+    canvas#cvBench { width: 100%; aspect-ratio: 16 / 7; display: block; border: 1px solid var(--border); border-radius: 6px; margin-top: 12px; }
+    .chart p { font: 0.72rem var(--mono); color: var(--dim); margin-bottom: 4px; display: flex; gap: 10px; flex-wrap: wrap; }
+    .chart p i { display: inline-block; width: 12px; height: 2px; vertical-align: 3px; margin-right: 5px; }
+    .chart canvas { width: 100%; height: 190px; display: block; border: 1px solid var(--border); border-radius: 6px; background: #0a0a0b; }
+    #cvU { height: 120px; } #cvS { height: 220px; } #cvId { height: 180px; }
+    ul.issues { list-style: none; display: grid; gap: 6px; margin-top: 12px; font-size: 0.84rem; color: var(--dim); }
+    ul.issues li { padding-left: 14px; position: relative; }
+    ul.issues li::before { content: ''; position: absolute; left: 0; top: 0.55em; width: 6px; height: 6px; border-radius: 50%; background: var(--muted); }
+    ul.issues li.ok::before { background: var(--ok); } ul.issues li.bad::before { background: var(--accent); }
+    .good { color: var(--ok); } .note a { color: var(--text); }
+    @media (max-width: 1000px) { .grid { grid-template-columns: minmax(0, 1fr); } .main-col { order: -1; } }
+    @media (max-width: 760px) { .kpis { grid-template-columns: repeat(3, minmax(0, 1fr)); } .row2 { grid-template-columns: minmax(0, 1fr); } .pins { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+  </style>
+</head>
+<body>
+  <div class="wrap">
+    <div class="top">
+      <a class="back" href="../../index.html#projets" data-t="back">← Retour au portfolio</a>
+      <div class="lang" role="group" aria-label="Langue / Language"><button type="button" data-lang="fr">FR</button><button type="button" data-lang="en">EN</button></div>
+    </div>
+    <p class="eyebrow" data-t="eyebrow">Démo · refaite de zéro en 2026, d'après le banc « drone » étudié en TP de CPGE</p>
+    <h1 data-t="title">Drone en tangage : modéliser, identifier, asservir</h1>
+    <p class="intro" data-t="intro"></p>
+    <p class="warnbox" data-t="warn"></p>
+    <div class="grid">
+      <div class="stack"><div class="panel" id="ctl"></div></div>
+      <div class="stack main-col">
+        <div class="panel">
+          <dl class="kpis" id="kpis"></dl>
+          <canvas id="cvBench" aria-label="Banc drone animé"></canvas>
+          <div class="controls"><button type="button" class="btn primary" id="play" data-t="replay">Rejouer</button><span id="clk"></span></div>
+        </div>
+        <div class="panel">
+          <div class="chart"><p><span><i style="background:var(--accent)"></i><span data-t="lgTh">angle réel θ (°)</span></span><span><i style="background:var(--line)"></i><span data-t="lgRef">consigne</span></span><span><i style="background:#4fb3a9"></i><span data-t="lgEst">angle estimé (utilisé par le correcteur)</span></span></p><canvas id="cvT"></canvas></div>
+          <div class="chart" style="margin-top:10px"><p><span><i style="background:#e0a458"></i><span data-t="lgU1">moteur gauche (gaz %)</span></span><span><i style="background:#a24bd6"></i><span data-t="lgU2">moteur droit (gaz %)</span></span></p><canvas id="cvU"></canvas></div>
+          <ul class="issues" id="iss"></ul>
+        </div>
+        <div class="panel">
+          <h2 data-t="bodeT">Boucle ouverte : diagramme de Bode et marges</h2>
+          <div class="row2"><div class="chart"><p><span data-t="lgGain">gain (dB)</span></p><canvas id="cvBg"></canvas></div><div class="chart"><p><span data-t="lgPhase">phase (°)</span></p><canvas id="cvBp"></canvas></div></div>
+          <p class="hint" data-t="bodeHint"></p>
+        </div>
+        <div class="panel">
+          <h2 data-t="senT">Capteurs embarqués : pourquoi fusionner</h2>
+          <div class="chart"><p><span><i style="background:var(--line)"></i><span data-t="lgTrue">angle réel</span></span><span><i style="background:#6c6c70"></i><span data-t="lgAcc">accéléromètre</span></span><span><i style="background:#e0a458"></i><span data-t="lgGyr">gyromètre intégré</span></span><span><i style="background:#4fb3a9"></i><span data-t="lgComp">filtre complémentaire</span></span><span><i style="background:var(--accent)"></i><span data-t="lgKal">filtre de Kalman</span></span></p><canvas id="cvS"></canvas></div>
+          <p class="hint" data-t="senHint"></p>
+        </div>
+        <div class="panel">
+          <h2><span data-t="idT">Identification : retrouver le modèle à partir d'un essai</span><button type="button" class="btn" id="runId" data-t="runId">Lancer l'essai</button></h2>
+          <div class="chart"><p><span><i style="background:#6c6c70"></i><span data-t="lgMeas">vitesse mesurée (gyromètre, bruitée)</span></span><span><i style="background:var(--accent)"></i><span data-t="lgModel">modèle identifié (simulation libre)</span></span></p><canvas id="cvId"></canvas></div>
+          <div class="tablewrap"><table id="idTab"></table></div>
+          <p class="hint" data-t="idHint"></p>
+        </div>
+        <div class="panel note"><p data-t="note1"></p><p data-t="note2"></p><p data-t="note3"></p><p><a href="https://github.com/Valentin-Auger-Laboratoire/drone-asservissement" target="_blank" rel="noopener" data-t="repo">Dépôt : moteur, tests, explications ↗</a></p></div>
+      </div>
+    </div>
+  </div>
+  <script src="drone.js"></script>
+  <script>
+  (function () {
+    'use strict';
+    const D = window.Drone, DEG = D.DEG, $ = (id) => document.getElementById(id);
+    let lang = 'fr';
+    try { lang = localStorage.getItem('lang') || ((navigator.language || 'fr').toLowerCase().startsWith('fr') ? 'fr' : 'en'); } catch (e) {}
+    const T = {
+      fr: {
+        back: '← Retour au portfolio', eyebrow: "Démo · refaite de zéro en 2026, d'après le banc « drone » étudié en TP de CPGE", title: 'Drone en tangage : modéliser, identifier, asservir',
+        intro: "En TP de CPGE, j'ai étudié un banc de drone à un seul axe : un bras qui pivote, une hélice à chaque bout, et deux boucles d'asservissement (position de l'axe, puis vitesse). Je l'ai trouvé passionnant, alors je l'ai refait de zéro : modèle physique, capteurs embarqués et leur fusion, correcteurs PID, cascade et retour d'état LQR, diagramme de Bode et marges, et identification du modèle à partir d'un essai bruité.",
+        warn: "Simulation refaite en 2026 : valeurs physiques SUPPOSÉES (inertie 0,012 kg·m², bras de 2 × 20 cm, poussée 3 N maxi par hélice, moteurs de constante de temps 60 ms). Ce n'est pas le logiciel ni le sujet du TP, qui ne sont pas publiés.",
+        replay: 'Rejouer', lgTh: 'angle réel θ (°)', lgRef: 'consigne', lgEst: 'angle estimé (utilisé par le correcteur)', lgU1: 'moteur gauche (gaz %)', lgU2: 'moteur droit (gaz %)',
+        bodeT: 'Boucle ouverte : diagramme de Bode et marges', lgGain: 'gain (dB)', lgPhase: 'phase (°)',
+        bodeHint: "Boucle ouverte du réglage choisi (en cascade : boucle de vitesse fermée, puis boucle de position). Trait vertical rouge : pulsation de coupure et marge de phase ; trait gris : pulsation où la phase vaut −180° et marge de gain. Ces marges sont vérifiées par les tests : en multipliant le gain par la marge calculée, la simulation se met à osciller.",
+        senT: 'Capteurs embarqués : pourquoi fusionner', senHint: "Le gyromètre est précis à court terme mais son biais fait dériver l'angle intégré ; l'accéléromètre donne l'angle sans dérive mais il est bruité par les vibrations des moteurs. Le filtre complémentaire et le filtre de Kalman (qui estime aussi le biais) combinent les deux.",
+        lgTrue: 'angle réel', lgAcc: 'accéléromètre', lgGyr: 'gyromètre intégré', lgComp: 'filtre complémentaire', lgKal: 'filtre de Kalman',
+        idT: "Identification : retrouver le modèle à partir d'un essai", runId: "Lancer l'essai", lgMeas: 'vitesse mesurée (gyromètre, bruitée)', lgModel: 'modèle identifié (simulation libre)',
+        idHint: "Essai de 60 s : la commande différentielle saute entre deux valeurs au hasard (signal binaire pseudo-aléatoire), on enregistre le gyromètre. Un modèle discret du 2e ordre est ajusté par moindres carrés, puis par variables instrumentales : avec du bruit de mesure, les moindres carrés ordinaires sont biaisés et sous-estiment la constante de temps des moteurs.",
+        idCols: ['Méthode', 'Inertie J', 'Frottement f', 'Constante de temps τ', 'Ajustement'], idTrue: 'valeurs du modèle', idLs: 'moindres carrés', idIv: 'variables instrumentales', idKept: 'retenu',
+        note1: "Modèle : J·θ'' = Lb·(F₂ − F₁) − f·θ' + perturbations, poussées F = kT·ω², moteurs du 1er ordre. Avec une commande symétrique (gaz ± d), le couple vaut exactement 4·Lb·kT·gaz·ωmax²·d. Le bras est un double intégrateur (aucun couple de rappel) : sans correcteur, il part en butée.",
+        note2: "Correcteurs : PID sur l'angle (dérivée filtrée, anti-emballement) ; cascade comme sur le banc (boucle de position P → consigne de vitesse limitée à ±3 rad/s → boucle de vitesse PI) ; retour d'état LQR avec action intégrale, calculé en résolvant l'équation de Riccati. Seule une action intégrale annule l'erreur quand une hélice perd de la poussée.",
+        note3: "Vérifié par 43 tests : couple exactement linéaire, réponse libre exacte, module de Bode exact, marges confirmées en simulation, rejet des perturbations, anti-emballement, fusion de capteurs et biais estimé, équation de Riccati résolue et boucle stable, identification juste sans bruit et avec bruit.",
+        repo: 'Dépôt : moteur, tests, explications ↗',
+        scen: 'Essais', sStep: 'Échelon de 20°', sGust: 'Rafale de vent', sMass: 'Masse ajoutée au bout du bras', sProp: 'Hélice abîmée (−20 % de poussée)', sSine: 'Consigne sinusoïdale',
+        ctlT: 'Correcteur', mPid: 'PID', mCas: 'cascade', mLqr: 'LQR', estT: 'Angle utilisé par le correcteur',
+        ests: { kalman: 'Kalman', comp: 'complémentaire', acc: 'accéléromètre seul', gyro: 'gyromètre intégré', true: 'capteur parfait' },
+        kp: 'Kp position', ki: 'Ki position', kd: 'Kd position', kpv: 'Kp vitesse', kiv: 'Ki vitesse', qa: 'Poids sur l\'angle (LQR)', noise: 'Bruit des capteurs', on: 'oui', off: 'non',
+        kOver: 'Dépassement', kT5: 'Temps de réponse 5 %', kErr: 'Erreur finale', kPm: 'Marge de phase', kGm: 'Marge de gain', kWc: 'Pulsation de coupure',
+        iss: { unstable: "Instable : la marge de gain est négative, le bras oscille ou part en butée.", lowpm: "Marge de phase faible : réponse oscillante, peu robuste.", ok: "Réglage stable avec des marges confortables.", errP: "Erreur permanente : sans action intégrale, la perturbation n'est pas compensée.", stop: "Le bras touche une butée (±45°)." },
+      },
+      en: {
+        back: '← Back to portfolio', eyebrow: 'Demo · rebuilt from scratch in 2026, from the “drone” bench studied in a CPGE lab', title: 'Pitch-axis drone: model, identify, control',
+        intro: 'In a CPGE lab I studied a single-axis drone bench: a pivoting arm with a propeller at each end and two control loops (axis position, then speed). I found it fascinating, so I rebuilt it from scratch: physical model, on-board sensors and their fusion, PID, cascade and LQR state-feedback controllers, Bode diagram and margins, and model identification from a noisy test.',
+        warn: 'Simulation rebuilt in 2026: physical values are ASSUMED (inertia 0.012 kg·m², 2 × 20 cm arm, 3 N max thrust per propeller, 60 ms motor time constant). This is not the lab software or lab sheet, which are not published.',
+        replay: 'Replay', lgTh: 'actual angle θ (°)', lgRef: 'setpoint', lgEst: 'estimated angle (used by the controller)', lgU1: 'left motor (throttle %)', lgU2: 'right motor (throttle %)',
+        bodeT: 'Open loop: Bode diagram and margins', lgGain: 'gain (dB)', lgPhase: 'phase (°)',
+        bodeHint: 'Open loop of the chosen tuning (in cascade: speed loop closed, then position loop). Red vertical line: crossover frequency and phase margin; grey line: −180° frequency and gain margin. These margins are checked by the tests: multiplying the gain by the computed margin makes the simulation oscillate.',
+        senT: 'On-board sensors: why fuse them', senHint: 'The gyroscope is accurate in the short term but its bias makes the integrated angle drift; the accelerometer gives the angle without drift but is noisy from motor vibration. The complementary filter and the Kalman filter (which also estimates the bias) combine both.',
+        lgTrue: 'actual angle', lgAcc: 'accelerometer', lgGyr: 'integrated gyro', lgComp: 'complementary filter', lgKal: 'Kalman filter',
+        idT: 'Identification: recover the model from a test', runId: 'Run the test', lgMeas: 'measured speed (gyro, noisy)', lgModel: 'identified model (free simulation)',
+        idHint: '60 s test: the differential command jumps randomly between two values (pseudo-random binary signal) and the gyro is recorded. A 2nd-order discrete model is fitted by least squares, then by instrumental variables: with measurement noise, ordinary least squares are biased and underestimate the motor time constant.',
+        idCols: ['Method', 'Inertia J', 'Friction f', 'Time constant τ', 'Fit'], idTrue: 'model values', idLs: 'least squares', idIv: 'instrumental variables', idKept: 'kept',
+        note1: "Model: J·θ'' = Lb·(F₂ − F₁) − f·θ' + disturbances, thrust F = kT·ω², first-order motors. With a symmetric command (throttle ± d) the torque is exactly 4·Lb·kT·throttle·ωmax²·d. The arm is a double integrator (no restoring torque): without a controller it hits the stop.",
+        note2: 'Controllers: PID on the angle (filtered derivative, anti-windup); cascade as on the bench (P position loop → speed setpoint limited to ±3 rad/s → PI speed loop); LQR state feedback with integral action, computed by solving the Riccati equation. Only integral action cancels the error when a propeller loses thrust.',
+        note3: 'Checked by 43 tests: exactly linear torque, exact free response, exact Bode magnitude, margins confirmed in simulation, disturbance rejection, anti-windup, sensor fusion and bias estimation, Riccati equation solved and loop stable, identification accurate with and without noise.',
+        repo: 'Repository: engine, tests, explanations ↗',
+        scen: 'Tests', sStep: '20° step', sGust: 'Gust of wind', sMass: 'Mass added at the arm end', sProp: 'Damaged propeller (−20 % thrust)', sSine: 'Sinusoidal setpoint',
+        ctlT: 'Controller', mPid: 'PID', mCas: 'cascade', mLqr: 'LQR', estT: 'Angle used by the controller',
+        ests: { kalman: 'Kalman', comp: 'complementary', acc: 'accelerometer only', gyro: 'integrated gyro', true: 'perfect sensor' },
+        kp: 'Kp position', ki: 'Ki position', kd: 'Kd position', kpv: 'Kp speed', kiv: 'Ki speed', qa: 'Angle weight (LQR)', noise: 'Sensor noise', on: 'on', off: 'off',
+        kOver: 'Overshoot', kT5: '5 % settling time', kErr: 'Final error', kPm: 'Phase margin', kGm: 'Gain margin', kWc: 'Crossover frequency',
+        iss: { unstable: 'Unstable: negative gain margin, the arm oscillates or hits the stop.', lowpm: 'Low phase margin: oscillating, not robust.', ok: 'Stable tuning with comfortable margins.', errP: 'Steady-state error: without integral action the disturbance is not compensated.', stop: 'The arm hits a stop (±45°).' },
+      },
+    };
+    const t = (k) => (T[lang][k] !== undefined ? T[lang][k] : T.fr[k]);
+    const fmt = (v, d) => (isFinite(v) ? v.toFixed(d) : '—').replace('.', lang === 'fr' ? ',' : '.');
+    const S = { scen: 'step', mode: 'cascade', est: 'kalman', noise: true, pid: { Kp: 0.2, Ki: 0.05, Kd: 0.09 }, cas: { Kp: 3, Ki: 0, Kpv: 0.16, Kiv: 0.15 }, qa: 1000 };
+    const SCEN = {
+      step: { ref: (t) => (t > 0.5 ? 20 * DEG : 0), dist: {} },
+      gust: { ref: () => 0, dist: { gust: [2, 0.3, 0.05] } },
+      mass: { ref: () => 0, dist: { mass: [2, 0.03] } },
+      prop: { ref: () => 0, dist: { prop: [2, 0.2] } },
+      sine: { ref: (t) => 15 * DEG * Math.sin(2 * Math.PI * 0.3 * t), dist: {} },
+    };
+    function ctlObj() {
+      if (S.mode === 'pid') return { mode: 'pid', ang: { Kp: S.pid.Kp, Ki: S.pid.Ki, Kd: S.pid.Kd } };
+      if (S.mode === 'lqr') return { mode: 'lqr', lqr: { q: [S.qa, 15, 0, 25], r: 1 } };
+      return { mode: 'cascade', ang: { Kp: S.cas.Kp, Ki: S.cas.Ki }, rate: { Kp: S.cas.Kpv, Ki: S.cas.Kiv } };
+    }
+    function seg(box, list, cur, onPick) { const s = document.createElement('div'); s.className = 'seg'; list.forEach(([v, l]) => { const b = document.createElement('button'); b.type = 'button'; b.className = 'btn'; b.textContent = l; b.setAttribute('aria-pressed', String(v) === String(cur)); b.addEventListener('click', () => onPick(v)); s.appendChild(b); }); box.appendChild(s); }
+    function slider(box, label, val, min, max, step, show, onInput) { const d = document.createElement('div'); d.className = 'ctl'; const id = 'r' + Math.random().toString(36).slice(2, 7); d.innerHTML = '<label for="' + id + '">' + label + '</label><output></output><input type="range" id="' + id + '" min="' + min + '" max="' + max + '" step="' + step + '">'; const i = d.querySelector('input'), o = d.querySelector('output'); i.value = val; o.textContent = show(+i.value); i.addEventListener('input', () => { o.textContent = show(+i.value); onInput(+i.value, false); }); i.addEventListener('change', () => onInput(+i.value, true)); box.appendChild(d); }
+    const h3 = (box, txt, first) => { const h = document.createElement('h3'); h.textContent = txt; if (first) h.style.cssText = 'margin-top:0;padding-top:0;border:0'; box.appendChild(h); };
+    function renderCtl() {
+      const box = $('ctl'); box.innerHTML = '';
+      h3(box, t('scen'), true);
+      const sc = document.createElement('div'); sc.className = 'scen';
+      [['step', 'sStep'], ['gust', 'sGust'], ['mass', 'sMass'], ['prop', 'sProp'], ['sine', 'sSine']].forEach(([k, l]) => { const b = document.createElement('button'); b.type = 'button'; b.className = 'btn'; b.textContent = t(l); b.setAttribute('aria-pressed', S.scen === k); b.addEventListener('click', () => { S.scen = k; renderCtl(); run(); }); sc.appendChild(b); });
+      box.appendChild(sc);
+      h3(box, t('ctlT'));
+      seg(box, [['pid', t('mPid')], ['cascade', t('mCas')], ['lqr', t('mLqr')]], S.mode, (v) => { S.mode = v; renderCtl(); run(); });
+      const fin = (v, f) => { if (f) run(); };
+      if (S.mode === 'pid') {
+        slider(box, t('kp'), S.pid.Kp, 0, 1.5, 0.01, (v) => fmt(v, 2), (v, f) => { S.pid.Kp = v; fin(v, f); });
+        slider(box, t('ki'), S.pid.Ki, 0, 1, 0.01, (v) => fmt(v, 2), (v, f) => { S.pid.Ki = v; fin(v, f); });
+        slider(box, t('kd'), S.pid.Kd, 0, 0.5, 0.005, (v) => fmt(v, 3), (v, f) => { S.pid.Kd = v; fin(v, f); });
+      } else if (S.mode === 'cascade') {
+        slider(box, t('kp'), S.cas.Kp, 0, 20, 0.1, (v) => fmt(v, 1), (v, f) => { S.cas.Kp = v; fin(v, f); });
+        slider(box, t('ki'), S.cas.Ki, 0, 3, 0.05, (v) => fmt(v, 2), (v, f) => { S.cas.Ki = v; fin(v, f); });
+        slider(box, t('kpv'), S.cas.Kpv, 0, 1, 0.01, (v) => fmt(v, 2), (v, f) => { S.cas.Kpv = v; fin(v, f); });
+        slider(box, t('kiv'), S.cas.Kiv, 0, 1.5, 0.01, (v) => fmt(v, 2), (v, f) => { S.cas.Kiv = v; fin(v, f); });
+      } else slider(box, t('qa'), Math.log10(S.qa), 1, 4, 0.05, (v) => fmt(Math.pow(10, v), 0), (v, f) => { S.qa = Math.round(Math.pow(10, v)); fin(v, f); });
+      h3(box, t('estT'));
+      seg(box, ['kalman', 'comp', 'acc', 'gyro', 'true'].map((e) => [e, t('ests')[e]]), S.est, (v) => { S.est = v; renderCtl(); run(); });
+      h3(box, t('noise'));
+      seg(box, [[1, t('on')], [0, t('off')]], S.noise ? 1 : 0, (v) => { S.noise = !!v; renderCtl(); run(); });
+    }
+    function setup(cv) { const dpr = window.devicePixelRatio || 1, w = cv.clientWidth, h = cv.clientHeight; if (cv.width !== Math.round(w * dpr) || cv.height !== Math.round(h * dpr)) { cv.width = Math.round(w * dpr); cv.height = Math.round(h * dpr); } const c = cv.getContext('2d'); c.setTransform(dpr, 0, 0, dpr, 0, 0); return { c, w, h }; }
+    let O = null, SEN = null, MG = null, t0 = null, rot = 0;
+    function run() {
+      const sc = SCEN[S.scen], ctl = ctlObj();
+      O = D.simulate({ ctl, est: S.est, noise: S.noise, ref: sc.ref, dist: sc.dist, T: 10, seed: 2 });
+      MG = D.margins(D.P0, ctl.mode === 'lqr' ? D.CTL0 : ctl);
+      SEN = { kal: D.simulate({ est: 'kalman', T: 20, seed: 4, ref: (t) => (t > 1 ? 15 * DEG : 0) }), comp: D.simulate({ est: 'comp', T: 20, seed: 4, ref: (t) => (t > 1 ? 15 * DEG : 0) }), gyro: D.simulate({ est: 'gyro', T: 20, seed: 4, ctl: D.CTL0, ref: (t) => (t > 1 ? 15 * DEG : 0) }) };
+      t0 = null; kpis(); issues(); drawBode(); drawSensors();
+    }
+    function kpis() {
+      const kpi = (k, v, u, cls) => '<div class="kpi' + (cls ? ' ' + cls : '') + '"><dt>' + k + '</dt><dd>' + v + (u ? '<small>' + u + '</small>' : '') + '</dd></div>';
+      let over = '—', t5 = '—', err;
+      if (S.scen === 'step') { const s = D.stepInfo(O, 0.5, 20 * DEG); over = fmt(s.overshoot, 1); t5 = fmt(s.t5, 2); err = s.err; }
+      else { const n = O.th.length; err = (O.ref[n - 1] - O.th[n - 1]) / DEG; }
+      const lq = S.mode === 'lqr';
+      $('kpis').innerHTML = kpi(t('kOver'), over, over === '—' ? '' : '%') + kpi(t('kT5'), t5, t5 === '—' ? '' : 's') + kpi(t('kErr'), fmt(err, 2), '°', Math.abs(err) > 0.5 ? 'bad' : 'good') + kpi(t('kPm'), lq ? '—' : fmt(MG.pm, 0), lq ? '' : '°', !lq && MG.pm < 30 ? 'bad' : '') + kpi(t('kGm'), lq ? '—' : MG.gm === null ? '∞' : fmt(MG.gm, 1), lq ? '' : 'dB', !lq && MG.gm !== null && MG.gm < 6 ? 'bad' : '') + kpi(t('kWc'), lq ? '—' : fmt(MG.wc, 1), lq ? '' : 'rad/s');
+    }
+    function issues() {
+      const L = [], lq = S.mode === 'lqr', hit = O.th.some((v) => Math.abs(v) >= D.P0.stop - 1e-6);
+      if (!lq) { if (MG.gm !== null && MG.gm < 0) L.push(['bad', t('iss').unstable]); else if (MG.pm < 30) L.push(['bad', t('iss').lowpm]); else L.push(['ok', t('iss').ok]); }
+      const n = O.th.length; if (['mass', 'prop'].includes(S.scen) && Math.abs(O.th[n - 1] - O.ref[n - 1]) > 0.5 * DEG) L.push(['bad', t('iss').errP]);
+      if (hit) L.push(['bad', t('iss').stop]);
+      $('iss').innerHTML = L.map(([c, x]) => '<li class="' + c + '">' + x + '</li>').join('');
+    }
+    function chart(cv, series, lo, hi, t1, tCur, unitDeg) {
+      const { c, w, h } = setup(cv); c.fillStyle = '#0a0a0b'; c.fillRect(0, 0, w, h);
+      const pl = 40, pb = 20, X = (x) => pl + (x / t1) * (w - pl - 8), Y = (v) => 8 + (1 - (v - lo) / (hi - lo)) * (h - 8 - pb);
+      c.font = '10px "JetBrains Mono", monospace'; c.fillStyle = '#6c6c70'; c.strokeStyle = '#1e1e21'; c.textAlign = 'right';
+      for (let k = 0; k <= 4; k++) { const v = lo + ((hi - lo) * k) / 4; c.beginPath(); c.moveTo(pl, Y(v)); c.lineTo(w - 8, Y(v)); c.stroke(); c.fillText(fmt(Math.abs(v) < 1e-9 ? 0 : v, hi - lo < 10 ? 1 : 0), pl - 4, Y(v) + 3); }
+      c.textAlign = 'center'; for (let k = 0; k <= 5; k++) c.fillText(fmt((t1 * k) / 5, 0) + ' s', X((t1 * k) / 5), h - 5);
+      series.forEach(([ts, arr, col, lw]) => { c.strokeStyle = col; c.lineWidth = lw || 1.5; c.beginPath(); let st = false; for (let k = 0; k < arr.length; k += 2) { const v = arr[k]; if (!isFinite(v)) continue; const p = [X(ts[k]), Y(Math.max(lo, Math.min(hi, v)))]; st ? c.lineTo(...p) : c.moveTo(...p); st = true; } c.stroke(); });
+      if (tCur !== null) { c.strokeStyle = 'rgba(242,242,242,0.5)'; c.beginPath(); c.moveTo(X(tCur), 6); c.lineTo(X(tCur), h - pb); c.stroke(); }
+    }
+    function drawCharts(tCur) {
+      const d = (a) => a.map((v) => v / DEG);
+      const all = d(O.th).concat(d(O.ref)); const hi = Math.max(25, Math.ceil(Math.max(...all.map(Math.abs)) / 5) * 5 + 5);
+      chart($('cvT'), [[O.t, d(O.ref), '#c9c9cc', 1.2], [O.t, d(O.est), '#4fb3a9', 1], [O.t, d(O.th), '#c8102e', 1.8]], -hi, hi, 10, tCur);
+      chart($('cvU'), [[O.t, O.u1.map((v) => v * 100), '#e0a458'], [O.t, O.u2.map((v) => v * 100), '#a24bd6']], 0, 60, 10, tCur);
+    }
+    function drawSensors() {
+      const o = SEN.kal, d = (a) => a.map((v) => v / DEG);
+      const gi = []; let acc0 = 0; o.gyro.forEach((g, k) => { acc0 += g * 0.005; gi.push(acc0); });
+      chart($('cvS'), [[o.t, d(o.acc), '#6c6c70', 0.8], [o.t, d(gi), '#e0a458', 1.6], [SEN.comp.t, d(SEN.comp.est), '#4fb3a9', 1.4], [o.t, d(o.est), '#c8102e', 1.6], [o.t, d(o.th), '#c9c9cc', 1.2]], -10, 30, 20, null);
+    }
+    function drawBode() {
+      const lq = S.mode === 'lqr', ctl = lq ? D.CTL0 : ctlObj(), m = MG, ws = m.ws, L = m.L;
+      const bodeChart = (cv, vals, lo, hi, ticks, unit, mark) => {
+        const { c, w, h } = setup(cv); c.fillStyle = '#0a0a0b'; c.fillRect(0, 0, w, h);
+        const pl = 42, pb = 20, w0 = Math.log10(ws[0]), w1 = Math.log10(ws[ws.length - 1]), X = (x) => pl + ((Math.log10(x) - w0) / (w1 - w0)) * (w - pl - 8), Y = (v) => 8 + (1 - (v - lo) / (hi - lo)) * (h - 8 - pb);
+        c.font = '10px "JetBrains Mono", monospace'; c.fillStyle = '#6c6c70'; c.strokeStyle = '#1e1e21'; c.textAlign = 'right';
+        ticks.forEach((v) => { c.beginPath(); c.moveTo(pl, Y(v)); c.lineTo(w - 8, Y(v)); c.stroke(); c.fillText(v + unit, pl - 4, Y(v) + 3); });
+        c.textAlign = 'center'; [0.01, 0.1, 1, 10, 100, 1000].forEach((v) => c.fillText(String(v), X(v), h - 5));
+        c.strokeStyle = '#c8102e'; c.lineWidth = 1.6; c.beginPath(); vals.forEach((v, k) => { const p = [X(ws[k]), Y(Math.max(lo, Math.min(hi, v)))]; k ? c.lineTo(...p) : c.moveTo(...p); }); c.stroke();
+        mark(c, X, Y);
+      };
+      const off = Math.round((L[0][1] / DEG) / 360) * 360 + (L[0][1] / DEG - Math.round((L[0][1] / DEG) / 360) * 360 > 0 ? 360 : 0), phase = L.map((l) => l[1] / DEG - off);
+      bodeChart($('cvBg'), L.map((l) => 20 * Math.log10(l[0])), -80, 80, [-80, -40, 0, 40, 80], '', (c, X, Y) => { c.strokeStyle = '#3a3a3d'; c.beginPath(); c.moveTo(X(ws[0]), Y(0)); c.lineTo(X(ws[ws.length - 1]), Y(0)); c.stroke(); if (m.wc) { c.strokeStyle = 'rgba(200,16,46,0.7)'; c.setLineDash([3, 3]); c.beginPath(); c.moveTo(X(m.wc), 6); c.lineTo(X(m.wc), 1e4); c.stroke(); c.setLineDash([]); } if (m.w180) { c.strokeStyle = 'rgba(201,201,204,0.6)'; c.setLineDash([3, 3]); c.beginPath(); c.moveTo(X(m.w180), 6); c.lineTo(X(m.w180), 1e4); c.stroke(); c.setLineDash([]); c.fillStyle = '#c9c9cc'; c.textAlign = 'left'; c.fillText('GM ' + fmt(m.gm, 1) + ' dB', X(m.w180) + 4, Y(-60)); } });
+      bodeChart($('cvBp'), phase, -450, 0, [-450, -360, -270, -180, -90, 0], '°', (c, X, Y) => { c.strokeStyle = '#3a3a3d'; c.beginPath(); c.moveTo(X(ws[0]), Y(-180)); c.lineTo(X(ws[ws.length - 1]), Y(-180)); c.stroke(); if (m.wc) { c.strokeStyle = 'rgba(200,16,46,0.7)'; c.setLineDash([3, 3]); c.beginPath(); c.moveTo(X(m.wc), 6); c.lineTo(X(m.wc), 1e4); c.stroke(); c.setLineDash([]); c.fillStyle = '#ff8a8a'; c.textAlign = 'left'; c.fillText('PM ' + fmt(m.pm, 0) + '°', X(m.wc) + 4, Y(-330)); } });
+    }
+    function drawBench(k) {
+      const { c, w, h } = setup($('cvBench')); c.fillStyle = '#0a0a0b'; c.fillRect(0, 0, w, h);
+      const cx = w / 2, cy = h * 0.42, L = Math.min(w * 0.36, h * 0.9), th = O.th[k], ref = O.ref[k];
+      // caisson bleu
+      c.fillStyle = '#123f86'; c.fillRect(cx - L - 40, 10, 2 * L + 80, h - 20); c.fillStyle = '#0d2f66'; c.fillRect(cx - L - 30, 20, 2 * L + 60, h - 40);
+      // rapporteur
+      c.strokeStyle = '#8f9399'; c.lineWidth = 10; c.beginPath(); c.arc(cx, cy, L * 0.55, 0.15 * Math.PI, 0.85 * Math.PI); c.stroke();
+      c.font = '10px "JetBrains Mono", monospace'; c.fillStyle = '#d9d6cf'; c.textAlign = 'center';
+      for (let a = -40; a <= 40; a += 10) { const r = a * DEG, x = cx + Math.sin(r) * L * 0.55, y = cy + Math.cos(r) * L * 0.55; c.fillStyle = '#1b1b1d'; c.fillRect(x - 1, y - 6, 2, 12); }
+      // consigne
+      c.strokeStyle = 'rgba(201,201,204,0.6)'; c.setLineDash([5, 4]); c.lineWidth = 1.5; c.beginPath(); c.moveTo(cx - L * Math.cos(ref), cy + L * Math.sin(ref)); c.lineTo(cx + L * Math.cos(ref), cy - L * Math.sin(ref)); c.stroke(); c.setLineDash([]);
+      // bras (positif : bout droit vers le haut)
+      const ex = Math.cos(th), ey = -Math.sin(th);
+      c.strokeStyle = '#c9c9cc'; c.lineWidth = 8; c.beginPath(); c.moveTo(cx - L * ex, cy - L * ey); c.lineTo(cx + L * ex, cy + L * ey); c.stroke();
+      c.fillStyle = '#2d8a3e'; c.save(); c.translate(cx, cy); c.rotate(-th); c.fillRect(-26, -16, 52, 14); c.restore();
+      c.fillStyle = '#c8102e'; c.beginPath(); c.arc(cx, cy, 7, 0, 7); c.fill();
+      // hélices : vitesse proportionnelle à ω
+      [[-1, O.w1[k], '#e0a458'], [1, O.w2[k], '#a24bd6']].forEach(([sg, wm, col]) => {
+        const px = cx + sg * L * ex, py = cy + sg * L * ey, nx = -ey, ny = ex; // normale au bras, vers le haut
+        const mx = px - nx * 10, my = py - ny * 10;
+        c.fillStyle = '#222'; c.beginPath(); c.arc(mx, my, 8, 0, 7); c.fill();
+        const blade = 0.5 + 0.5 * Math.abs(Math.cos(rot * (wm / 400) + sg)), bl = L * 0.2 * blade;
+        c.strokeStyle = col; c.lineWidth = 4; c.beginPath(); c.moveTo(mx - nx * 12 - ex * bl, my - ny * 12 - ey * bl); c.lineTo(mx - nx * 12 + ex * bl, my - ny * 12 + ey * bl); c.stroke();
+        c.fillStyle = col; c.font = '10px "JetBrains Mono", monospace'; c.fillText(fmt(wm * 60 / (2 * Math.PI), 0) + ' tr/min', mx - nx * 34, my - ny * 34);
+      });
+      // butées
+      c.fillStyle = '#55555a'; [-1, 1].forEach((sg) => { const a = sg * D.P0.stop, x = cx + sg * L * Math.cos(a), y = cy - L * Math.sin(a) * sg * sg; c.fillRect(x - 4, cy + L * Math.sin(D.P0.stop) - 2, 8, 8); });
+      c.fillStyle = '#f2f2f2'; c.font = '600 15px Inter, sans-serif'; c.textAlign = 'left'; c.fillText('θ = ' + fmt(th / DEG, 1) + '°', 18, h - 22);
+      c.font = '11px "JetBrains Mono", monospace'; c.fillStyle = '#9b9b9f'; c.fillText((lang === 'fr' ? 'consigne ' : 'setpoint ') + fmt(ref / DEG, 1) + '°', 18, h - 40);
+    }
+    function loop(now) {
+      if (O) {
+        if (t0 === null) t0 = now; const tt = Math.min(10, (now - t0) / 1000); rot += 0.25;
+        let k = Math.min(O.t.length - 1, Math.round(tt / 0.005));
+        drawBench(k); drawCharts(O.t[k]); $('clk').textContent = 't = ' + fmt(tt, 1) + ' s';
+      }
+      requestAnimationFrame(loop);
+    }
+    function runId() {
+      const id = D.identify({ noise: 0.02, seed: 7 + Math.floor(Math.random() * 1000) }), n = id.y.length, ts = id.y.map((_, k) => k * id.dt);
+      chart($('cvId'), [[ts, id.y, '#6c6c70', 0.8], [ts, id.ys, '#c8102e', 1.6]], Math.min(...id.y), Math.max(...id.y), ts[n - 1], null);
+      const row = (name, q, kept, fit) => '<tr><td>' + name + (kept ? ' <span class="good">· ' + t('idKept') + '</span>' : '') + '</td><td class="n">' + fmt(q.J * 1000, 2) + ' g·m²</td><td class="n">' + fmt(q.f * 1000, 2) + ' mN·m·s</td><td class="n">' + fmt(q.tau * 1000, 0) + ' ms</td><td class="n">' + (fit === null ? '—' : fmt(fit, 1) + ' %') + '</td></tr>';
+      $('idTab').innerHTML = '<thead><tr>' + t('idCols').map((x, j) => '<th' + (j ? ' class="n"' : '') + '>' + x + '</th>').join('') + '</tr></thead><tbody>' + row(t('idTrue'), id.truth, false, null) + row(t('idLs'), id.ls, id.method === 'ls', id.method === 'ls' ? id.fit : null) + row(t('idIv'), id.iv, id.method === 'iv', id.method === 'iv' ? id.fit : null) + '</tbody>';
+    }
+    $('play').addEventListener('click', () => { t0 = null; });
+    $('runId').addEventListener('click', runId);
+    function setLang(l) {
+      lang = l; document.documentElement.lang = l;
+      document.querySelectorAll('[data-t]').forEach((el) => { const v = T[l][el.dataset.t]; if (typeof v === 'string') el.textContent = v; });
+      document.querySelectorAll('.lang button').forEach((b) => b.setAttribute('aria-pressed', b.dataset.lang === l));
+      try { localStorage.setItem('lang', l); } catch (e) {}
+      renderCtl(); if (O) { kpis(); issues(); drawBode(); drawSensors(); }
+    }
+    document.querySelectorAll('.lang button').forEach((b) => b.addEventListener('click', () => setLang(b.dataset.lang)));
+    window.addEventListener('resize', () => { if (O) { drawBode(); drawSensors(); } });
+    setLang(lang); run(); runId();
+    requestAnimationFrame(loop);
+  })();
+  </script>
+</body>
+</html>
