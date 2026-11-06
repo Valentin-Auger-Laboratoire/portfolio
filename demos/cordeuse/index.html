@@ -1,0 +1,345 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Cordeuse de raquette</title>
+  <meta name="description" content="Cordeuse de raquette asservie en effort : rapport du moto-réducteur à vis sans fin, irréversibilité, mesure de la tension par un ressort calibré et simulation de la boucle d'effort.">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --bg: #0c0c0d; --panel: #161618; --border: #262628; --border-hi: #3a3a3d;
+      --text: #f2f2f2; --dim: #9b9b9f; --muted: #6c6c70; --accent: #c8102e; --line: #c9c9cc; --warn: #e0a458; --ok: #8fd18f;
+      --mono: "JetBrains Mono", ui-monospace, monospace; --sans: "Inter", system-ui, sans-serif;
+      color-scheme: dark;
+    }
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    body { background: var(--bg); color: var(--text); font-family: var(--sans); line-height: 1.55; -webkit-font-smoothing: antialiased; }
+    .wrap { max-width: 1280px; margin: 0 auto; padding: 24px 16px 48px; }
+    .top { display: flex; justify-content: space-between; align-items: center; gap: 12px; flex-wrap: wrap; margin-bottom: 24px; }
+    .back { font-size: 0.9rem; color: var(--dim); text-decoration: none; }
+    .back:hover { color: var(--accent); }
+    .lang { display: flex; border: 1px solid var(--border-hi); }
+    .lang button { font: 500 0.78rem var(--mono); letter-spacing: .05em; background: none; color: var(--dim); border: 0; padding: 5px 10px; cursor: pointer; }
+    .lang button + button { border-left: 1px solid var(--border-hi); }
+    .lang button[aria-pressed="true"] { background: var(--text); color: var(--bg); }
+    .eyebrow { font: 500 0.82rem var(--mono); color: var(--accent); letter-spacing: .04em; }
+    h1 { font-size: clamp(1.6rem, 3.4vw, 2.3rem); line-height: 1.15; margin: 6px 0 10px; text-wrap: balance; }
+    .intro { color: var(--dim); max-width: 82ch; }
+    .intro a { color: var(--line); }
+    .warnbox { border: 1px solid #4a3a20; background: #1a160f; color: var(--warn); border-radius: 6px; padding: 8px 12px; font-size: 0.84rem; margin-top: 12px; }
+    .grid { display: grid; grid-template-columns: 320px minmax(0, 1fr); gap: 20px; align-items: start; margin-top: 20px; }
+    .stack { display: grid; gap: 16px; min-width: 0; }
+    .panel { background: var(--panel); border: 1px solid var(--border); border-radius: 8px; padding: 16px; min-width: 0; }
+    h2 { font: 600 0.78rem var(--mono); letter-spacing: .12em; text-transform: uppercase; color: var(--dim); margin-bottom: 12px; }
+    h3 { font: 600 0.72rem var(--mono); letter-spacing: .08em; text-transform: uppercase; color: var(--dim); margin: 14px 0 10px; padding-top: 12px; border-top: 1px solid var(--border); }
+    button:focus-visible, input:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+    .btn { font: 500 0.82rem var(--sans); background: none; color: var(--text); border: 1px solid var(--border-hi); border-radius: 6px; padding: 6px 11px; cursor: pointer; white-space: nowrap; }
+    .btn:hover { border-color: var(--accent); color: var(--accent); }
+    .btn[aria-pressed="true"] { border-color: var(--accent); color: var(--accent); }
+    .btn.primary { background: var(--accent); border-color: var(--accent); color: #fff; }
+    .seg { display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 10px; }
+    .ctl { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 2px 10px; margin-bottom: 10px; }
+    .ctl label { font: 500 0.76rem var(--mono); color: var(--dim); }
+    .ctl output { font: 0.8rem var(--mono); font-variant-numeric: tabular-nums; text-align: right; }
+    .ctl input[type=range] { grid-column: 1 / -1; width: 100%; accent-color: var(--accent); }
+    .lab { font: 500 0.74rem var(--mono); color: var(--dim); margin: 2px 0 6px; }
+    .hint { font-size: 0.8rem; color: var(--dim); margin-top: 8px; }
+    .kpis { display: grid; grid-template-columns: repeat(6, minmax(0, 1fr)); gap: 10px; }
+    .kpi { border: 1px solid var(--border); border-radius: 6px; padding: 8px 10px; min-width: 0; }
+    .kpi dt { font: 0.66rem var(--mono); color: var(--dim); }
+    .kpi dd { font: 600 1.02rem var(--sans); font-variant-numeric: tabular-nums; margin-top: 2px; }
+    .kpi dd small { font: 400 0.7rem var(--mono); color: var(--dim); margin-left: 3px; }
+    .kpi.bad dd { color: #ff8a8a; } .kpi.good dd { color: var(--ok); }
+    canvas#table { width: 100%; aspect-ratio: 240 / 150; display: block; border: 1px solid var(--border); border-radius: 6px; background: #0a0a0b; margin-top: 12px; cursor: crosshair; touch-action: none; }
+    .controls { display: flex; gap: 8px; flex-wrap: wrap; align-items: center; margin-top: 10px; font: 0.78rem var(--mono); color: var(--dim); }
+    .row2 { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 16px; }
+    .pins { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 6px; font: 0.74rem var(--mono); }
+    .pin { border: 1px solid var(--border); border-radius: 5px; padding: 5px 7px; min-width: 0; }
+    .pin b { display: block; color: var(--dim); font-weight: 500; font-size: 0.68rem; }
+    .pin span { font-variant-numeric: tabular-nums; }
+    .pin.hi { border-color: var(--accent); } .pin.hi span { color: #ff8a8a; }
+    .serial { font: 0.74rem/1.45 var(--mono); background: #0a0a0b; border: 1px solid var(--border); border-radius: 6px; padding: 8px 10px; height: 172px; overflow: hidden; color: var(--line); white-space: pre; }
+    .serial .t { color: var(--muted); }
+    .serial .w { color: #ff8a8a; }
+    .state { font: 0.8rem var(--mono); color: var(--dim); margin-top: 8px; }
+    .state b { color: var(--text); font-weight: 500; }
+    table { width: 100%; border-collapse: collapse; font: 0.8rem var(--mono); font-variant-numeric: tabular-nums; }
+    th, td { text-align: left; padding: 6px 8px; border-bottom: 1px solid var(--border); }
+    td.n, th.n { text-align: right; }
+    th { color: var(--dim); font-weight: 500; }
+    td.bad { color: #ff8a8a; } td.good { color: var(--ok); }
+    .tablewrap { overflow-x: auto; }
+    ol.review { padding-left: 1.2em; display: grid; gap: 6px; font-size: 0.86rem; color: var(--dim); }
+    ol.review b { color: var(--text); font-weight: 600; }
+    .note { font-size: 0.82rem; color: var(--dim); }
+    .note p + p { margin-top: 6px; }
+    .scen { display: grid; gap: 6px; margin-bottom: 4px; }
+    .scen .btn { text-align: left; white-space: normal; }
+    .cap { font: 0.72rem var(--mono); color: var(--dim); margin-bottom: 4px; }
+    canvas.sq { width: 100%; aspect-ratio: 1; display: block; border: 1px solid var(--border); border-radius: 6px; background: #0a0a0b; }
+    .chart p { font: 0.72rem var(--mono); color: var(--dim); margin-bottom: 4px; display: flex; gap: 10px; flex-wrap: wrap; }
+    .chart p i { display: inline-block; width: 12px; height: 2px; vertical-align: 3px; margin-right: 5px; }
+    .chart canvas { width: 100%; height: 200px; display: block; border: 1px solid var(--border); border-radius: 6px; background: #0a0a0b; }
+    #cvZ { cursor: crosshair; }
+    ul.issues { list-style: none; display: grid; gap: 6px; margin-top: 12px; font-size: 0.84rem; color: var(--dim); }
+    ul.issues li { padding-left: 14px; position: relative; }
+    ul.issues li::before { content: ''; position: absolute; left: 0; top: 0.55em; width: 6px; height: 6px; border-radius: 50%; background: var(--muted); }
+    ul.issues li.ok::before { background: var(--ok); } ul.issues li.bad::before { background: var(--accent); }
+    .photos { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 12px; }
+    .photos img { width: 100%; display: block; border: 1px solid var(--border); border-radius: 6px; }
+    .photos figcaption { font-size: 0.78rem; color: var(--dim); margin-top: 6px; }
+    .note a { color: var(--text); }
+    @media (max-width: 760px) { .photos { grid-template-columns: minmax(0, 1fr); } }
+    @media (max-width: 1000px) { .grid { grid-template-columns: minmax(0, 1fr); } .main-col { order: -1; } }
+    @media (max-width: 760px) { .kpis { grid-template-columns: repeat(3, minmax(0, 1fr)); } .row2 { grid-template-columns: minmax(0, 1fr); } .pins { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+  </style>
+</head>
+<body>
+  <div class="wrap">
+    <div class="top">
+      <a class="back" href="../../index.html#projets" data-t="back">← Retour au portfolio</a>
+      <div class="lang" role="group" aria-label="Langue / Language"><button type="button" data-lang="fr">FR</button><button type="button" data-lang="en">EN</button></div>
+    </div>
+    <p class="eyebrow" data-t="eyebrow">Démo · TP de sciences de l'ingénieur, CPGE TSI (septembre 2024)</p>
+    <h1 data-t="title">Cordeuse de raquette : le réducteur et la boucle d'effort</h1>
+    <p class="intro" data-t="intro"></p>
+    <p class="warnbox" data-t="warn"></p>
+    <div class="grid">
+      <div class="stack"><div class="panel" id="ctl"></div></div>
+      <div class="stack main-col">
+        <div class="panel">
+          <dl class="kpis" id="kpis"></dl>
+          <div class="row2" style="margin-top:12px">
+            <div><p class="cap" data-t="capGear">Le moto-réducteur (vu de face)</p><canvas id="cvGear" class="sq" aria-label="Réducteur"></canvas></div>
+            <div><p class="cap" data-t="capMech">La mise en tension</p><canvas id="cvMech" class="sq" aria-label="Chariot, ressort et corde"></canvas></div>
+          </div>
+          <div class="controls"><button type="button" class="btn primary" id="play" data-t="replay">Rejouer</button><span id="clk"></span></div>
+          <p class="hint" data-t="mechHint"></p>
+        </div>
+        <div class="panel">
+          <div class="row2">
+            <div class="chart"><p><span><i style="background:var(--accent)"></i><span data-t="lgT">tension de la corde (N)</span></span><span><i style="background:var(--line)"></i><span data-t="lgSet">consigne</span></span></p><canvas id="cvT"></canvas></div>
+            <div class="chart"><p><span><i style="background:var(--warn)"></i><span data-t="lgU">tension moteur (V)</span></span><span><i style="background:#4fb3a9"></i><span data-t="lgI">courant (A)</span></span></p><canvas id="cvU"></canvas></div>
+          </div>
+          <ul class="issues" id="iss"></ul>
+        </div>
+        <div class="panel">
+          <div class="chart"><p><span><i style="background:var(--accent)"></i><span data-t="lgFnom">effort tenu au courant nominal (N)</span></span><span><i style="background:#4fb3a9"></i><span data-t="lgV">vitesse de chaîne à vide (mm/s × 5)</span></span><span><i style="background:var(--line)"></i><span data-t="lgSet2">consigne de tension</span></span><span data-t="lgZ">selon les dents de la grande roue</span></p><canvas id="cvZ"></canvas></div>
+          <p class="hint" data-t="zHint"></p>
+        </div>
+        <div class="panel">
+          <h2 data-t="phT">Ma modification sur la maquette numérique</h2>
+          <div class="photos">
+            <figure><img src="img/reducteur-maquette.jpg" alt="" data-alt="alt1" loading="lazy"><figcaption data-t="ph1">La vis sans fin entraîne deux roues de 29 dents, chacune solidaire d'un pignon de 15 dents.</figcaption></figure>
+            <figure><img src="img/assemblage-maquette.jpg" alt="" data-alt="alt2" loading="lazy"><figcaption data-t="ph2">L'assemblage complet : moteur, vis, les deux étages et la grande roue (en vert).</figcaption></figure>
+            <figure><img src="img/roue-modifiee.jpg" alt="" data-alt="alt3" loading="lazy"><figcaption data-t="ph3">La grande roue que j'ai reprise (sélectionnée) : environ 60 dents, comptées sur cette photo.</figcaption></figure>
+          </div>
+          <p class="hint" data-t="phHint"></p>
+        </div>
+        <div class="panel note"><p data-t="note1"></p><p data-t="note2"></p><p><a href="https://github.com/Valentin-Auger-Laboratoire/cordeuse-raquette" target="_blank" rel="noopener" data-t="repo">Dépôt : captures, calculs et tests ↗</a></p></div>
+      </div>
+    </div>
+  </div>
+  <script src="cordeuse.js"></script>
+  <script>
+  (function () {
+    'use strict';
+    const C = window.Cordeuse, $ = (id) => document.getElementById(id);
+    let lang = 'fr';
+    try { lang = localStorage.getItem('lang') || ((navigator.language || 'fr').toLowerCase().startsWith('fr') ? 'fr' : 'en'); } catch (e) {}
+    const T = {
+      fr: {
+        back: '← Retour au portfolio', eyebrow: "Démo · TP de sciences de l'ingénieur, CPGE TSI (septembre 2024)", title: "Cordeuse de raquette : le réducteur et la boucle d'effort",
+        intro: "Une cordeuse tend la corde d'une raquette à une tension précise, environ 25 kg. Un moteur à courant continu entraîne, par une vis sans fin et deux étages d'engrenages, une chaîne qui tire un chariot ; entre la chaîne et le chariot, un ressort calibré s'écrase, et un potentiomètre mesure cet écrasement : c'est la mesure de la tension. Dans le TP, j'ai repris la grande roue du réducteur sur la maquette numérique pour obtenir un rapport qui donne assez de couple. La démo recalcule ce réducteur et simule la boucle d'effort.",
+        warn: "Valeurs du moteur, du ressort, de la corde, de la vis et du pignon de chaîne SUPPOSÉES (ordres de grandeur, réglables) : seuls les nombres de dents (29, 15 et ≈ 60) viennent du banc. Le sujet du TP n'est pas publié ; tout est recalculé.",
+        capGear: 'Le moto-réducteur (vu de face)', capMech: 'La mise en tension', replay: 'Rejouer',
+        mechHint: "À gauche : la vis (1 filet par défaut) fait tourner les deux roues de 29 dents ; leurs pignons de 15 dents entraînent ensemble la grande roue, qui porte le pignon de chaîne. À droite : la chaîne tire le poussoir, qui écrase le ressort contre le chariot ; le chariot tire la corde. L'écrasement λ du ressort, lu par le potentiomètre, donne la tension : T = K_r·λ.",
+        lgT: 'tension de la corde (N)', lgSet: 'consigne', lgU: 'tension moteur (V)', lgI: 'courant (A)',
+        lgFnom: 'effort tenu au courant nominal (N)', lgV: 'vitesse de chaîne à vide (mm/s × 5)', lgSet2: 'consigne de tension', lgZ: 'selon les dents de la grande roue',
+        zHint: "Plus la grande roue a de dents, plus le rapport de réduction est grand : le moteur fournit plus d'effort sans dépasser son courant nominal, mais la chaîne avance moins vite (le produit effort × vitesse reste constant). Avec trop peu de dents, le moteur ne peut tenir la tension voulue qu'en chauffant. C'est pour cela qu'il fallait revoir la roue.",
+        phT: 'Ma modification sur la maquette numérique',
+        ph1: 'La vis sans fin entraîne deux roues de 29 dents, chacune solidaire d\'un pignon de 15 dents.', ph2: "L'assemblage complet : moteur, vis, les deux étages et la grande roue (en vert).", ph3: "La grande roue que j'ai reprise (sélectionnée) : environ 60 dents, comptées sur cette photo.",
+        alt1: 'Maquette SolidWorks du moto-réducteur : vis sans fin et deux roues de 29 dents', alt2: 'Assemblage SolidWorks complet du moto-réducteur', alt3: 'La grande roue modifiée, sélectionnée dans SolidWorks',
+        phHint: "Photos de mon écran pendant le TP. La maquette numérique est celle fournie avec le banc ; ma part est la grande roue, reprise pour que le rapport de réduction donne le couple voulu. Le fichier modifié n'a pas été conservé.",
+        note1: "Le TP (fait seul) : identifier les chaînes d'énergie et d'information de la cordeuse, calculer le rapport de transmission du moto-réducteur, mesurer la raideur du ressort calibré et construire le modèle de la cordeuse. Deux étages identiques en parallèle partagent l'effort entre deux engrènements et équilibrent les efforts sur la vis.",
+        note2: "Calculs : rapport N = (29 / filets) × (Z / 15) ; vis sans fin : angle d'hélice γ, angle de frottement φ, rendement tan γ / tan(γ + φ), irréversible si γ ≤ φ ; effort = k·I·N·η / r ; corde et ressort en série ; correcteur proportionnel avec saturation à ±12 V ; mesure quantifiée sur 10 bits. Équations résolues pas à pas (0,1 ms), 70 tests.",
+        repo: 'Dépôt : captures, calculs et tests ↗',
+        scen: 'Expériences', sTension: 'Appui sur le bouton : mise en tension', sCut: 'Coupure de courant pendant la tension', sRelease: 'Second appui : retour du chariot', sZ30: 'Grande roue de 30 dents', sTwo: 'Vis à 2 filets, puis coupure',
+        red: 'Réducteur', starts: 'Filets de la vis', zBig: 'Dents de la grande roue', mu: 'Frottement vis / roue', cord: 'Corde et mesure', tset: 'Consigne de tension', kr: 'Raideur du ressort K_r', kc: 'Raideur de la corde', ctrl: 'Commande', kp: 'Gain du correcteur Kp',
+        kN: 'Rapport N', kEta: 'Rendement de la vis', kLock: 'Vis', lockY: 'irréversible', lockN: 'réversible', kFnom: 'Effort nominal', kT95: 'Mise en tension (95 %)', kErr: 'Écart final',
+        iss: { ok: "La tension voulue est atteinte sans dépasser le courant nominal.", weak: "Effort nominal inférieur à la consigne : le moteur dépasse son courant nominal pour tenir la tension, il chauffe.", lock: "Vis irréversible : coupez le courant, la corde reste tendue.", rev: "Vis réversible : à la coupure, la corde fait tourner le moteur à l'envers et se détend.", sens: "Capteur saturé : la tension voulue dépasse ce que le potentiomètre peut mesurer avec ce ressort.", err: 'Écart final du correcteur proportionnel : ', errEnd: ' ; à l\'arrêt, il garde un courant de ', res: 'Résolution de la mesure : ' },
+        sat: 'saturé',
+      },
+      en: {
+        back: '← Back to portfolio', eyebrow: 'Demo · engineering science lab, CPGE TSI (September 2024)', title: 'Racket stringing machine: the gearbox and the force loop',
+        intro: "A stringing machine tensions a racket string to a precise value, about 25 kg. A DC motor drives, through a worm and two gear stages, a chain that pulls a carriage; between the chain and the carriage a calibrated spring is compressed, and a potentiometer measures this compression: that is the tension measurement. In the lab I reworked the large gear of the gearbox on the digital model to get a ratio with enough torque. The demo recomputes this gearbox and simulates the force loop.",
+        warn: 'Motor, spring, string, worm and chain sprocket values are ASSUMED (orders of magnitude, adjustable): only the tooth counts (29, 15 and ≈ 60) come from the bench. The lab sheet is not published; everything is recomputed.',
+        capGear: 'The geared motor (front view)', capMech: 'Tensioning', replay: 'Replay',
+        mechHint: 'Left: the worm (1 start by default) turns the two 29-tooth wheels; their 15-tooth pinions together drive the large wheel, which carries the chain sprocket. Right: the chain pulls the pusher, which compresses the spring against the carriage; the carriage pulls the string. The spring compression λ, read by the potentiometer, gives the tension: T = K_r·λ.',
+        lgT: 'string tension (N)', lgSet: 'setpoint', lgU: 'motor voltage (V)', lgI: 'current (A)',
+        lgFnom: 'force held at rated current (N)', lgV: 'no-load chain speed (mm/s × 5)', lgSet2: 'tension setpoint', lgZ: 'versus large-wheel tooth count',
+        zHint: 'The more teeth on the large wheel, the larger the reduction ratio: the motor delivers more force without exceeding its rated current, but the chain moves more slowly (force × speed stays constant). With too few teeth the motor can only hold the required tension by overheating. That is why the wheel had to be reworked.',
+        phT: 'My change on the digital model',
+        ph1: 'The worm drives two 29-tooth wheels, each fixed to a 15-tooth pinion.', ph2: 'The full assembly: motor, worm, both stages and the large wheel (green).', ph3: 'The large wheel I reworked (selected): about 60 teeth, counted on this photo.',
+        alt1: 'SolidWorks model of the geared motor: worm and two 29-tooth wheels', alt2: 'Full SolidWorks assembly of the geared motor', alt3: 'The modified large wheel, selected in SolidWorks',
+        phHint: 'Photos of my screen during the lab. The digital model is the one supplied with the bench; my part is the large wheel, reworked so that the reduction ratio gives the required torque. The modified file was not kept.',
+        note1: "The lab (done on my own): identify the machine's energy and information chains, compute the gear ratio, measure the calibrated spring stiffness and build the machine model. Two identical stages in parallel share the load between two meshes and balance the forces on the worm.",
+        note2: 'Computation: ratio N = (29 / starts) × (Z / 15); worm: lead angle γ, friction angle φ, efficiency tan γ / tan(γ + φ), self-locking if γ ≤ φ; force = k·I·N·η / r; string and spring in series; proportional controller saturated at ±12 V; 10-bit measurement. Equations stepped at 0.1 ms, 70 tests.',
+        repo: 'Repository: screenshots, calculations and tests ↗',
+        scen: 'Experiments', sTension: 'Button press: tensioning', sCut: 'Power cut while tensioned', sRelease: 'Second press: carriage returns', sZ30: '30-tooth large wheel', sTwo: '2-start worm, then power cut',
+        red: 'Gearbox', starts: 'Worm starts', zBig: 'Large-wheel teeth', mu: 'Worm / wheel friction', cord: 'String and measurement', tset: 'Tension setpoint', kr: 'Spring stiffness K_r', kc: 'String stiffness', ctrl: 'Control', kp: 'Controller gain Kp',
+        kN: 'Ratio N', kEta: 'Worm efficiency', kLock: 'Worm', lockY: 'self-locking', lockN: 'reversible', kFnom: 'Rated force', kT95: 'Tensioning (95 %)', kErr: 'Final error',
+        iss: { ok: 'The required tension is reached without exceeding the rated current.', weak: 'Rated force below the setpoint: the motor exceeds its rated current to hold the tension and overheats.', lock: 'Self-locking worm: cut the power, the string stays tight.', rev: 'Reversible worm: when power is cut the string back-drives the motor and slackens.', sens: 'Sensor saturated: the required tension exceeds what the potentiometer can measure with this spring.', err: 'Final error of the proportional controller: ', errEnd: '; at rest it keeps drawing ', res: 'Measurement resolution: ' },
+        sat: 'saturated',
+      },
+    };
+    const t = (k) => (T[lang][k] !== undefined ? T[lang][k] : T.fr[k]);
+    const fmt = (v, d) => (isFinite(v) ? v.toFixed(d) : '—').replace('.', lang === 'fr' ? ',' : '.');
+    const S = Object.assign({}, C.DEFAULTS), SC = { tension: { t1: 8 }, cut: { t1: 8, cut: 5 }, release: { t1: 10, release: 5 } };
+    let scen = 'tension', sim = null, t0 = null, preOn = 'tension';
+    function seg(box, list, cur, onPick) { const s = document.createElement('div'); s.className = 'seg'; list.forEach(([v, l]) => { const b = document.createElement('button'); b.type = 'button'; b.className = 'btn'; b.textContent = l; b.setAttribute('aria-pressed', String(v) === String(cur)); b.addEventListener('click', () => onPick(v)); s.appendChild(b); }); box.appendChild(s); }
+    function slider(box, label, val, min, max, step, show, onInput) { const d = document.createElement('div'); d.className = 'ctl'; const id = 'r' + Math.random().toString(36).slice(2, 7); d.innerHTML = '<label for="' + id + '">' + label + '</label><output></output><input type="range" id="' + id + '" min="' + min + '" max="' + max + '" step="' + step + '">'; const i = d.querySelector('input'), o = d.querySelector('output'); i.value = val; o.textContent = show(+i.value); i.addEventListener('input', () => { o.textContent = show(+i.value); onInput(+i.value, false); }); i.addEventListener('change', () => onInput(+i.value, true)); box.appendChild(d); }
+    const h3 = (box, txt, first) => { const h = document.createElement('h3'); h.textContent = txt; if (first) h.style.cssText = 'margin-top:0;padding-top:0;border:0'; box.appendChild(h); };
+    const PRE = { tension: [{}, 'tension'], cut: [{}, 'cut'], release: [{}, 'release'], z30: [{ zBig: 30 }, 'tension'], two: [{ starts: 2 }, 'cut'] };
+    function renderCtl() {
+      const box = $('ctl'); box.innerHTML = '';
+      h3(box, t('scen'), true);
+      const sc = document.createElement('div'); sc.className = 'scen';
+      [['tension', 'sTension'], ['cut', 'sCut'], ['release', 'sRelease'], ['z30', 'sZ30'], ['two', 'sTwo']].forEach(([k, l]) => { const b = document.createElement('button'); b.type = 'button'; b.className = 'btn'; b.textContent = t(l); b.setAttribute('aria-pressed', preOn === k); b.addEventListener('click', () => { Object.assign(S, C.DEFAULTS, PRE[k][0]); scen = PRE[k][1]; preOn = k; renderCtl(); run(); }); sc.appendChild(b); });
+      box.appendChild(sc);
+      const free = () => { preOn = null; box.querySelectorAll('.scen .btn').forEach((b) => b.setAttribute('aria-pressed', 'false')); };
+      h3(box, t('red'));
+      seg(box, [[1, '1'], [2, '2']], S.starts, (v) => { S.starts = v; free(); renderCtl(); run(); });
+      slider(box, t('zBig'), S.zBig, 20, 100, 1, (v) => v + (lang === 'fr' ? ' dents' : ' teeth'), (v, fin) => { S.zBig = v; free(); if (fin) run(); else kpis(); });
+      slider(box, t('mu'), S.mu, 0.04, 0.2, 0.01, (v) => fmt(v, 2), (v, fin) => { S.mu = v; free(); if (fin) run(); else kpis(); });
+      h3(box, t('cord'));
+      slider(box, t('tset'), S.Tset, 100, 300, 5, (v) => v + ' N ≈ ' + fmt(v / 9.81, 1) + ' kg', (v, fin) => { S.Tset = v; free(); if (fin) run(); });
+      slider(box, t('kr'), S.Kr, 2, 30, 1, (v) => v + ' N/mm', (v, fin) => { S.Kr = v; free(); if (fin) run(); });
+      slider(box, t('kc'), S.kc, 0.5, 6, 0.1, (v) => fmt(v, 1) + ' N/mm', (v, fin) => { S.kc = v; free(); if (fin) run(); });
+      h3(box, t('ctrl'));
+      slider(box, t('kp'), S.Kp, 0.05, 3, 0.05, (v) => fmt(v, 2) + ' V/N', (v, fin) => { S.Kp = v; free(); if (fin) run(); });
+    }
+    function setup(cv) { const dpr = window.devicePixelRatio || 1, w = cv.clientWidth, h = cv.clientHeight; if (cv.width !== Math.round(w * dpr) || cv.height !== Math.round(h * dpr)) { cv.width = Math.round(w * dpr); cv.height = Math.round(h * dpr); } const c = cv.getContext('2d'); c.setTransform(dpr, 0, 0, dpr, 0, 0); return { c, w, h }; }
+    function run() { sim = C.simulate(S, SC[scen]); sim.theta = [0]; for (let k = 1; k < sim.t.length; k++) sim.theta.push(sim.theta[k - 1] + sim.om[k] * (sim.t[k] - sim.t[k - 1])); t0 = null; kpis(); issues(); drawCharts(); drawZ(); }
+    function kpis() {
+      const d = C.derived(S), kpi = (k, v, u, cls) => '<div class="kpi' + (cls ? ' ' + cls : '') + '"><dt>' + k + '</dt><dd>' + v + (u ? '<small>' + u + '</small>' : '') + '</dd></div>';
+      $('kpis').innerHTML = kpi(t('kN'), fmt(d.N, 1), '', 'main') + kpi(t('kEta'), fmt(d.w.etaD * 100, 0), '%') + kpi(t('kLock'), d.w.selfLocking ? t('lockY') : t('lockN'), '', d.w.selfLocking ? 'good' : 'bad') + kpi(t('kFnom'), fmt(d.Fnom, 0), 'N', d.Fnom >= S.Tset ? 'good' : 'bad') + kpi(t('kT95'), sim && sim.t95 !== null ? fmt(sim.t95, 2) : '—', 's') + kpi(t('kErr'), sim ? fmt(S.Tset - sim.Tend, 1) : '—', 'N');
+    }
+    function issues() {
+      const d = sim.d, L = [];
+      L.push([d.Fnom >= S.Tset ? 'ok' : 'bad', d.Fnom >= S.Tset ? t('iss').ok : t('iss').weak]);
+      L.push([d.w.selfLocking ? 'ok' : 'bad', d.w.selfLocking ? t('iss').lock : t('iss').rev]);
+      if (S.Tset > d.Tsensor) L.push(['bad', t('iss').sens]);
+      const iEnd = sim.i[sim.t.findIndex((x) => x >= (SC[scen].cut || SC[scen].release || 99)) - 1] || sim.i[sim.i.length - 1];
+      L.push(['', t('iss').err + fmt(S.Tset - sim.Tend, 1) + ' N' + t('iss').errEnd + fmt(Math.abs(iEnd), 2) + ' A. ' + t('iss').res + fmt(d.res, 2) + ' N.']);
+      $('iss').innerHTML = L.map(([c, x]) => '<li class="' + c + '">' + x + '</li>').join('');
+    }
+    function chart(cv, series, yMin, yMax, tCur, labels) {
+      const { c, w, h } = setup(cv); c.fillStyle = '#0a0a0b'; c.fillRect(0, 0, w, h);
+      const pl = 40, pb = 20, t1 = sim.t[sim.t.length - 1], X = (x) => pl + (x / t1) * (w - pl - 8), Y = (v) => 8 + (1 - (v - yMin) / (yMax - yMin)) * (h - 8 - pb);
+      c.font = '10px "JetBrains Mono", monospace'; c.fillStyle = '#6c6c70'; c.strokeStyle = '#1e1e21'; c.textAlign = 'right';
+      for (let k = 0; k <= 4; k++) { const v = yMin + ((yMax - yMin) * k) / 4; c.beginPath(); c.moveTo(pl, Y(v)); c.lineTo(w - 8, Y(v)); c.stroke(); c.fillText(fmt(v, 0), pl - 4, Y(v) + 3); }
+      c.textAlign = 'center'; for (let s = 0; s <= t1; s += 2) c.fillText(s + ' s', X(s), h - 5);
+      series.forEach(([arr, col, dash]) => { c.strokeStyle = col; c.lineWidth = 1.6; c.setLineDash(dash ? [4, 3] : []); c.beginPath(); arr.forEach((v, k) => { const x = X(sim.t[k]), y = Y(Math.max(yMin, Math.min(yMax, v))); k ? c.lineTo(x, y) : c.moveTo(x, y); }); c.stroke(); c.setLineDash([]); });
+      if (tCur !== null) { c.strokeStyle = 'rgba(242,242,242,0.5)'; c.beginPath(); c.moveTo(X(tCur), 6); c.lineTo(X(tCur), h - pb); c.stroke(); }
+    }
+    let tCur = 0;
+    function drawCharts() {
+      chart($('cvT'), [[sim.T, '#c8102e'], [sim.t.map(() => S.Tset), '#c9c9cc', true]], 0, Math.max(300, S.Tset * 1.1), tCur);
+      chart($('cvU'), [[sim.U, '#e0a458'], [sim.i, '#4fb3a9']], -12, 16, tCur);
+    }
+    function drawZ() {
+      const { c, w, h } = setup($('cvZ')); c.fillStyle = '#0a0a0b'; c.fillRect(0, 0, w, h);
+      const pl = 44, pb = 22, z0 = 20, z1 = 100, X = (z) => pl + ((z - z0) / (z1 - z0)) * (w - pl - 8), ymax = 800, Y = (v) => 8 + (1 - v / ymax) * (h - 8 - pb);
+      c.font = '10px "JetBrains Mono", monospace'; c.fillStyle = '#6c6c70'; c.strokeStyle = '#1e1e21'; c.textAlign = 'right';
+      for (let k = 0; k <= 4; k++) { const v = (ymax * k) / 4; c.beginPath(); c.moveTo(pl, Y(v)); c.lineTo(w - 8, Y(v)); c.stroke(); c.fillText(fmt(v, 0), pl - 4, Y(v) + 3); }
+      c.textAlign = 'center'; for (let z = 20; z <= 100; z += 10) c.fillText(String(z), X(z), h - 6);
+      const line = (f, col, dash) => { c.strokeStyle = col; c.lineWidth = 1.8; c.setLineDash(dash ? [4, 3] : []); c.beginPath(); for (let z = z0; z <= z1; z++) { const v = f(z); z === z0 ? c.moveTo(X(z), Y(v)) : c.lineTo(X(z), Y(Math.min(ymax, v))); } c.stroke(); c.setLineDash([]); };
+      line((z) => C.derived(Object.assign({}, S, { zBig: z })).Fnom, '#c8102e');
+      line((z) => C.derived(Object.assign({}, S, { zBig: z })).vChain * 5, '#4fb3a9');
+      line(() => S.Tset, '#c9c9cc', true);
+      c.strokeStyle = '#f2f2f2'; c.setLineDash([4, 3]); c.beginPath(); c.moveTo(X(S.zBig), 6); c.lineTo(X(S.zBig), h - pb); c.stroke(); c.setLineDash([]);
+      c.fillStyle = '#9b9b9f'; c.textAlign = 'left'; c.fillText('Z = ' + S.zBig, X(S.zBig) + 4, 18);
+      $('cvZ').onclick = (e) => { const r = e.target.getBoundingClientRect(); S.zBig = Math.round(Math.max(20, Math.min(100, z0 + ((e.clientX - r.left - pl) / (r.width - pl - 8)) * (z1 - z0)))); preOn = null; renderCtl(); run(); };
+    }
+    // ------------------------------------------------------------ dessins animés
+    function gear(c, x, y, r, z, ang, col, edge) {
+      const m = (2 * r) / (z + 2); c.beginPath();
+      for (let k = 0; k <= z * 4; k++) { const a = ang + (k / (z * 4)) * 2 * Math.PI, q = k % 4, rr = q === 0 || q === 3 ? r - 1.25 * m * 1.6 : r; k ? c.lineTo(x + rr * Math.cos(a), y + rr * Math.sin(a)) : c.moveTo(x + rr * Math.cos(a), y + rr * Math.sin(a)); }
+      c.closePath(); c.fillStyle = col; c.fill(); c.strokeStyle = edge; c.lineWidth = 1; c.stroke();
+      c.fillStyle = '#0a0a0b'; c.beginPath(); c.arc(x, y, Math.max(2, r * 0.12), 0, 7); c.fill();
+      c.strokeStyle = edge; c.beginPath(); c.moveTo(x, y); c.lineTo(x + r * 0.6 * Math.cos(ang), y + r * 0.6 * Math.sin(ang)); c.stroke();
+    }
+    function drawGear(k) {
+      const { c, w, h } = setup($('cvGear')); c.fillStyle = '#0a0a0b'; c.fillRect(0, 0, w, h);
+      const th = sim.theta[k], d = sim.d, s = Math.min(w, h) / 300;
+      const cx = w / 2, by = h * 0.62, Rb = Math.min(110, 30 + S.zBig * 1.15) * s, r29 = 40 * s, r15 = r29 * 15 / 29;
+      // grande roue
+      gear(c, cx, by, Rb, S.zBig, -th / d.N, '#5f7f5a', '#9fc29a');
+      // deux étages identiques, symétriques, engrenant sur la grande roue
+      [-1, 1].forEach((sg) => {
+        const a = -Math.PI / 2 + sg * 0.62, dist = Rb + r15, x = cx + dist * Math.cos(a), y = by + dist * Math.sin(a), a29 = (th * S.starts) / 29 * sg;
+        gear(c, x, y, r29, 29, a29, sg < 0 ? '#6c6c70' : '#8a4b55', sg < 0 ? '#b0b0b4' : '#d08a94');
+        gear(c, x, y, r15, 15, a29 + 0.1, sg < 0 ? '#8a8a90' : '#a65d68', '#f2f2f2');
+      });
+      // vis sans fin entre les deux roues de 29 dents
+      const vy = by - (Rb + r15) * Math.cos(0.62) - r29 - 10 * s, vx0 = cx - 70 * s, vx1 = cx + 70 * s, ph = (th / (2 * Math.PI)) % 1;
+      c.fillStyle = '#3a3a3d'; c.fillRect(vx0, vy - 8 * s, vx1 - vx0, 16 * s);
+      c.strokeStyle = '#c9c9cc'; c.lineWidth = 1.2; for (let x = vx0 + ((ph * 14 * s) % (14 * s)); x < vx1; x += 14 * s / S.starts * S.starts) { c.beginPath(); c.moveTo(x, vy - 8 * s); c.lineTo(x + 6 * s, vy + 8 * s); c.stroke(); }
+      c.fillStyle = '#26262a'; c.fillRect(vx1, vy - 14 * s, 50 * s, 28 * s); c.fillStyle = '#9b9b9f'; c.font = 10 * Math.max(1, s * 0.9) + 'px "JetBrains Mono", monospace'; c.textAlign = 'center'; c.fillText('M', vx1 + 25 * s, vy + 4);
+      c.textAlign = 'left'; c.fillText((lang === 'fr' ? 'vis ' : 'worm ') + S.starts + (lang === 'fr' ? ' filet' : ' start') + (S.starts > 1 ? 's' : ''), 8, 16);
+      c.fillText('29 → 15 → ' + S.zBig + '   N = ' + fmt(d.N, 0), 8, h - 10);
+    }
+    function drawMech(k) {
+      const { c, w, h } = setup($('cvMech')); c.fillStyle = '#0a0a0b'; c.fillRect(0, 0, w, h);
+      const T = sim.T[k], mu = sim.mu[k], lam = Math.min(T / S.Kr, S.potStroke), str = T / S.kc;
+      const y = h * 0.45, xA = 20, xS = w - 42, L0 = w * 0.2, Lmin = L0 * 0.35;
+      const strMax = Math.max(40, (Math.max(S.Tset, ...sim.T) * 1.05) / S.kc), sc = (w - xA - 40 - (L0 + 30) - 50) / strMax;
+      const xC = xA + 20 + str * sc, Ls = L0 - (L0 - Lmin) * (lam / S.potStroke), xP = xC + 10 + Ls, xEnd = xP + 16;
+      // raquette (corde fixée à gauche)
+      c.fillStyle = '#3a3a3d'; c.fillRect(xA - 10, y - 40, 10, 80);
+      c.strokeStyle = T > 1 ? '#e0a458' : '#9b9b9f'; c.lineWidth = 2; c.beginPath(); c.moveTo(xA, y); if (T < 1) c.quadraticCurveTo((xA + xC) / 2, y + 12, xC, y); else c.lineTo(xC, y); c.stroke();
+      // chariot (boîtier) avec le ressort et le poussoir à l'intérieur
+      c.fillStyle = '#1d1d20'; c.strokeStyle = '#6c6c70'; c.lineWidth = 1; c.fillRect(xC, y - 26, xEnd - xC, 52); c.strokeRect(xC, y - 26, xEnd - xC, 52);
+      c.strokeStyle = '#c9c9cc'; c.lineWidth = 1.4; c.beginPath(); const n = 10; for (let q = 0; q <= n; q++) { const x = xC + 10 + (Ls * q) / n, yy = y + (q === 0 || q === n ? 0 : q % 2 ? -10 : 10); q ? c.lineTo(x, yy) : c.moveTo(x, yy); } c.stroke();
+      c.fillStyle = '#c8102e'; c.fillRect(xP, y - 18, 8, 36);
+      // chaîne : du poussoir au pignon moteur (droite), retour par le bas
+      const yC = y + 60, rS = (yC - y) / 2;
+      c.strokeStyle = '#6c6c70'; c.lineWidth = 2; c.setLineDash([3, 3]); c.lineDashOffset = -mu * 2; c.beginPath(); c.moveTo(xP + 8, y); c.lineTo(xS, y); c.arc(xS, y + rS, rS, -Math.PI / 2, Math.PI / 2); c.lineTo(xA + 30, yC); c.stroke(); c.setLineDash([]);
+      c.fillStyle = '#4fb3a9'; c.beginPath(); c.arc(xS, y + rS, 7, 0, 7); c.fill();
+      c.fillStyle = '#9b9b9f'; c.font = '11px "JetBrains Mono", monospace'; c.textAlign = 'left';
+      c.fillText('T = ' + fmt(T, 0) + ' N   λ = ' + fmt(lam, 1) + ' mm' + (lam >= S.potStroke - 1e-9 ? ' (' + t('sat') + ')' : ''), 10, 18);
+      c.fillText((lang === 'fr' ? 'corde : +' : 'string: +') + fmt(str, 0) + ' mm', 10, 34);
+      c.fillText((lang === 'fr' ? 'avance de la chaîne ' : 'chain travel ') + fmt(mu, 0) + ' mm', 10, h - 10);
+      c.fillStyle = '#6c6c70'; c.font = '10px "JetBrains Mono", monospace'; c.fillText(lang === 'fr' ? 'raquette' : 'racket', xA - 10, y + 54); c.fillText(lang === 'fr' ? 'chariot + ressort' : 'carriage + spring', xC, y - 32); c.textAlign = 'right'; c.fillText(lang === 'fr' ? 'moteur' : 'motor', xS + 10, y + 2 * rS + 18);
+    }
+    function loop(now) {
+      if (sim) {
+        if (t0 === null) t0 = now;
+        const tt = Math.min(sim.t[sim.t.length - 1], (now - t0) / 1000);
+        let k = 0; while (k < sim.t.length - 1 && sim.t[k + 1] <= tt) k++;
+        drawGear(k); drawMech(k); tCur = sim.t[k]; drawCharts();
+        $('clk').textContent = 't = ' + fmt(tt, 1) + ' s';
+      }
+      requestAnimationFrame(loop);
+    }
+    $('play').addEventListener('click', () => { t0 = null; });
+    function setLang(l) {
+      lang = l; document.documentElement.lang = l;
+      document.querySelectorAll('[data-t]').forEach((el) => { const v = T[l][el.dataset.t]; if (typeof v === 'string') el.textContent = v; });
+      document.querySelectorAll('[data-alt]').forEach((el) => { const v = T[l][el.dataset.alt]; if (typeof v === 'string') el.alt = v; });
+      document.querySelectorAll('.lang button').forEach((b) => b.setAttribute('aria-pressed', b.dataset.lang === l));
+      try { localStorage.setItem('lang', l); } catch (e) {}
+      renderCtl(); if (sim) { kpis(); issues(); drawZ(); }
+    }
+    document.querySelectorAll('.lang button').forEach((b) => b.addEventListener('click', () => setLang(b.dataset.lang)));
+    window.addEventListener('resize', () => { if (sim) drawZ(); });
+    setLang(lang); run();
+    requestAnimationFrame(loop);
+  })();
+  </script>
+</body>
+</html>
