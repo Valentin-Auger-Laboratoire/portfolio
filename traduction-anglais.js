@@ -122,7 +122,7 @@ window.I18N_EN = {
   'p29.date': 'Nov 2026',
   'p29.title': 'Heartbeat detection on real ECGs (Pan-Tompkins)',
   'p29.desc': "Analysis of real electrocardiograms from the MIT-BIH database (PhysioNet) with a hand-written Pan-Tompkins algorithm: band-pass filter, derivative, squaring, integration and adaptive thresholds, each step displayed. Detected beats are compared with the cardiologists' annotations: on record 100 (30 minutes, 2,273 beats), 100% sensitivity and positive predictive value, R peak placed within 1.6 ms, and every premature beat flagged. Heart rate, variability (SDNN, RMSSD), tachogram, Poincaré plot and a synthetic ECG generator to test noise. Teaching tool, not a medical device.",
-  'p45.date': 'CPGE TSI · 2026',
+  'p45.date': '2024',
   'p45.title': 'Pitch-axis drone: model, identify, control',
   'p45.desc': "Based on the single-axis drone bench studied in a CPGE lab (a pivoting arm with a propeller at each end), rebuilt from scratch. Physical model (thrust kT·ω², first-order motors), on-board sensors and their fusion (drifting gyro, noisy accelerometer, complementary filter, Kalman filter estimating the bias), PID, position → speed cascade as on the bench and LQR state feedback, Bode diagram with margins checked in simulation, model identification by least squares and instrumental variables, disturbances (gust, added mass, damaged propeller). 43 tests.",
   'p45.img': "Simulated pitch-axis drone bench: two-propeller arm tracking a sinusoidal setpoint, angle response and sensor fusion (gyro, accelerometer, Kalman filter)",
