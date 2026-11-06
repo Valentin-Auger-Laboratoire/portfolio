@@ -9,6 +9,7 @@ window.I18N_EN = {
   'meta.description': 'Portfolio of Valentin Auger, engineering student: networks, artificial intelligence, electronics and health.',
 
   'nav.menu': 'Open menu',
+  'nav.home': 'Home',
   'nav.about': 'About',
   'nav.projects': 'Projects',
   'nav.skills': 'Skills',
