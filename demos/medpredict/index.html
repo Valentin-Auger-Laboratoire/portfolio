@@ -1,0 +1,183 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>MedPredict : fiabilité</title>
+  <meta name="description" content="Fiabilité d'un parc de dispositifs médicaux (loi de Weibull avec appareils encore en service) et âge optimal de remplacement préventif.">
+  <meta property="og:type" content="website">
+  <meta property="og:url" content="https://valentin-auger-laboratoire.github.io/portfolio/demos/medpredict/">
+  <meta property="og:title" content="MedPredict : fiabilité et maintenance des dispositifs médicaux">
+  <meta property="og:description" content="Fiabilité d'un parc de dispositifs médicaux (loi de Weibull avec appareils encore en service) et âge optimal de remplacement préventif.">
+  <meta property="og:image" content="https://valentin-auger-laboratoire.github.io/portfolio/assets/projets/medpredict.jpg">
+  <meta property="og:image:width" content="960">
+  <meta property="og:image:height" content="600">
+  <meta name="twitter:card" content="summary_large_image">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="../_commun/commun.css">
+</head>
+<body>
+  <div class="wrap">
+    <div class="top">
+      <a class="back" href="../../index.html#projets" data-t="back">← Retour au portfolio</a>
+      <div class="lang" role="group" aria-label="Langue / Language"><button type="button" data-lang="fr">FR</button><button type="button" data-lang="en">EN</button></div>
+    </div>
+    <p class="eyebrow" data-t="eyebrow"></p>
+    <h1 data-t="title"></h1>
+    <p class="intro" data-t="intro"></p>
+    <p class="warnbox" data-t="warn"></p>
+    <div class="grid">
+      <div class="stack">
+        <div class="panel">
+          <h2 data-t="srcT"></h2>
+          <div class="scen">
+            <button type="button" class="btn" data-src="exemple" data-t="srcEx"></button>
+            <button type="button" class="btn" data-src="genere" data-t="srcGen"></button>
+            <button type="button" class="btn" data-src="csv" data-t="srcCsv"></button>
+          </div>
+          <div id="gen">
+            <div class="ctl"><label for="vb" data-t="vb"></label><output id="ovb"></output><input type="range" id="vb" min="0.6" max="5" step="0.1" value="2.3"></div>
+            <div class="ctl"><label for="ve" data-t="ve"></label><output id="ove"></output><input type="range" id="ve" min="1000" max="10000" step="100" value="4200"></div>
+            <div class="ctl"><label for="vn" data-t="vn"></label><output id="ovn"></output><input type="range" id="vn" min="10" max="400" step="10" value="40"></div>
+            <div class="ctl"><label for="vf" data-t="vf"></label><output id="ovf"></output><input type="range" id="vf" min="1000" max="20000" step="500" value="9000"></div>
+            <button type="button" class="btn" id="tirage" data-t="tirage"></button>
+          </div>
+          <div id="csvbox"><textarea id="csv" spellcheck="false" aria-label="CSV"></textarea><p class="hint" data-t="csvHint"></p></div>
+          <label class="check"><input type="checkbox" id="oubli"> <span data-t="oubli"></span></label>
+          <h3 data-t="coutT"></h3>
+          <div class="ctl"><label for="cp" data-t="cp"></label><output id="ocp"></output><input type="range" id="cp" min="20" max="1000" step="10" value="150"></div>
+          <div class="ctl"><label for="cc" data-t="cc"></label><output id="occ"></output><input type="range" id="cc" min="100" max="5000" step="50" value="1200"></div>
+          <div class="ctl"><label for="mttr" data-t="mttr"></label><output id="omttr"></output><input type="range" id="mttr" min="1" max="72" step="1" value="6"></div>
+        </div>
+      </div>
+      <div class="stack">
+        <div class="panel"><dl class="kpis" id="kpis"></dl><p class="hint" id="verdict"></p></div>
+        <div class="panel row2">
+          <div class="chart"><p><span><i style="background:var(--line)"></i><span data-t="lgKM"></span></span><span><i style="background:var(--accent)"></i><span data-t="lgW"></span></span></p><canvas id="cvR"></canvas></div>
+          <div class="chart"><p><span><i style="background:var(--line)"></i><span data-t="lgC"></span></span><span><i style="background:#6c6c70"></i><span data-t="lgSans"></span></span></p><canvas id="cvC"></canvas></div>
+        </div>
+        <div class="panel row2">
+          <div class="chart"><p><span><i style="background:var(--warn)"></i><span data-t="lgH"></span></span></p><canvas id="cvH"></canvas></div>
+          <div class="note"><h2 data-t="howT"></h2><p data-t="how1"></p><p data-t="how2"></p><p data-t="how3"></p><p><a href="https://github.com/Valentin-Auger-Laboratoire/MedPredict-Reliability-Estimateur-de-Maintenance-et-de-Fiabilit-des-Dispositifs" target="_blank" rel="noopener" data-t="repo"></a></p></div>
+        </div>
+      </div>
+    </div>
+  </div>
+  <script src="../_commun/commun.js"></script>
+  <script src="medpredict.js"></script>
+  <script>
+  (function () {
+    'use strict';
+    const M = window.MedPredict, C = window.Commun, $ = (id) => document.getElementById(id);
+    const T = {
+      fr: {
+        back: '← Retour au portfolio', eyebrow: 'Démo · projet personnel en Python (mars 2026)', title: 'MedPredict : fiabilité et maintenance des dispositifs médicaux',
+        intro: "Un service biomédical suit son parc d'appareils : certains sont tombés en panne, d'autres fonctionnent encore. À partir de cet historique, on estime comment les appareils vieillissent (loi de Weibull), leur durée moyenne de bon fonctionnement, et l'âge auquel il vaut mieux les remplacer avant la panne.",
+        warn: "Parc et coûts fictifs. La démo reprend exactement les calculs du code Python du dépôt (mêmes résultats à 10⁻¹² près sur le parc d'exemple). Outil d'étude, pas un logiciel de gestion de parc biomédical.",
+        srcT: 'Données', srcEx: "Parc d'exemple : 40 pousse-seringues", srcGen: 'Générer un parc', srcCsv: 'Coller mon propre CSV',
+        vb: 'β réel (forme)', ve: 'η réel (échelle, h)', vn: "Nombre d'appareils", vf: "Ancienneté max. d'un appareil (h)", tirage: 'Nouveau tirage',
+        csvHint: 'Format : appareil, heures, etat (panne ou en_service). Séparateur virgule, point-virgule ou tabulation.',
+        oubli: "Oublier les appareils encore en service (erreur fréquente)",
+        coutT: 'Coûts', cp: 'Remplacement préventif (€)', cc: 'Panne en service (€)', mttr: 'Durée de réparation (h)',
+        kN: 'Appareils', kBeta: 'β estimé', kEta: 'η estimé', kMtbf: 'MTBF', kB10: 'B10', kDispo: 'Disponibilité', kT: 'Préventif conseillé', kGain: 'Économie',
+        pannes: 'pannes', h: 'h', jeunesse: "β < 1 : défauts de jeunesse (le taux de panne baisse avec l'âge).", aleatoire: 'β ≈ 1 : pannes au hasard (taux constant).', usure: "β > 1 : usure (le taux de panne augmente avec l'âge).",
+        pasRentable: "Le remplacement préventif n'est pas rentable ici : avec des pannes de jeunesse ou au hasard, remplacer un appareil qui marche ne fait pas baisser le risque.",
+        biais: "Attention : en oubliant les {n} appareils encore en service, on sous-estime leur durée de vie (η {e1} h au lieu de {e2} h).",
+        lgKM: 'historique (Kaplan-Meier)', lgW: 'loi de Weibull ajustée', lgC: 'coût avec préventif à l\'âge T', lgSans: 'sans préventif', lgH: 'taux de défaillance h(t) (pannes par 1 000 h)',
+        axH: 'heures', axR: 'R(t)', axC: '€ / 1 000 h', axT: 'âge de remplacement T (h)', axHz: '/ 1 000 h',
+        howT: 'Comment c\'est calculé', how1: "Maximum de vraisemblance avec censure à droite : les appareils encore en service comptent comme « au moins aussi vieux que leur âge actuel ». La courbe de Kaplan-Meier, tirée directement de l'historique, sert à juger si la loi de Weibull colle.",
+        how2: "MTBF = η·Γ(1 + 1/β) ; B10 = âge où 10 % du parc est tombé en panne ; disponibilité = MTBF / (MTBF + durée de réparation).",
+        how3: "Coût par heure en remplaçant à l'âge T (ou à la panne si elle arrive avant) : C(T) = [Cp·R(T) + Cc·(1 − R(T))] / ∫₀ᵀ R(t) dt, minimisé par une grille puis une section dorée.",
+        repo: 'Code Python, tests et explications sur GitHub ↗', csvErr: 'lignes ignorées : ', peu: 'Il faut au moins deux pannes pour estimer la loi.',
+      },
+      en: {
+        back: '← Back to portfolio', eyebrow: 'Demo · personal project in Python (March 2026)', title: 'MedPredict: reliability and maintenance of medical devices',
+        intro: 'A biomedical department tracks its device fleet: some units have failed, others are still running. From that history we estimate how devices age (Weibull law), their mean time between failures, and the age at which it is better to replace them before they fail.',
+        warn: 'Fleet and costs are fictitious. The demo runs exactly the same computations as the Python code in the repository (same results to 10⁻¹² on the sample fleet). Study tool, not biomedical asset-management software.',
+        srcT: 'Data', srcEx: 'Sample fleet: 40 syringe pumps', srcGen: 'Generate a fleet', srcCsv: 'Paste my own CSV',
+        vb: 'true β (shape)', ve: 'true η (scale, h)', vn: 'Number of devices', vf: 'Max. device age (h)', tirage: 'New draw',
+        csvHint: 'Format: device, hours, state (panne/failed or en_service/running). Comma, semicolon or tab separated.',
+        oubli: 'Forget the devices still running (common mistake)',
+        coutT: 'Costs', cp: 'Preventive replacement (€)', cc: 'Failure in service (€)', mttr: 'Repair time (h)',
+        kN: 'Devices', kBeta: 'estimated β', kEta: 'estimated η', kMtbf: 'MTBF', kB10: 'B10', kDispo: 'Availability', kT: 'Advised replacement', kGain: 'Saving',
+        pannes: 'failures', h: 'h', jeunesse: 'β < 1: infant mortality (failure rate falls with age).', aleatoire: 'β ≈ 1: random failures (constant rate).', usure: 'β > 1: wear-out (failure rate rises with age).',
+        pasRentable: 'Preventive replacement does not pay off here: with infant-mortality or random failures, replacing a working device does not reduce the risk.',
+        biais: 'Warning: by forgetting the {n} devices still running, their life is underestimated (η {e1} h instead of {e2} h).',
+        lgKM: 'history (Kaplan-Meier)', lgW: 'fitted Weibull law', lgC: 'cost with replacement at age T', lgSans: 'no preventive replacement', lgH: 'failure rate h(t) (failures per 1,000 h)',
+        axH: 'hours', axR: 'R(t)', axC: '€ / 1,000 h', axT: 'replacement age T (h)', axHz: '/ 1,000 h',
+        howT: 'How it is computed', how1: 'Maximum likelihood with right-censoring: running devices count as "at least as old as their current age". The Kaplan-Meier curve, taken directly from the history, shows whether the Weibull law fits.',
+        how2: 'MTBF = η·Γ(1 + 1/β); B10 = age at which 10% of the fleet has failed; availability = MTBF / (MTBF + repair time).',
+        how3: 'Cost per hour when replacing at age T (or at failure if earlier): C(T) = [Cp·R(T) + Cc·(1 − R(T))] / ∫₀ᵀ R(t) dt, minimised by a grid then a golden-section search.',
+        repo: 'Python code, tests and explanations on GitHub ↗', csvErr: 'ignored lines: ', peu: 'At least two failures are needed to fit the law.',
+      },
+    };
+    let src = 'exemple', graine = 2026, donnees = null;
+    const L = C.Langue(T, () => maj());
+    const nf = (x, d) => C.nf(x, d, L.lang);
+    $('csv').value = M.EXEMPLE;
+
+    function lireDonnees() {
+      if (src === 'exemple') return M.lireCSV(M.EXEMPLE);
+      if (src === 'csv') return M.lireCSV($('csv').value);
+      const g = M.genererParc(+$('vn').value, +$('vb').value, +$('ve').value, +$('vf').value, graine);
+      return { durees: g.durees, panne: g.panne, erreurs: [] };
+    }
+
+    function maj() {
+      document.querySelectorAll('[data-src]').forEach((b) => b.setAttribute('aria-pressed', String(b.dataset.src === src)));
+      $('gen').style.display = src === 'genere' ? '' : 'none';
+      $('csvbox').style.display = src === 'csv' ? '' : 'none';
+      [['vb', 1], ['ve', 0], ['vn', 0], ['vf', 0], ['cp', 0], ['cc', 0], ['mttr', 0]].forEach(([k, d]) => { $('o' + k).textContent = nf(+$(k).value, d); });
+      donnees = lireDonnees();
+      let { durees, panne } = donnees;
+      const enService = panne.filter((p) => !p).length;
+      let f, fComplet = null;
+      try {
+        fComplet = M.ajusterWeibull(durees, panne);
+        if ($('oubli').checked) {
+          const d2 = durees.filter((_, i) => panne[i]);
+          f = M.ajusterWeibull(d2, d2.map(() => true));
+        } else f = fComplet;
+      } catch (e) { $('kpis').innerHTML = ''; $('verdict').textContent = T[L.lang].peu; return; }
+      const cp = +$('cp').value, cc = +$('cc').value, mttr = +$('mttr').value;
+      const m = M.mtbf(f.beta, f.eta), opt = M.intervalleOptimal(f.beta, f.eta, cp, cc), t = L.t;
+      const kpi = (k, v, u, cls) => `<div class="kpi ${cls || ''}"><dt>${t(k)}</dt><dd>${v}${u ? `<small>${u}</small>` : ''}</dd></div>`;
+      $('kpis').innerHTML = kpi('kN', durees.length, `${panne.filter(Boolean).length} ${t('pannes')}`) + kpi('kBeta', nf(f.beta, 2)) + kpi('kEta', nf(f.eta, 0), 'h')
+        + kpi('kMtbf', nf(m, 0), 'h') + kpi('kB10', nf(M.dureeBp(10, f.beta, f.eta), 0), 'h') + kpi('kDispo', nf(M.disponibilite(m, mttr) * 100, 2), '%')
+        + (opt ? kpi('kT', nf(opt.T, 0), 'h', 'good') + kpi('kGain', nf((1 - opt.cout / opt.sans) * 100, 0), '%', 'good') : kpi('kT', '—', '', 'mid'));
+      let v = t(M.regime(f.beta));
+      if (!opt) v += ' ' + t('pasRentable');
+      if ($('oubli').checked && enService) v += ' ' + t('biais').replace('{n}', enService).replace('{e1}', nf(f.eta, 0)).replace('{e2}', nf(fComplet.eta, 0));
+      if (donnees.erreurs && donnees.erreurs.length) v += ` (${t('csvErr')}${donnees.erreurs.join(', ')})`;
+      $('verdict').textContent = v;
+      // graphiques
+      const xmax = Math.max(1.6 * f.eta, Math.max(...durees) * 1.05);
+      const xs = Array.from({ length: 300 }, (_, i) => i * xmax / 299);
+      const km = M.kaplanMeier(durees, panne);
+      C.graphique($('cvR'), { xmin: 0, xmax, ymin: 0, ymax: 1.02, xlabel: t('axH'), ylabel: t('axR'),
+        series: [{ x: [0, ...km.xs, xmax], y: [1, ...km.ys, km.ys.length ? km.ys[km.ys.length - 1] : 1], color: '#c9c9cc', step: true },
+          { x: xs, y: xs.map((x) => M.fiabilite(x, f.beta, f.eta)), color: '#c8102e', width: 2 }] });
+      const Ts = Array.from({ length: 200 }, (_, i) => (0.05 + i * 1.95 / 199) * f.eta);
+      const cs = Ts.map((x) => M.coutHoraire(x, f.beta, f.eta, cp, cc) * 1000);
+      const sans = cc / m * 1000;
+      const ymax = Math.min(Math.max(...cs), sans * 3);
+      C.graphique($('cvC'), { xmin: 0, xmax: Ts[Ts.length - 1], ymin: 0, ymax: ymax * 1.05, xlabel: t('axT'), ylabel: t('axC'),
+        series: [{ x: Ts, y: cs, color: '#c9c9cc', width: 2 }], hlignes: [{ y: sans, color: '#6c6c70', dash: [5, 4] }],
+        marques: opt ? [{ x: opt.T, y: opt.cout * 1000, color: '#c8102e' }] : [] });
+      const hz = xs.slice(1).map((x) => M.tauxDefaillance(x, f.beta, f.eta) * 1000);
+      C.graphique($('cvH'), { xmin: 0, xmax, ymin: 0, ymax: Math.min(Math.max(...hz), 20 * M.tauxDefaillance(f.eta, f.beta, f.eta) * 1000) * 1.05 || 1, xlabel: t('axH'), ylabel: t('axHz'),
+        series: [{ x: xs.slice(1), y: hz, color: '#e0a458', width: 2 }] });
+    }
+
+    document.querySelectorAll('[data-src]').forEach((b) => b.addEventListener('click', () => { src = b.dataset.src; maj(); }));
+    ['vb', 've', 'vn', 'vf', 'cp', 'cc', 'mttr', 'oubli'].forEach((k) => $(k).addEventListener('input', maj));
+    $('csv').addEventListener('input', maj);
+    $('tirage').addEventListener('click', () => { graine++; maj(); });
+    window.addEventListener('resize', maj);
+    L.appliquer(L.lang);
+  })();
+  </script>
+</body>
+</html>
