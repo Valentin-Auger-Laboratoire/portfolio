@@ -1,0 +1,216 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>VitalWatch : monitoring</title>
+  <meta name="description" content="Monitoring patient simulé : capteur connecté, réseau imparfait, alarmes fiables et score NEWS2.">
+  <meta property="og:type" content="website">
+  <meta property="og:url" content="https://valentin-auger-laboratoire.github.io/portfolio/demos/vitalwatch/">
+  <meta property="og:title" content="VitalWatch : monitoring patient connecté et système d'alerte">
+  <meta property="og:description" content="Monitoring patient simulé : capteur connecté, réseau imparfait, alarmes fiables et score NEWS2.">
+  <meta property="og:image" content="https://valentin-auger-laboratoire.github.io/portfolio/assets/projets/vitalwatch.jpg">
+  <meta property="og:image:width" content="960">
+  <meta property="og:image:height" content="600">
+  <meta name="twitter:card" content="summary_large_image">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="../_commun/commun.css">
+  <style>
+    .ecran { display: grid; grid-template-columns: repeat(6, minmax(0, 1fr)); gap: 8px; background: #050506; border: 1px solid var(--border-hi); border-radius: 8px; padding: 10px; }
+    .cst { border: 1px solid #1d1d20; border-radius: 6px; padding: 8px 10px; min-width: 0; }
+    .cst b { display: block; font: 500 0.68rem var(--mono); color: var(--dim); }
+    .cst span { font: 600 1.7rem var(--mono); font-variant-numeric: tabular-nums; }
+    .cst small { font: 0.7rem var(--mono); color: var(--muted); margin-left: 4px; }
+    .cst.alarme { border-color: var(--accent); background: #2a0a10; } .cst.alarme span { color: #ff6b7a; }
+    .cst.art span { color: var(--warn); }
+    .fc span { color: #7bd389; } .spo2 span { color: #8ab4ff; } .fr span { color: #f2e27a; } .pas span { color: #ff9a6b; } .temp span { color: #e8e8ea; } .news span { color: #e8e8ea; }
+    .news.eleve { border-color: var(--accent); } .news.eleve span { color: #ff6b7a; } .news.moyen span, .news.basmoyen span { color: var(--warn); }
+    .lecture { display: flex; gap: 10px; align-items: center; flex-wrap: wrap; margin-top: 10px; font: 0.8rem var(--mono); color: var(--dim); }
+    .lecture input[type=range] { flex: 1; min-width: 160px; accent-color: var(--accent); }
+    @media (max-width: 900px) { .ecran { grid-template-columns: repeat(3, minmax(0, 1fr)); } }
+  </style>
+</head>
+<body>
+  <div class="wrap">
+    <div class="top">
+      <a class="back" href="../../index.html#projets" data-t="back">← Retour au portfolio</a>
+      <div class="lang" role="group" aria-label="Langue / Language"><button type="button" data-lang="fr">FR</button><button type="button" data-lang="en">EN</button></div>
+    </div>
+    <p class="eyebrow" data-t="eyebrow"></p>
+    <h1 data-t="title"></h1>
+    <p class="intro" data-t="intro"></p>
+    <p class="warnbox" data-t="warn"></p>
+    <div class="grid">
+      <div class="stack">
+        <div class="panel">
+          <h2 data-t="scT"></h2>
+          <div class="scen">
+            <button type="button" class="btn" data-sc="stable" data-t="sStable"></button>
+            <button type="button" class="btn" data-sc="sepsis" data-t="sSepsis"></button>
+            <button type="button" class="btn" data-sc="desaturation" data-t="sDesat"></button>
+            <button type="button" class="btn" data-sc="capteur" data-t="sCapteur"></button>
+            <button type="button" class="btn" data-sc="reseau" data-t="sReseau"></button>
+            <button type="button" class="btn" data-sc="conscience" data-t="sConsc"></button>
+          </div>
+          <h3 data-t="netT"></h3>
+          <div class="ctl"><label for="perte" data-t="perte"></label><output id="operte"></output><input type="range" id="perte" min="0" max="0.4" step="0.01"></div>
+          <div class="ctl"><label for="coupure" data-t="coupure"></label><output id="ocoupure"></output><input type="range" id="coupure" min="0" max="600" step="10"></div>
+          <h3 data-t="alT"></h3>
+          <div class="ctl"><label for="persist" data-t="persist"></label><output id="opersist"></output><input type="range" id="persist" min="0" max="120" step="10" value="30"></div>
+          <label class="check"><input type="checkbox" id="hyst" checked> <span data-t="hystL"></span></label>
+          <label class="check"><input type="checkbox" id="art" checked> <span data-t="artL"></span></label>
+        </div>
+      </div>
+      <div class="stack">
+        <div class="panel">
+          <div class="ecran" id="ecran"></div>
+          <div class="lecture"><button type="button" class="btn primary" id="play"></button><input type="range" id="tps" min="0" max="21590" step="10" aria-label="temps"><span id="horloge"></span></div>
+        </div>
+        <div class="panel"><dl class="kpis" id="kpis"></dl></div>
+        <div class="panel">
+          <div class="chart"><p><span><i style="background:#7bd389"></i>FC</span><span><i style="background:#f2e27a"></i>FR</span><span><i style="background:#ff9a6b"></i>PAS</span><span><i style="background:#8ab4ff"></i>SpO2</span><span data-t="lgAl"></span></p><canvas id="cvV"></canvas></div>
+          <div class="chart" style="margin-top:10px"><p><span data-t="lgNews"></span></p><canvas id="cvN" style="height:150px"></canvas></div>
+        </div>
+        <div class="panel row2">
+          <div><h2 data-t="jT"></h2><div class="log" id="journal"></div></div>
+          <div class="note"><h2 data-t="howT"></h2><p data-t="how1"></p><p data-t="how2"></p><p data-t="how3"></p><p><a href="https://github.com/Valentin-Auger-Laboratoire/VitalWatch-IoT-Simulateur-de-Monitoring-Patient-et-Syst-me-d-Alerte-Critique" target="_blank" rel="noopener" data-t="repo"></a></p></div>
+        </div>
+      </div>
+    </div>
+  </div>
+  <script src="../_commun/commun.js"></script>
+  <script src="vitalwatch.js"></script>
+  <script>
+  (function () {
+    'use strict';
+    const V = window.VitalWatch, C = window.Commun, $ = (id) => document.getElementById(id), DUREE = 6 * 3600;
+    const T = {
+      fr: {
+        back: '← Retour au portfolio', eyebrow: 'Démo · projet personnel en Python (mars 2026)', title: 'VitalWatch : monitoring patient connecté et système d\'alerte',
+        intro: "Un capteur au lit du patient envoie ses constantes toutes les 10 secondes au poste de soins, à travers un réseau qui perd, retarde et mélange des messages. Le moniteur doit déclencher les bonnes alarmes : ni trop (l'équipe finit par ne plus les écouter), ni trop peu. La démo rejoue 6 heures de surveillance.",
+        warn: 'Patient, capteur et réseau simulés ; seuils indicatifs. Même logique que le code Python du dépôt. Projet d\'étude, pas un dispositif médical.',
+        scT: 'Scénarios (6 h)', sStable: 'Patient stable', sSepsis: 'Sepsis qui s\'installe', sDesat: 'Désaturation', sCapteur: 'Oxymètre qui glisse du doigt', sReseau: 'Réseau dégradé', sConsc: 'Perte de conscience (score V)',
+        netT: 'Réseau', perte: 'Messages perdus', coupure: 'Coupure à 2 h (s)', alT: 'Alarmes', persist: 'Persistance avant alarme (s)', hystL: 'Hystérésis (marge avant la fin d\'alarme)', artL: 'Reconnaître les artefacts d\'oxymètre',
+        play: 'Lecture', pause: 'Pause',
+        kEmis: 'Mesures émises', kRecu: 'Reçues', kPerdu: 'Déclarées perdues', kCli: 'Alarmes cliniques', kTech: 'Alarmes techniques', kNews: 'NEWS2 max.',
+        lgAl: 'pointillés rouges : alarmes cliniques', lgNews: 'Score NEWS2 toutes les 5 min (orange : niveau moyen, rouge : élevé)', axH: 'h',
+        jT: 'Journal du poste de soins', vide: 'Aucune alerte pour l\'instant.',
+        alarme: 'ALARME {p} {s} ({v})', finAlarme: "fin d'alarme {p} ({v})", haut: 'trop haute', bas: 'trop basse', liaisonPerdue: 'liaison perdue ({v} s sans mesure)', liaisonOk: 'liaison rétablie',
+        capteur: 'oxymètre : signal aberrant, vérifier le capteur', capteurOk: 'oxymètre : signal correct', news: 'NEWS2 = {v} : niveau de réponse {n}',
+        aucun: 'aucun', bas_: 'bas', basmoyen: 'bas-moyen', moyen: 'moyen', eleve: 'élevé',
+        howT: "Comment c'est calculé", how1: 'Les messages sont remis dans l\'ordre grâce à leur numéro ; un trou qui dure plus de 30 s est compté comme perdu. Sans message pendant 60 s, alarme technique « liaison perdue ».',
+        how2: "Une alarme de seuil ne sonne que si la condition dure assez longtemps (persistance), et ne s'arrête qu'une fois revenue dans la zone normale avec une marge (hystérésis). Essayez de tout désactiver dans le scénario « réseau dégradé » ou « désaturation ».",
+        how3: 'NEWS2 (Royal College of Physicians, 2017) toutes les 5 minutes, sur les médianes des 5 dernières minutes. Dans le sepsis, il passe au niveau élevé bien avant la première alarme de seuil, parce qu\'il additionne plusieurs constantes un peu anormales.',
+        repo: 'Code Python, tests et explications sur GitHub ↗', alerte: 'Conscience',
+      },
+      en: {
+        back: '← Back to portfolio', eyebrow: 'Demo · personal project in Python (March 2026)', title: 'VitalWatch: connected patient monitoring and alert system',
+        intro: 'A bedside sensor sends vital signs to the nursing station every 10 seconds, through a network that loses, delays and reorders messages. The monitor must raise the right alarms: not too many (the team stops listening), not too few. The demo replays 6 hours of monitoring.',
+        warn: 'Simulated patient, sensor and network; indicative thresholds. Same logic as the Python code in the repository. Study project, not a medical device.',
+        scT: 'Scenarios (6 h)', sStable: 'Stable patient', sSepsis: 'Developing sepsis', sDesat: 'Desaturation', sCapteur: 'Oximeter slipping off the finger', sReseau: 'Degraded network', sConsc: 'Loss of consciousness (V score)',
+        netT: 'Network', perte: 'Lost messages', coupure: 'Outage at 2 h (s)', alT: 'Alarms', persist: 'Persistence before alarm (s)', hystL: 'Hysteresis (margin before alarm ends)', artL: 'Recognise oximeter artefacts',
+        play: 'Play', pause: 'Pause',
+        kEmis: 'Readings sent', kRecu: 'Received', kPerdu: 'Declared lost', kCli: 'Clinical alarms', kTech: 'Technical alarms', kNews: 'Max NEWS2',
+        lgAl: 'red dashes: clinical alarms', lgNews: 'NEWS2 every 5 min (orange: medium level, red: high)', axH: 'h',
+        jT: 'Nursing-station log', vide: 'No alert yet.',
+        alarme: 'ALARM {p} {s} ({v})', finAlarme: 'alarm ended {p} ({v})', haut: 'too high', bas: 'too low', liaisonPerdue: 'link lost ({v} s without readings)', liaisonOk: 'link restored',
+        capteur: 'oximeter: implausible signal, check the sensor', capteurOk: 'oximeter: signal OK', news: 'NEWS2 = {v}: response level {n}',
+        aucun: 'none', bas_: 'low', basmoyen: 'low-medium', moyen: 'medium', eleve: 'high',
+        howT: 'How it is computed', how1: 'Messages are put back in order using their sequence number; a gap lasting more than 30 s is counted as lost. With no message for 60 s, technical alarm "link lost".',
+        how2: 'A threshold alarm only rings if the condition lasts long enough (persistence), and only ends once back in the normal range with a margin (hysteresis). Try disabling everything in the "degraded network" or "desaturation" scenario.',
+        how3: 'NEWS2 (Royal College of Physicians, 2017) every 5 minutes, on the medians of the last 5 minutes. In sepsis it reaches the high level well before the first threshold alarm, because it adds up several slightly abnormal signs.',
+        repo: 'Python code, tests and explanations on GitHub ↗', alerte: 'Consciousness',
+      },
+    };
+    const SC = {
+      stable: { capteur: {}, perte: 0.02, coupure: 0 }, sepsis: { capteur: { scenario: 'sepsis' }, perte: 0.02, coupure: 0 },
+      desaturation: { capteur: { scenario: 'desaturation' }, perte: 0.02, coupure: 0 }, capteur: { capteur: { decroche: [[5400, 90], [9000, 8]] }, perte: 0.02, coupure: 0 },
+      reseau: { capteur: {}, perte: 0.1, coupure: 180 }, conscience: { capteur: { consciencePerdueA: 3600 }, perte: 0.02, coupure: 0 },
+    };
+    let sc = 'sepsis', mon = null, msgs = null, enLecture = true, tps = 0, dernier = performance.now();
+    const L = C.Langue(T, () => { dessin(); journal(); });
+    const nf = (x, d) => C.nf(x, d, L.lang);
+    const hm = (t) => `${Math.floor(t / 3600)} h ${String(Math.floor(t % 3600 / 60)).padStart(2, '0')}`;
+
+    function scenario(nom) { sc = nom; $('perte').value = SC[nom].perte; $('coupure').value = SC[nom].coupure; calculer(); tps = 0; }
+    function calculer() {
+      document.querySelectorAll('[data-sc]').forEach((b) => b.setAttribute('aria-pressed', String(b.dataset.sc === sc)));
+      $('operte').textContent = nf(+$('perte').value * 100, 0) + ' %'; $('ocoupure').textContent = $('coupure').value; $('opersist').textContent = $('persist').value;
+      msgs = V.simulerCapteur(Object.assign({ graine: 4 }, SC[sc].capteur));
+      const cp = +$('coupure').value;
+      mon = V.surveiller(V.reseau(msgs, { perte: +$('perte').value, coupures: cp ? [[7200, cp]] : [], graine: 2 }),
+        { persistance: +$('persist').value, hysteresis: $('hyst').checked, artefacts: $('art').checked });
+      const t = L.t, kpi = (k, v, cls) => `<div class="kpi ${cls || ''}"><dt>${t(k)}</dt><dd>${v}</dd></div>`;
+      const ncli = mon.journal.filter((j) => j.cle === 'alarme').length, ntech = mon.journal.filter((j) => j.cle === 'capteur' || j.cle === 'liaisonPerdue').length;
+      const nmax = Math.max(0, ...mon.historiqueNews.map((h) => h.score));
+      $('kpis').innerHTML = kpi('kEmis', msgs.length) + kpi('kRecu', mon.recus) + kpi('kPerdu', mon.perdus, mon.perdus > 100 ? 'mid' : '')
+        + kpi('kCli', ncli, ncli > 6 ? 'bad' : '') + kpi('kTech', ntech) + kpi('kNews', nmax, nmax >= 7 ? 'bad' : nmax >= 5 ? 'mid' : 'good');
+      dessin(); journal();
+    }
+
+    function texte(j) {
+      const t = L.t;
+      if (j.cle === 'alarme' || j.cle === 'finAlarme') return t(j.cle).replace('{p}', j.val[0].toUpperCase()).replace('{s}', t(j.val[1])).replace('{v}', nf(j.val[2], j.val[0] === 'temp' ? 1 : 0));
+      if (j.cle === 'liaisonPerdue') return t('liaisonPerdue').replace('{v}', j.val);
+      if (j.cle === 'news') return t('news').replace('{v}', j.val[0]).replace('{n}', t(j.val[1] === 'bas' ? 'bas_' : j.val[1]));
+      return t(j.cle);
+    }
+    function journal() {
+      const vus = mon.journal.filter((j) => j.t <= tps);
+      $('journal').innerHTML = vus.length ? vus.map((j) => `<span class="d">${hm(j.t)}</span> <span class="${j.genre === 'clinique' ? 'c' : j.genre === 'technique' ? 't' : 'n'}">${texte(j)}</span>`).join('\n') : `<span class="d">${L.t('vide')}</span>`;
+      $('journal').scrollTop = 1e6;
+    }
+
+    function ecran() {
+      const tr = mon.traites; let m = null;
+      for (let i = tr.length - 1; i >= 0; i--) if (tr[i].t <= tps) { m = tr[i]; break; }
+      const actives = new Set(); const fin = new Map();
+      mon.journal.filter((j) => j.t <= tps && j.genre === 'clinique').forEach((j) => { const k = j.val[0]; if (j.cle === 'alarme') actives.add(k); else actives.delete(k); });
+      const hn = mon.historiqueNews.filter((h) => h.t <= tps).pop();
+      const silence = m && tps - m.t > 60;
+      const bloc = (k, lab, v, u, extra) => `<div class="cst ${k} ${actives.has(k) ? 'alarme' : ''} ${extra || ''}"><b>${lab}</b><span>${v}</span><small>${u}</small></div>`;
+      const val = (k, d) => (!m || silence ? '--' : m.artefact && (k === 'spo2' || k === 'fc') ? '?' : nf(m[k], d));
+      $('ecran').innerHTML = bloc('fc', 'FC', val('fc', 0), '/min', m && m.artefact ? 'art' : '') + bloc('spo2', 'SpO2', val('spo2', 0), '%', m && m.artefact ? 'art' : '')
+        + bloc('fr', 'FR', val('fr', 0), '/min') + bloc('pas', 'PAS', val('pas', 0), 'mmHg') + bloc('temp', 'T°', val('temp', 1), '°C')
+        + `<div class="cst news ${hn ? hn.niveau : ''}"><b>NEWS2</b><span>${hn ? hn.score : '--'}</span><small>${hn ? L.t(hn.niveau === 'bas' ? 'bas_' : hn.niveau) : ''}</small></div>`;
+      $('horloge').textContent = hm(tps) + ' / 6 h 00' + (m ? ` · ${L.t('alerte')} ${m.conscience}` : '');
+      $('tps').value = tps;
+    }
+
+    function dessin() {
+      const tr = mon.traites.filter((m) => !m.artefact), t = L.t;
+      const xs = tr.map((m) => m.t / 3600);
+      const g = C.graphique($('cvV'), { xmin: 0, xmax: 6, ymin: 0, ymax: 160, xlabel: t('axH'),
+        series: [['fc', '#7bd389'], ['fr', '#f2e27a'], ['pas', '#ff9a6b'], ['spo2', '#8ab4ff']].map(([k, c]) => ({ x: xs, y: tr.map((m) => m[k]), color: c, width: 1 })),
+        vlignes: mon.journal.filter((j) => j.cle === 'alarme').map((j) => ({ x: j.t / 3600, color: '#c8102e', dash: [4, 3] })).concat([{ x: tps / 3600, color: '#f2f2f2' }]) });
+      const hn = mon.historiqueNews;
+      C.graphique($('cvN'), { xmin: 0, xmax: 6, ymin: 0, ymax: 14, xlabel: t('axH'), bandes: [{ y0: 5, y1: 7, color: 'rgba(224,164,88,0.15)' }, { y0: 7, y1: 14, color: 'rgba(200,16,46,0.18)' }],
+        series: [{ x: hn.map((h) => h.t / 3600), y: hn.map((h) => h.score), color: '#e8e8ea', step: true, width: 2 }], vlignes: [{ x: tps / 3600, color: '#f2f2f2' }] });
+      ecran();
+    }
+
+    function boucle(now) {
+      const dt = (now - dernier) / 1000; dernier = now;
+      if (enLecture && mon) {
+        const avant = tps; tps = Math.min(DUREE - 10, tps + dt * 600); // 1 s réelle = 10 min
+        if (Math.floor(avant / 300) !== Math.floor(tps / 300) || tps >= DUREE - 10) { dessin(); journal(); } else ecran();
+        if (tps >= DUREE - 10) { enLecture = false; $('play').textContent = L.t('play'); }
+      }
+      requestAnimationFrame(boucle);
+    }
+
+    document.querySelectorAll('[data-sc]').forEach((b) => b.addEventListener('click', () => { scenario(b.dataset.sc); enLecture = true; $('play').textContent = L.t('pause'); }));
+    ['perte', 'coupure', 'persist', 'hyst', 'art'].forEach((k) => $(k).addEventListener('input', calculer));
+    $('play').addEventListener('click', () => { enLecture = !enLecture; if (enLecture && tps >= DUREE - 20) tps = 0; $('play').textContent = L.t(enLecture ? 'pause' : 'play'); });
+    $('tps').addEventListener('input', () => { tps = +$('tps').value; enLecture = false; $('play').textContent = L.t('play'); dessin(); journal(); });
+    window.addEventListener('resize', dessin);
+    scenario('sepsis');
+    L.appliquer(L.lang);
+    $('play').textContent = L.t('pause');
+    requestAnimationFrame(boucle);
+  })();
+  </script>
+</body>
+</html>
