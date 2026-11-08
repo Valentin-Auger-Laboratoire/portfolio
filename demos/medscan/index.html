@@ -1,0 +1,169 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>MedScan : anomalies</title>
+  <meta name="description" content="Détection d'anomalies sur des images médicales de synthèse, par comparaison pixel à pixel avec un modèle sain.">
+  <meta property="og:type" content="website">
+  <meta property="og:url" content="https://valentin-auger-laboratoire.github.io/portfolio/demos/medscan/">
+  <meta property="og:title" content="MedScan : détection d'anomalies par analyse des pixels">
+  <meta property="og:description" content="Détection d'anomalies sur des images médicales de synthèse, par comparaison pixel à pixel avec un modèle sain.">
+  <meta property="og:image" content="https://valentin-auger-laboratoire.github.io/portfolio/assets/projets/medscan.jpg">
+  <meta property="og:image:width" content="960">
+  <meta property="og:image:height" content="600">
+  <meta name="twitter:card" content="summary_large_image">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="../_commun/commun.css">
+  <style>
+    .imgs { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 12px; }
+    .imgs figure { min-width: 0; }
+    .imgs canvas { width: 100%; aspect-ratio: 1; display: block; border: 1px solid var(--border); border-radius: 6px; image-rendering: pixelated; background: #000; }
+    .imgs figcaption { font: 0.74rem var(--mono); color: var(--dim); margin-bottom: 5px; }
+    #cvI { cursor: crosshair; }
+    @media (max-width: 900px) { .imgs { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+  </style>
+</head>
+<body>
+  <div class="wrap">
+    <div class="top">
+      <a class="back" href="../../index.html#projets" data-t="back">← Retour au portfolio</a>
+      <div class="lang" role="group" aria-label="Langue / Language"><button type="button" data-lang="fr">FR</button><button type="button" data-lang="en">EN</button></div>
+    </div>
+    <p class="eyebrow" data-t="eyebrow"></p>
+    <h1 data-t="title"></h1>
+    <p class="intro" data-t="intro"></p>
+    <p class="warnbox" data-t="warn"></p>
+    <div class="grid">
+      <div class="stack">
+        <div class="panel">
+          <h2 data-t="casT"></h2>
+          <div class="scen">
+            <button type="button" class="btn" data-cas="deux" data-t="cDeux"></button>
+            <button type="button" class="btn" data-cas="sain" data-t="cSain"></button>
+            <button type="button" class="btn" data-cas="petite" data-t="cPetite"></button>
+            <button type="button" class="btn" data-cas="vide" data-t="cVide"></button>
+          </div>
+          <p class="hint" data-t="clic"></p>
+          <h3 data-t="lesT"></h3>
+          <div class="ctl"><label for="rayon" data-t="rayon"></label><output id="orayon"></output><input type="range" id="rayon" min="1" max="12" step="0.5" value="5"></div>
+          <div class="ctl"><label for="contraste" data-t="contraste"></label><output id="ocontraste"></output><input type="range" id="contraste" min="-60" max="60" step="1" value="30"></div>
+          <h3 data-t="detT"></h3>
+          <div class="ctl"><label for="seuil" data-t="seuil"></label><output id="oseuil"></output><input type="range" id="seuil" min="2" max="10" step="0.5" value="5"></div>
+          <div class="ctl"><label for="surf" data-t="surf"></label><output id="osurf"></output><input type="range" id="surf" min="1" max="60" step="1" value="12"></div>
+          <div class="ctl"><label for="bruit" data-t="bruit"></label><output id="obruit"></output><input type="range" id="bruit" min="1" max="20" step="0.5" value="6"></div>
+          <div class="ctl"><label for="nsain" data-t="nsain"></label><output id="onsain"></output><input type="range" id="nsain" min="3" max="40" step="1" value="20"></div>
+          <label class="check"><input type="checkbox" id="verite" checked> <span data-t="veriteL"></span></label>
+        </div>
+      </div>
+      <div class="stack">
+        <div class="panel"><dl class="kpis" id="kpis"></dl></div>
+        <div class="panel">
+          <div class="imgs">
+            <figure><figcaption data-t="fSain"></figcaption><canvas id="cvS" width="128" height="128"></canvas></figure>
+            <figure><figcaption data-t="fImg"></figcaption><canvas id="cvI" width="128" height="128"></canvas></figure>
+            <figure><figcaption data-t="fZ"></figcaption><canvas id="cvZ" width="128" height="128"></canvas></figure>
+            <figure><figcaption data-t="fRes"></figcaption><canvas id="cvR" width="128" height="128"></canvas></figure>
+          </div>
+          <p class="hint" data-t="legende"></p>
+        </div>
+        <div class="panel tablewrap"><h2 data-t="regT"></h2><table id="tab"></table></div>
+        <div class="panel note"><h2 data-t="howT"></h2><p data-t="how1"></p><p data-t="how2"></p><p data-t="how3"></p><p><a href="https://github.com/Valentin-Auger-Laboratoire/MedScan-Analyzer-D-tecteur-d-Anomalies-par-Analyse-de-Pixels" target="_blank" rel="noopener" data-t="repo"></a></p></div>
+      </div>
+    </div>
+  </div>
+  <script src="../_commun/commun.js"></script>
+  <script src="medscan.js"></script>
+  <script>
+  (function () {
+    'use strict';
+    const M = window.MedScan, C = window.Commun, $ = (id) => document.getElementById(id), n = M.TAILLE;
+    const T = {
+      fr: {
+        back: '← Retour au portfolio', eyebrow: 'Démo · projet personnel en Python (mars 2026)', title: 'MedScan : détection d\'anomalies par analyse des pixels',
+        intro: "Pour repérer une zone anormale sur une coupe, on la compare à ce qu'on attend chez des sujets sains : chaque pixel reçoit un score z (de combien d'écarts-types il s'éloigne du modèle sain), puis les pixels anormaux sont nettoyés et regroupés en régions. Cliquez sur la coupe pour ajouter une lésion.",
+        warn: 'Images de synthèse (ellipses et bruit), aucune donnée de patient. Même algorithme que le code Python du dépôt. Projet d\'étude, pas un logiciel de diagnostic.',
+        casT: 'Cas', cDeux: 'Deux lésions (exemple du dépôt)', cSain: 'Sujet sain', cPetite: 'Petite lésion peu contrastée', cVide: 'Effacer les lésions',
+        clic: 'Clic sur la coupe : ajoute une lésion avec le rayon et le contraste choisis.',
+        lesT: 'Lésion ajoutée au clic', rayon: 'Rayon (pixels)', contraste: 'Contraste (niveaux de gris)',
+        detT: 'Détection', seuil: 'Seuil sur |z|', surf: 'Surface minimale (pixels)', bruit: 'Bruit de l\'image', nsain: 'Coupes saines dans le modèle', veriteL: 'Montrer la vérité (contour vert)',
+        kVraies: 'Lésions placées', kDet: 'Régions détectées', kTrouvees: 'Lésions trouvées', kFP: 'Fausses alertes', kDice: 'Recouvrement (Dice)',
+        fSain: 'Un sujet sain du modèle', fImg: 'Coupe analysée (cliquable)', fZ: 'Score z par pixel', fRes: 'Régions détectées',
+        legende: 'Score z : rouge = plus clair que le modèle, bleu = plus sombre. Contour rouge : région détectée ; contour vert : vraie lésion.',
+        regT: 'Régions détectées', thN: 'N°', thC: 'Centre', thA: 'Surface', thCo: 'Contraste', thT: 'Type', thZ: 'z max', hyper: 'hyperintense', hypo: 'hypointense', aucune: 'Aucune région anormale.',
+        howT: "Comment c'est calculé", how1: "Modèle sain : moyenne et écart-type de chaque pixel sur des coupes saines légèrement lissées (fenêtre 5 × 5). Plus il y a de coupes, plus l'écart-type est fiable et moins il y a de fausses alertes.",
+        how2: "Pixels anormaux : |z| au-dessus du seuil, à l'intérieur du corps (seuil d'Otsu). Ouverture morphologique 3 × 3 pour retirer les pixels isolés, puis régions connexes (8 voisins, union-find) ; les régions trop petites sont rejetées.",
+        how3: "Tout est écrit à la main, sans bibliothèque d'image. Le lissage élargit un peu les contours (environ 2 pixels), d'où un Dice autour de 0,7 à 0,8.",
+        repo: 'Code Python, tests et explications sur GitHub ↗',
+      },
+      en: {
+        back: '← Back to portfolio', eyebrow: 'Demo · personal project in Python (March 2026)', title: 'MedScan: pixel-based anomaly detection',
+        intro: 'To spot an abnormal area on a slice, it is compared with what is expected in healthy subjects: each pixel gets a z-score (how many standard deviations it is from the healthy model), then abnormal pixels are cleaned and grouped into regions. Click on the slice to add a lesion.',
+        warn: 'Synthetic images (ellipses and noise), no patient data. Same algorithm as the Python code in the repository. Study project, not diagnostic software.',
+        casT: 'Cases', cDeux: 'Two lesions (repository example)', cSain: 'Healthy subject', cPetite: 'Small low-contrast lesion', cVide: 'Clear lesions',
+        clic: 'Click on the slice: adds a lesion with the chosen radius and contrast.',
+        lesT: 'Lesion added on click', rayon: 'Radius (pixels)', contraste: 'Contrast (grey levels)',
+        detT: 'Detection', seuil: 'Threshold on |z|', surf: 'Minimum area (pixels)', bruit: 'Image noise', nsain: 'Healthy slices in the model', veriteL: 'Show the ground truth (green outline)',
+        kVraies: 'Lesions placed', kDet: 'Regions detected', kTrouvees: 'Lesions found', kFP: 'False alarms', kDice: 'Overlap (Dice)',
+        fSain: 'A healthy subject from the model', fImg: 'Analysed slice (clickable)', fZ: 'Per-pixel z-score', fRes: 'Detected regions',
+        legende: 'z-score: red = brighter than the model, blue = darker. Red outline: detected region; green outline: true lesion.',
+        regT: 'Detected regions', thN: 'No.', thC: 'Centre', thA: 'Area', thCo: 'Contrast', thT: 'Type', thZ: 'max z', hyper: 'hyperintense', hypo: 'hypointense', aucune: 'No abnormal region.',
+        howT: 'How it is computed', how1: 'Healthy model: mean and standard deviation of each pixel over slightly smoothed healthy slices (5 × 5 window). The more slices, the more reliable the standard deviation and the fewer false alarms.',
+        how2: 'Abnormal pixels: |z| above the threshold, inside the body (Otsu threshold). 3 × 3 morphological opening removes isolated pixels, then connected regions (8 neighbours, union-find); regions that are too small are rejected.',
+        how3: 'Everything is hand-written, without an image library. Smoothing slightly enlarges outlines (about 2 pixels), hence a Dice around 0.7 to 0.8.',
+        repo: 'Python code, tests and explanations on GitHub ↗',
+      },
+    };
+    const CAS = { deux: [{ cy: 50, cx: 45, r: 6, contraste: 35 }, { cy: 80, cx: 82, r: 4, contraste: -30 }], sain: [], petite: [{ cy: 60, cx: 70, r: 2, contraste: 12 }], vide: [] };
+    let lesions = CAS.deux.slice(), cas = 'deux', modele = null, cleModele = '', sain0 = null;
+    const L = C.Langue(T, () => maj());
+    const nf = (x, d) => C.nf(x, d, L.lang);
+
+    function peindre(cv, f) {
+      const ctx = cv.getContext('2d'), img = ctx.createImageData(n, n);
+      for (let i = 0; i < n * n; i++) { const [r, g, b] = f(i); img.data[4 * i] = r; img.data[4 * i + 1] = g; img.data[4 * i + 2] = b; img.data[4 * i + 3] = 255; }
+      ctx.putImageData(img, 0, 0);
+    }
+    const gris = (im) => (i) => { const v = Math.max(0, Math.min(255, im[i])); return [v, v, v]; };
+    const contour = (m, i) => m[i] && ((i % n) === 0 || !m[i - 1] || !m[i + 1] || !m[i - n] || !m[i + n]);
+
+    function maj() {
+      document.querySelectorAll('[data-cas]').forEach((b) => b.setAttribute('aria-pressed', String(b.dataset.cas === cas)));
+      $('orayon').textContent = nf(+$('rayon').value, 1); $('ocontraste').textContent = (+$('contraste').value > 0 ? '+' : '') + $('contraste').value;
+      $('oseuil').textContent = nf(+$('seuil').value, 1); $('osurf').textContent = $('surf').value; $('obruit').textContent = nf(+$('bruit').value, 1); $('onsain').textContent = $('nsain').value;
+      const bruit = +$('bruit').value, cle = bruit + '|' + $('nsain').value;
+      if (cle !== cleModele) { const s = M.sujetsSains(+$('nsain').value, 100, { bruit }); modele = M.modeleSain(s, n); sain0 = s[0]; cleModele = cle; }
+      const cp = M.coupe(lesions, { graine: 7, bruit });
+      const d = M.detecter(cp.image, modele, { seuil: +$('seuil').value, surfaceMin: +$('surf').value, mm: 1.5 });
+      // lésions trouvées : une région recouvre la lésion
+      let trouvees = 0;
+      lesions.forEach((l) => { const i = Math.round(l.cy) * n + Math.round(l.cx); if (d.masque[i]) trouvees++; });
+      const fp = d.regions.filter((r) => !lesions.some((l) => Math.hypot(r.centre[0] - l.cy, r.centre[1] - l.cx) < l.r + 3)).length;
+      const t = L.t, kpi = (k, v, cls) => `<div class="kpi ${cls || ''}"><dt>${t(k)}</dt><dd>${v}</dd></div>`;
+      $('kpis').innerHTML = kpi('kVraies', lesions.length) + kpi('kDet', d.regions.length) + kpi('kTrouvees', `${trouvees} / ${lesions.length}`, trouvees < lesions.length ? 'bad' : 'good')
+        + kpi('kFP', fp, fp ? 'bad' : 'good') + kpi('kDice', lesions.length ? nf(M.dice(d.masque, cp.vrai), 2) : '—');
+      peindre($('cvS'), gris(sain0));
+      peindre($('cvI'), gris(cp.image));
+      peindre($('cvZ'), (i) => { const z = Math.max(-15, Math.min(15, d.z[i])) / 15; return z >= 0 ? [255, 255 * (1 - z), 255 * (1 - z)] : [255 * (1 + z), 255 * (1 + z), 255]; });
+      const ver = $('verite').checked;
+      peindre($('cvR'), (i) => { if (contour(d.masque, i)) return [230, 30, 60]; if (ver && contour(cp.vrai, i)) return [80, 220, 120]; const v = cp.image[i] * 0.85; return [v, v, v]; });
+      let h = `<tr><th>${t('thN')}</th><th>${t('thC')}</th><th class="n">${t('thA')}</th><th class="n">${t('thCo')}</th><th>${t('thT')}</th><th class="n">${t('thZ')}</th></tr>`;
+      d.regions.forEach((r, k) => { h += `<tr><td>${k + 1}</td><td>(${nf(r.centre[0], 0)}, ${nf(r.centre[1], 0)})</td><td class="n">${r.aire} px = ${nf(r.aireMm2, 0)} mm²</td><td class="n">${r.contraste > 0 ? '+' : ''}${nf(r.contraste, 0)}</td><td>${t(r.type)}</td><td class="n">${nf(r.zmax, 1)}</td></tr>`; });
+      if (!d.regions.length) h += `<tr><td colspan="6">${t('aucune')}</td></tr>`;
+      $('tab').innerHTML = h;
+    }
+
+    $('cvI').addEventListener('click', (e) => {
+      const r = e.target.getBoundingClientRect();
+      lesions.push({ cy: (e.clientY - r.top) / r.height * n, cx: (e.clientX - r.left) / r.width * n, r: +$('rayon').value, contraste: +$('contraste').value });
+      cas = ''; maj();
+    });
+    document.querySelectorAll('[data-cas]').forEach((b) => b.addEventListener('click', () => { cas = b.dataset.cas; lesions = CAS[cas].slice(); maj(); }));
+    ['rayon', 'contraste', 'seuil', 'surf', 'bruit', 'nsain', 'verite'].forEach((k) => $(k).addEventListener('input', maj));
+    L.appliquer(L.lang);
+  })();
+  </script>
+</body>
+</html>
