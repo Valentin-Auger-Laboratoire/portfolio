@@ -671,6 +671,102 @@
             </span>
           </div>
         </article>
+        <article class="project-card project-card--wide" data-tags="signal imagerie sante">
+          <div class="card-media"><img src="assets/projets/vision-ecg.jpg" alt="Image d'un électrocardiogramme sur papier millimétré et tracé numérisé avec les pics R détectés" data-i18n-attr="alt:p48.img" width="960" height="600" loading="lazy" decoding="async"></div>
+          <div class="card-top">
+            <span class="card-type" data-i18n="tag.signal">Traitement du signal</span>
+            <span class="card-date" data-i18n="p48.date">Mars 2026</span>
+          </div>
+          <h3 data-i18n="p48.title">Vision-ECG : lire un électrocardiogramme à partir de son image</h3>
+          <p data-i18n="p48.desc">Retrouver le signal d'un ECG imprimé ou photographié, puis en tirer les mesures habituelles. Le tracé est séparé de la grille par la couleur, l'échelle est mesurée sur la grille elle-même (autocorrélation) et vérifiée sur l'impulsion d'étalonnage de 1 mV, puis chaque colonne de pixels devient une valeur de tension. Détection des pics R, fréquence cardiaque, intervalles RR et variabilité, amplitude de l'onde R, durée du QRS, et repérage d'une tachycardie, d'un rythme irrégulier ou d'un QRS élargi. 61 tests sur des ECG de synthèse dont on connaît la vérité. Pas un dispositif médical.</p>
+          <ul class="tags"><li>Traitement d'image</li><li>ECG</li><li>Python</li><li>numpy</li></ul>
+          <div class="card-foot">
+            <span class="card-context" data-i18n="projects.contextPython">Projet personnel · Python</span>
+            <span class="card-links">
+              <a class="card-link" href="https://github.com/Valentin-Auger-Laboratoire/Vision-ECG-Extracteur-de-Param-tres-Physiologiques-sur-Image" target="_blank" rel="noopener" data-i18n="projects.code">Voir le code ↗</a>
+            </span>
+          </div>
+        </article>
+        <article class="project-card project-card--wide" data-tags="imagerie sante">
+          <div class="card-media"><img src="assets/projets/medscan.jpg" alt="Coupe de synthèse, carte des scores z et deux anomalies entourées en rouge" data-i18n-attr="alt:p49.img" width="960" height="600" loading="lazy" decoding="async"></div>
+          <div class="card-top">
+            <span class="card-type" data-i18n="tag.imaging">Imagerie médicale</span>
+            <span class="card-date" data-i18n="p49.date">Mars 2026</span>
+          </div>
+          <h3 data-i18n="p49.title">MedScan : détection d'anomalies sur une image par analyse des pixels</h3>
+          <p data-i18n="p49.desc">Une coupe est comparée pixel par pixel à un modèle sain construit sur 20 coupes sans anomalie : chaque pixel reçoit un score z, les pixels trop éloignés sont nettoyés par une ouverture morphologique puis regroupés en régions décrites par leur surface, leur centre, leur contraste et leur type (hyper ou hypointense). Seuil d'Otsu, images intégrales, morphologie et étiquetage des régions sont écrits à la main avec numpy. 34 tests : aucune fausse alerte sur des sujets sains jamais vus, lésions bien localisées, limite de détection mesurée. Images de synthèse, pas un logiciel de diagnostic.</p>
+          <ul class="tags"><li>Traitement d'image</li><li>Score z</li><li>Morphologie</li><li>Python</li></ul>
+          <div class="card-foot">
+            <span class="card-context" data-i18n="projects.contextPython">Projet personnel · Python</span>
+            <span class="card-links">
+              <a class="card-link" href="https://github.com/Valentin-Auger-Laboratoire/MedScan-Analyzer-D-tecteur-d-Anomalies-par-Analyse-de-Pixels" target="_blank" rel="noopener" data-i18n="projects.code">Voir le code ↗</a>
+            </span>
+          </div>
+        </article>
+        <article class="project-card project-card--wide" data-tags="sante reseau data">
+          <div class="card-media"><img src="assets/projets/vitalwatch.jpg" alt="Constantes d'un patient simulé pendant un sepsis, alarmes de seuil et score NEWS2 qui monte" data-i18n-attr="alt:p50.img" width="960" height="600" loading="lazy" decoding="async"></div>
+          <div class="card-top">
+            <span class="card-type" data-i18n="tag.health">Application santé</span>
+            <span class="card-date" data-i18n="p50.date">Mars 2026</span>
+          </div>
+          <h3 data-i18n="p50.title">VitalWatch : monitoring patient connecté et système d'alerte</h3>
+          <p data-i18n="p50.desc">Un capteur au lit du patient envoie ses constantes toutes les 10 s en JSON, comme sur un bus MQTT, à travers un réseau qui perd, retarde et mélange les messages. Le poste central les remet dans l'ordre, compte les pertes, signale une liaison coupée, et déclenche des alarmes avec persistance et hystérésis pour ne pas sonner sur un pic isolé. Un oxymètre qui glisse du doigt donne une alarme technique, pas clinique. Le score NEWS2 est calculé toutes les 5 minutes : dans le scénario de sepsis, il passe au niveau élevé 34 minutes avant la première alarme de seuil. 43 tests. Simulation, pas un dispositif médical.</p>
+          <ul class="tags"><li>IoT</li><li>MQTT (simulé)</li><li>NEWS2</li><li>Python</li></ul>
+          <div class="card-foot">
+            <span class="card-context" data-i18n="projects.contextPython">Projet personnel · Python</span>
+            <span class="card-links">
+              <a class="card-link" href="https://github.com/Valentin-Auger-Laboratoire/VitalWatch-IoT-Simulateur-de-Monitoring-Patient-et-Syst-me-d-Alerte-Critique" target="_blank" rel="noopener" data-i18n="projects.code">Voir le code ↗</a>
+            </span>
+          </div>
+        </article>
+        <article class="project-card project-card--wide" data-tags="securite sante data">
+          <div class="card-media"><img src="assets/projets/securehealth.jpg" alt="Ressource FHIR Patient avant et après anonymisation : nom, téléphone et adresse retirés, identifiants remplacés par des pseudonymes" data-i18n-attr="alt:p51.img" width="960" height="600" loading="lazy" decoding="async"></div>
+          <div class="card-top">
+            <span class="card-type" data-i18n="tag.security">Cybersécurité</span>
+            <span class="card-date" data-i18n="p51.date">Mars 2026</span>
+          </div>
+          <h3 data-i18n="p51.title">SecureHealth Exchange : valider et anonymiser des données médicales FHIR</h3>
+          <p data-i18n="p51.desc">Avant de partager des données de santé au format FHIR : validation (champs obligatoires, formats de dates, références entre ressources, codes LOINC contrôlés par leur chiffre de contrôle, unités UCUM), puis anonymisation. Les noms, téléphones et adresses sont retirés, les identifiants remplacés par des pseudonymes HMAC-SHA256 cohérents dans tout le lot, la naissance réduite à l'année, et les dates de chaque patient décalées du même nombre de jours pour garder les intervalles. Le risque de réidentification est mesuré par le k-anonymat, avec généralisation pas à pas. 184 tests. Données fictives.</p>
+          <ul class="tags"><li>FHIR</li><li>HMAC-SHA256</li><li>RGPD</li><li>k-anonymat</li><li>Python</li></ul>
+          <div class="card-foot">
+            <span class="card-context" data-i18n="projects.contextPython">Projet personnel · Python</span>
+            <span class="card-links">
+              <a class="card-link" href="https://github.com/Valentin-Auger-Laboratoire/SecureHealth-Exchange-Anonymiseur-et-Validateur-de-Donn-es-M-dicales-Norme-FHIR-" target="_blank" rel="noopener" data-i18n="projects.code">Voir le code ↗</a>
+            </span>
+          </div>
+        </article>
+        <article class="project-card project-card--wide" data-tags="sante mecanique signal">
+          <div class="card-media"><img src="assets/projets/gaitanalysis.jpg" alt="Flexion des deux genoux avec un genou raide, et marge de stabilité d'une marche normale et d'une marche instable" data-i18n-attr="alt:p52.img" width="960" height="600" loading="lazy" decoding="async"></div>
+          <div class="card-top">
+            <span class="card-type" data-i18n="tag.sport">Sport et santé</span>
+            <span class="card-date" data-i18n="p52.date">Mars 2026</span>
+          </div>
+          <h3 data-i18n="p52.title">GaitAnalysis : amplitudes articulaires et stabilité de la marche</h3>
+          <p data-i18n="p52.desc">Marche simulée dans le plan sagittal (hanche, genou, cheville des deux côtés) avec variabilité des pas, bruit de mesure et balancement du centre de masse. Détection des attaques du talon, amplitude articulaire (ROM) par cycle comparée à des repères, indice de symétrie, variabilité de la durée de foulée, et marge de stabilité de Hof : quand elle devient négative, le centre de masse sort de la base d'appui. Quatre scénarios, dont un genou raide (33° contre 59°) et une marche instable. 31 tests. Pas un outil de diagnostic.</p>
+          <ul class="tags"><li>Biomécanique</li><li>Analyse de la marche</li><li>Python</li><li>numpy</li></ul>
+          <div class="card-foot">
+            <span class="card-context" data-i18n="projects.contextPython">Projet personnel · Python</span>
+            <span class="card-links">
+              <a class="card-link" href="https://github.com/Valentin-Auger-Laboratoire/GaitAnalysis-Sim-Analyseur-de-Stabilit-et-d-Amplitude-de-Mouvement-ROM-" target="_blank" rel="noopener" data-i18n="projects.code">Voir le code ↗</a>
+            </span>
+          </div>
+        </article>
+        <article class="project-card project-card--wide" data-tags="dispositifs sante data">
+          <div class="card-media"><img src="assets/projets/medpredict.jpg" alt="Courbe de fiabilité d'un parc de pousse-seringues fictif et coût de maintenance selon l'âge de remplacement" data-i18n-attr="alt:p53.img" width="960" height="600" loading="lazy" decoding="async"></div>
+          <div class="card-top">
+            <span class="card-type" data-i18n="tag.devices">Dispositifs médicaux</span>
+            <span class="card-date" data-i18n="p53.date">Mars 2026</span>
+          </div>
+          <h3 data-i18n="p53.title">MedPredict : fiabilité et maintenance des dispositifs médicaux</h3>
+          <p data-i18n="p53.desc">À partir de l'historique d'un parc de pousse-seringues fictif (appareils tombés en panne et encore en service), ajustement d'une loi de Weibull par maximum de vraisemblance en tenant compte des appareils encore en service, comparaison avec la courbe de Kaplan-Meier, MTBF, durée B10 et disponibilité. Puis l'âge de remplacement préventif qui minimise le coût de maintenance : ici toutes les 1 869 h, pour 65 % d'économie par rapport à l'attente de la panne. Si les pannes sont aléatoires, l'outil dit que le préventif ne sert à rien. 26 tests.</p>
+          <ul class="tags"><li>Fiabilité</li><li>Loi de Weibull</li><li>Maintenance</li><li>Python</li></ul>
+          <div class="card-foot">
+            <span class="card-context" data-i18n="projects.contextPython">Projet personnel · Python</span>
+            <span class="card-links">
+              <a class="card-link" href="https://github.com/Valentin-Auger-Laboratoire/MedPredict-Reliability-Estimateur-de-Maintenance-et-de-Fiabilit-des-Dispositifs" target="_blank" rel="noopener" data-i18n="projects.code">Voir le code ↗</a>
+            </span>
+          </div>
+        </article>
         <article class="project-card project-card--wide" data-tags="web">
           <div class="card-media"><img src="assets/projets/traceur-courbes.jpg" alt="Traceur de courbes : liste des fonctions avec curseurs, graphique avec dérivée, tangente et points remarquables" data-i18n-attr="alt:p24.img" width="960" height="600" loading="lazy" decoding="async"></div>
           <div class="card-top">
