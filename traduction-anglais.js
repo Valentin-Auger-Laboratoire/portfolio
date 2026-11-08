@@ -195,7 +195,7 @@ window.I18N_EN = {
   'p22.desc': "Design lab on a sailing boat's hydraulic autopilot. My part was the cylinder: critical analysis of the existing joint between the cylinder end and its bearing (half-bushings, location, materials, machining of matched parts, loosening, sealing), then modification in SolidWorks to fit a standard radial spherical plain bearing GE 30 FW-2RS. Deleting parts and their mates in the existing assembly, inserting and mating the bearing and the new cylinder end, then reworking the sketches of the cylinder end and of the housing bore to locate and retain each ring. Starting parts supplied with the lab subject; screenshots of the work are published.",
   'projects.demo': 'Try the demo ↗',
   'projects.contextStage': 'Internship project · pharmacy',
-  'p7.date': 'Jun 2026',
+  'p7.date': 'Jul 2026',
   'p7.title': 'Pharmacy back office: delivery intake and invoice checking',
   'p7.desc': 'During my pharmacy internship, I saw how much time was lost checking wholesaler deliveries by hand. I designed a Flutter proof of concept that reads invoices (simulated OCR), matches received and invoiced quantities line by line using the CIP code, flags the invoice as disputed when they differ, and tracks stock with shortage and expiry alerts. Layered architecture, 7-table SQLite database, role-based access (pharmacist, technician, intern), AES-256 encryption and an append-only audit log. Fictitious data, anonymised pharmacy.',
   'projects.contextProto': 'Web application · prototype',
