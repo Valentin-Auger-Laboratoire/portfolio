@@ -1,0 +1,210 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>GaitAnalysis : marche</title>
+  <meta name="description" content="Analyse de la marche simulée : amplitudes articulaires (ROM), symétrie, régularité des pas et marge de stabilité.">
+  <meta property="og:type" content="website">
+  <meta property="og:url" content="https://valentin-auger-laboratoire.github.io/portfolio/demos/gaitanalysis/">
+  <meta property="og:title" content="GaitAnalysis : amplitudes articulaires et stabilité de la marche">
+  <meta property="og:description" content="Analyse de la marche simulée : amplitudes articulaires (ROM), symétrie, régularité des pas et marge de stabilité.">
+  <meta property="og:image" content="https://valentin-auger-laboratoire.github.io/portfolio/assets/projets/gaitanalysis.jpg">
+  <meta property="og:image:width" content="960">
+  <meta property="og:image:height" content="600">
+  <meta name="twitter:card" content="summary_large_image">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="../_commun/commun.css">
+  <style>
+    canvas#cvM { width: 100%; height: 300px; display: block; border: 1px solid var(--border); border-radius: 6px; background: #0a0a0b; }
+  </style>
+</head>
+<body>
+  <div class="wrap">
+    <div class="top">
+      <a class="back" href="../../index.html#projets" data-t="back">← Retour au portfolio</a>
+      <div class="lang" role="group" aria-label="Langue / Language"><button type="button" data-lang="fr">FR</button><button type="button" data-lang="en">EN</button></div>
+    </div>
+    <p class="eyebrow" data-t="eyebrow"></p>
+    <h1 data-t="title"></h1>
+    <p class="intro" data-t="intro"></p>
+    <p class="warnbox" data-t="warn"></p>
+    <div class="grid">
+      <div class="stack">
+        <div class="panel">
+          <h2 data-t="scT"></h2>
+          <div class="scen">
+            <button type="button" class="btn" data-sc="normal" data-t="sNormal"></button>
+            <button type="button" class="btn" data-sc="genou_raide_droit" data-t="sGenou"></button>
+            <button type="button" class="btn" data-sc="variabilite" data-t="sVar"></button>
+            <button type="button" class="btn" data-sc="instable" data-t="sInst"></button>
+          </div>
+          <h3 data-t="regT"></h3>
+          <div class="ctl"><label for="raideur" data-t="raideur"></label><output id="oraideur"></output><input type="range" id="raideur" min="0.3" max="1" step="0.05"></div>
+          <div class="ctl"><label for="cv" data-t="cvL"></label><output id="ocv"></output><input type="range" id="cv" min="0" max="0.12" step="0.005"></div>
+          <div class="ctl"><label for="duree" data-t="dureeL"></label><output id="oduree"></output><input type="range" id="duree" min="0.8" max="1.6" step="0.02"></div>
+          <div class="ctl"><label for="bal" data-t="balL"></label><output id="obal"></output><input type="range" id="bal" min="0.005" max="0.06" step="0.001"></div>
+          <div class="ctl"><label for="larg" data-t="largL"></label><output id="olarg"></output><input type="range" id="larg" min="0.04" max="0.3" step="0.005"></div>
+          <div class="ctl"><label for="bruit" data-t="bruitL"></label><output id="obruit"></output><input type="range" id="bruit" min="0" max="3" step="0.1"></div>
+          <button type="button" class="btn" id="tirage" data-t="tirage"></button>
+        </div>
+      </div>
+      <div class="stack">
+        <div class="panel"><dl class="kpis" id="kpis"></dl></div>
+        <div class="panel row2">
+          <div><p class="hint" style="margin:0 0 6px" data-t="capM"></p><canvas id="cvM" aria-label="marcheur"></canvas></div>
+          <div class="tablewrap"><h2 data-t="romT"></h2><table id="tab"></table><p class="hint" id="verdict"></p></div>
+        </div>
+        <div class="panel">
+          <div class="chart"><p><span><i style="background:var(--accent)"></i><span data-t="lgD"></span></span><span><i style="background:var(--line)"></i><span data-t="lgG"></span></span><span data-t="lgAtt"></span></p><canvas id="cvA"></canvas></div>
+          <div class="seg" style="margin-top:8px"><button type="button" class="btn" data-art="hanche" data-t="hanche"></button><button type="button" class="btn" data-art="genou" data-t="genou"></button><button type="button" class="btn" data-art="cheville" data-t="cheville"></button></div>
+        </div>
+        <div class="panel row2">
+          <div class="chart"><p><span><i style="background:var(--ok)"></i><span data-t="lgMos"></span></span></p><canvas id="cvS"></canvas></div>
+          <div class="note"><h2 data-t="howT"></h2><p data-t="how1"></p><p data-t="how2"></p><p data-t="how3"></p><p><a href="https://github.com/Valentin-Auger-Laboratoire/GaitAnalysis-Sim-Analyseur-de-Stabilit-et-d-Amplitude-de-Mouvement-ROM-" target="_blank" rel="noopener" data-t="repo"></a></p></div>
+        </div>
+      </div>
+    </div>
+  </div>
+  <script src="../_commun/commun.js"></script>
+  <script src="marche.js"></script>
+  <script>
+  (function () {
+    'use strict';
+    const M = window.Marche, C = window.Commun, $ = (id) => document.getElementById(id);
+    const T = {
+      fr: {
+        back: '← Retour au portfolio', eyebrow: 'Démo · projet personnel en Python (mars 2026)', title: 'GaitAnalysis : amplitudes articulaires et stabilité de la marche',
+        intro: "En rééducation, on mesure la marche pour savoir si les articulations bougent assez, si la marche est symétrique et régulière, et si la personne est stable. La démo simule une marche (angles de hanche, genou et cheville des deux côtés, balancement du centre de masse), puis l'analyse comme le ferait le code Python du dépôt.",
+        warn: 'Marche simulée à partir de gabarits simplifiés ; repères et seuils indicatifs. Ce n\'est pas un outil de diagnostic.',
+        scT: 'Scénarios', sNormal: 'Marche normale', sGenou: 'Genou droit raide', sVar: 'Pas irréguliers', sInst: 'Marche instable',
+        regT: 'Réglages', raideur: 'Flexion du genou droit (1 = normale)', cvL: 'Variabilité des foulées', dureeL: 'Durée de foulée (s)', balL: 'Balancement latéral du centre de masse (cm)', largL: 'Largeur du pas (cm)', bruitL: 'Bruit de mesure (°)', tirage: 'Nouveau tirage',
+        kCad: 'Cadence', kCv: 'Variabilité', kSym: 'Symétrie du genou', kMos: 'Marge de stabilité min.', ppm: 'pas/min',
+        capM: 'Marcheur reconstruit à partir des angles simulés (vue de côté) ; jambe droite en rouge.',
+        romT: 'Amplitudes articulaires (ROM)', thArt: 'Articulation', thD: 'Droite', thG: 'Gauche', thSym: 'Symétrie', thRef: 'Repère',
+        hanche: 'Hanche', genou: 'Genou', cheville: 'Cheville',
+        lgD: 'droite', lgG: 'gauche', lgAtt: 'traits : attaques du talon détectées (pied droit)', lgMos: "marge de stabilité (cm) : sous 0, le centre de masse « extrapolé » sort de la base d'appui",
+        axT: 's', axA: '°', axM: 'cm',
+        vOk: 'Rien d\'anormal.', vRom: 'ROM réduite : {a}.', vSym: 'Asymétrie : {a}.', vCv: 'Pas irréguliers (variabilité > 4 %).', vMos: "Marge de stabilité négative : risque de déséquilibre latéral.",
+        howT: "Comment c'est calculé", how1: "Les attaques du talon sont les maximums de flexion de hanche : signal lissé sur 90 ms, seuil à mi-hauteur, au moins 0,6 s entre deux pas, position affinée par une parabole. Le ROM de chaque cycle est l'écart entre le maximum et le minimum de l'angle.",
+        how2: "Indice de symétrie de Robinson : |D − G| / moyenne × 100. Variabilité : écart-type de la durée de foulée divisé par sa moyenne.",
+        how3: "Marge de stabilité de Hof (2005) : bord de la base d'appui − (centre de masse + vitesse / ω₀), avec ω₀ = √(g / longueur de jambe). On garde la pire valeur de chaque foulée.",
+        repo: 'Code Python, tests et explications sur GitHub ↗',
+      },
+      en: {
+        back: '← Back to portfolio', eyebrow: 'Demo · personal project in Python (March 2026)', title: 'GaitAnalysis: joint range of motion and walking stability',
+        intro: 'In rehabilitation, gait is measured to find out whether joints move enough, whether walking is symmetric and regular, and whether the person is stable. The demo simulates walking (hip, knee and ankle angles on both sides, sway of the centre of mass), then analyses it as the Python code in the repository does.',
+        warn: 'Simulated gait from simplified templates; indicative reference values and thresholds. This is not a diagnostic tool.',
+        scT: 'Scenarios', sNormal: 'Normal gait', sGenou: 'Stiff right knee', sVar: 'Irregular steps', sInst: 'Unstable gait',
+        regT: 'Settings', raideur: 'Right knee flexion (1 = normal)', cvL: 'Stride variability', dureeL: 'Stride time (s)', balL: 'Lateral sway of the centre of mass (cm)', largL: 'Step width (cm)', bruitL: 'Measurement noise (°)', tirage: 'New draw',
+        kCad: 'Cadence', kCv: 'Variability', kSym: 'Knee symmetry', kMos: 'Min. stability margin', ppm: 'steps/min',
+        capM: 'Walker rebuilt from the simulated angles (side view); right leg in red.',
+        romT: 'Joint range of motion (ROM)', thArt: 'Joint', thD: 'Right', thG: 'Left', thSym: 'Symmetry', thRef: 'Reference',
+        hanche: 'Hip', genou: 'Knee', cheville: 'Ankle',
+        lgD: 'right', lgG: 'left', lgAtt: 'lines: detected heel strikes (right foot)', lgMos: 'stability margin (cm): below 0, the extrapolated centre of mass leaves the base of support',
+        axT: 's', axA: '°', axM: 'cm',
+        vOk: 'Nothing abnormal.', vRom: 'Reduced ROM: {a}.', vSym: 'Asymmetry: {a}.', vCv: 'Irregular steps (variability > 4%).', vMos: 'Negative stability margin: risk of lateral loss of balance.',
+        howT: 'How it is computed', how1: 'Heel strikes are hip-flexion peaks: signal smoothed over 90 ms, half-height threshold, at least 0.6 s between steps, position refined with a parabola. Each cycle\'s ROM is the gap between the angle\'s maximum and minimum.',
+        how2: 'Robinson symmetry index: |R − L| / mean × 100. Variability: standard deviation of stride time divided by its mean.',
+        how3: "Hof's margin of stability (2005): edge of the base of support − (centre of mass + velocity / ω₀), with ω₀ = √(g / leg length). The worst value of each stride is kept.",
+        repo: 'Python code, tests and explanations on GitHub ↗',
+      },
+    };
+    const DEF = { raideur: 1, cv: 0.02, duree: 1.1, bal: 0.02, larg: 0.16, bruit: 0.5 };
+    let sc = 'normal', art = 'genou', graine = 3, sim = null, res = null, t0 = performance.now();
+    const L = C.Langue(T, () => { maj(false); });
+    const nf = (x, d) => C.nf(x, d, L.lang);
+
+    function scenario(nom) {
+      sc = nom; const s = M.SCENARIOS[nom];
+      $('raideur').value = s.raideur || DEF.raideur; $('cv').value = s.cv !== undefined ? s.cv : DEF.cv; $('duree').value = DEF.duree;
+      $('bal').value = s.balancement || DEF.bal; $('larg').value = s.largeur || DEF.larg; $('bruit').value = DEF.bruit;
+      maj(true);
+    }
+
+    function maj(recalc) {
+      document.querySelectorAll('[data-sc]').forEach((b) => b.setAttribute('aria-pressed', String(b.dataset.sc === sc)));
+      document.querySelectorAll('[data-art]').forEach((b) => b.setAttribute('aria-pressed', String(b.dataset.art === art)));
+      $('oraideur').textContent = nf(+$('raideur').value, 2); $('ocv').textContent = nf(+$('cv').value * 100, 1) + ' %';
+      $('oduree').textContent = nf(+$('duree').value, 2); $('obal').textContent = nf(+$('bal').value * 100, 1);
+      $('olarg').textContent = nf(+$('larg').value * 100, 1); $('obruit').textContent = nf(+$('bruit').value, 1);
+      if (recalc || !sim) {
+        sim = M.simuler({ n: 20, raideur: +$('raideur').value, cv: +$('cv').value, duree: +$('duree').value, balancement: +$('bal').value, largeur: +$('larg').value, bruit: +$('bruit').value, graine });
+        res = M.analyser(sim); t0 = performance.now();
+      }
+      const t = L.t, r = res;
+      const kpi = (k, v, u, cls) => `<div class="kpi ${cls || ''}"><dt>${t(k)}</dt><dd>${v}${u ? `<small>${u}</small>` : ''}</dd></div>`;
+      $('kpis').innerHTML = kpi('kCad', nf(r.cadence, 0), t('ppm')) + kpi('kCv', nf(r.cv, 1), '%', r.cv > 4 ? 'bad' : 'good')
+        + kpi('kSym', nf(r.genou.symetrie, 1), '%', r.genou.symetrie > 10 ? 'bad' : 'good') + kpi('kMos', nf(r.mosMin * 100, 1), 'cm', r.mosMin < 0 ? 'bad' : r.mosMin < 0.02 ? 'mid' : 'good');
+      let h = `<tr><th>${t('thArt')}</th><th class="n">${t('thD')}</th><th class="n">${t('thG')}</th><th class="n">${t('thSym')}</th><th class="n">${t('thRef')}</th></tr>`;
+      const red = [], asy = [];
+      M.ARTICULATIONS.forEach((a) => {
+        const x = r[a], [lo, hi] = x.reference;
+        if (Math.min(x.droit, x.gauche) < lo) red.push(t(a).toLowerCase());
+        if (x.symetrie > 10) asy.push(t(a).toLowerCase());
+        h += `<tr><td>${t(a)}</td><td class="n ${x.droit < lo ? 'bad' : ''}">${nf(x.droit, 1)}°</td><td class="n ${x.gauche < lo ? 'bad' : ''}">${nf(x.gauche, 1)}°</td><td class="n ${x.symetrie > 10 ? 'bad' : ''}">${nf(x.symetrie, 1)} %</td><td class="n">${lo}–${hi}°</td></tr>`;
+      });
+      $('tab').innerHTML = h;
+      const v = [];
+      if (red.length) v.push(t('vRom').replace('{a}', red.join(', ')));
+      if (asy.length) v.push(t('vSym').replace('{a}', asy.join(', ')));
+      if (r.cv > 4) v.push(t('vCv'));
+      if (r.mosMin < 0) v.push(t('vMos'));
+      $('verdict').textContent = v.length ? v.join(' ') : t('vOk');
+      const n = sim.t.findIndex((x) => x > 4.4);
+      const tt = Array.from(sim.t.slice(0, n)), d = Array.from(sim[art + '_droit'].slice(0, n)), g = Array.from(sim[art + '_gauche'].slice(0, n));
+      const ymin = Math.min(...d, ...g) - 3, ymax = Math.max(...d, ...g) + 3;
+      C.graphique($('cvA'), { xmin: 0, xmax: tt[tt.length - 1], ymin, ymax, xlabel: t('axT'), ylabel: t(art) + ' (' + t('axA') + ')',
+        series: [{ x: tt, y: g, color: '#c9c9cc', width: 1.3 }, { x: tt, y: d, color: '#c8102e', width: 1.6 }],
+        vlignes: r.attaquesDroit.filter((a) => a < 4.4).map((a) => ({ x: a, color: '#c8102e88', dash: [3, 3] })) });
+      const ms = Array.from(r.marge.slice(0, n), (x) => x * 100);
+      C.graphique($('cvS'), { xmin: 0, xmax: tt[tt.length - 1], ymin: Math.min(-1, ...ms) - 1, ymax: Math.max(...ms) + 1, xlabel: t('axT'), ylabel: t('axM'),
+        series: [{ x: tt, y: ms, color: '#8fd18f', width: 1.6 }], hlignes: [{ y: 0, color: '#c8102e', dash: [4, 3] }],
+        bandes: [{ y0: -100, y1: 0, color: 'rgba(200,16,46,0.12)' }] });
+    }
+
+    // Marcheur vu de côté, reconstruit à partir des angles
+    function dessiner() {
+      const cv = $('cvM'), { ctx, w, h } = C.preparer(cv);
+      if (sim) {
+        const tmax = sim.t[sim.t.length - 1], tc = ((performance.now() - t0) / 1000) % tmax;
+        const k = Math.min(sim.t.length - 1, Math.floor(tc * sim.fe));
+        const echelle = h / 2.5, hx = w / 2, hy = h * 0.43;
+        ctx.strokeStyle = '#2a2a2e'; ctx.beginPath(); ctx.moveTo(0, hy + 0.98 * echelle); ctx.lineTo(w, hy + 0.98 * echelle); ctx.stroke();
+        const off = ((tc * 1.25 / (+$('duree').value)) * echelle) % 40;
+        ctx.fillStyle = '#2a2a2e'; for (let x = -off; x < w; x += 40) ctx.fillRect(x, hy + 0.98 * echelle + 2, 18, 2);
+        const jambe = (cote, couleur) => {
+          const rad = Math.PI / 180, cuisse = sim['hanche_' + cote][k] * rad, genou = sim['genou_' + cote][k] * rad, cheville = sim['cheville_' + cote][k] * rad;
+          const a1 = cuisse, a2 = cuisse - genou;
+          const kx = hx + Math.sin(a1) * 0.48 * echelle, ky = hy + Math.cos(a1) * 0.48 * echelle;
+          const ax = kx + Math.sin(a2) * 0.46 * echelle, ay = ky + Math.cos(a2) * 0.46 * echelle;
+          const af = a2 + Math.PI / 2 - cheville;
+          const fx = ax + Math.sin(af) * 0.2 * echelle, fy = ay + Math.cos(af) * 0.2 * echelle;
+          ctx.strokeStyle = couleur; ctx.lineWidth = 6; ctx.lineCap = 'round';
+          ctx.beginPath(); ctx.moveTo(hx, hy); ctx.lineTo(kx, ky); ctx.lineTo(ax, ay); ctx.lineTo(fx, fy); ctx.stroke();
+          ctx.fillStyle = couleur; [[kx, ky], [ax, ay]].forEach(([x, y]) => { ctx.beginPath(); ctx.arc(x, y, 4.5, 0, 7); ctx.fill(); });
+        };
+        jambe('gauche', '#8a8a8e');
+        ctx.strokeStyle = '#d8d8da'; ctx.lineWidth = 7; ctx.beginPath(); ctx.moveTo(hx, hy); ctx.lineTo(hx + 0.04 * echelle, hy - 0.62 * echelle); ctx.stroke();
+        ctx.beginPath(); ctx.arc(hx + 0.06 * echelle, hy - 0.78 * echelle, 0.12 * echelle, 0, 7); ctx.fillStyle = '#d8d8da'; ctx.fill();
+        jambe('droit', '#c8102e');
+        ctx.fillStyle = '#9b9b9f'; ctx.font = '12px "JetBrains Mono", monospace'; ctx.textAlign = 'left';
+        ctx.fillText(`${L.t('genou')} D ${nf(sim.genou_droit[k], 0)}°  G ${nf(sim.genou_gauche[k], 0)}°`, 10, 18);
+      }
+      requestAnimationFrame(dessiner);
+    }
+
+    document.querySelectorAll('[data-sc]').forEach((b) => b.addEventListener('click', () => scenario(b.dataset.sc)));
+    document.querySelectorAll('[data-art]').forEach((b) => b.addEventListener('click', () => { art = b.dataset.art; maj(false); }));
+    ['raideur', 'cv', 'duree', 'bal', 'larg', 'bruit'].forEach((k) => $(k).addEventListener('input', () => { sc = ''; maj(true); }));
+    $('tirage').addEventListener('click', () => { graine++; maj(true); });
+    window.addEventListener('resize', () => maj(false));
+    scenario('normal');
+    L.appliquer(L.lang);
+    requestAnimationFrame(dessiner);
+  })();
+  </script>
+</body>
+</html>
