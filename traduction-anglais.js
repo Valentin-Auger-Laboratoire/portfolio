@@ -316,7 +316,7 @@ window.I18N_EN = {
   'background.e3desc': 'Technology-track high school diploma, specialization in Information Systems and Digital Technology.',
 
   'experience.title': '<span>05</span> Experience',
-  'exp.e1date': 'Jun — Jul 2026 · 2 months',
+  'exp.e1date': 'Jul 2026 · 1 month',
   'exp.e1title': 'Intern — back-office optimization',
   'exp.e1place': 'Pharmacie des Aunettes (pharmacy), Ris-Orangis, France',
   'exp.e1desc': 'Studied and implemented a procedure to optimize the back office: analysis of existing workflows and tools to improve internal management and day-to-day data handling. First-hand observation of information flows and digital needs in a healthcare setting.',
