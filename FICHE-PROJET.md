@@ -9,6 +9,7 @@
   (MedPredict, GaitAnalysis, MedScan, VitalWatch IoT, SecureHealth Exchange FHIR, Vision-ECG).
 
 ## Déploiement
+- Nov. 2026, DEMANDÉ PAR VALENTIN : plus AUCUNE mention de Claude dans les commits (pas de ligne « Co-Authored-By: Claude », pas de « Claude-Session ») et TOUJOURS l'identité ci-dessous (git -c user.name=… -c user.email=…), y compris dans le dépôt de profil. Il veut aussi retirer Claude des contributeurs des 44 dépôts (réécriture de l'historique + force push) : bloqué par la permission « Git Destructive » de la session cloud, en attente de son autorisation.
 - Commits : auteur "Valentin-Auger-Laboratoire <263339119+Valentin-Auger-Laboratoire@users.noreply.github.com>" (JAMAIS le Gmail perso valentin32auger@gmail.com ; les anciens commits jusqu'à 6302b0b le contiennent encore).
 - Dépôt : https://github.com/Valentin-Auger-Laboratoire/portfolio (branche `main`)
 - Site en ligne : https://valentin-auger-laboratoire.github.io/portfolio/
