@@ -1,0 +1,250 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Vision-ECG : numérisation</title>
+  <meta name="description" content="Numérisation d'une image d'ECG sur papier millimétré : échelle par autocorrélation, extraction du tracé, pics R, fréquence cardiaque, QRS.">
+  <meta property="og:type" content="website">
+  <meta property="og:url" content="https://valentin-auger-laboratoire.github.io/portfolio/demos/vision-ecg/">
+  <meta property="og:title" content="Vision-ECG : extraire les paramètres d'une image d'électrocardiogramme">
+  <meta property="og:description" content="Numérisation d'une image d'ECG sur papier millimétré : échelle par autocorrélation, extraction du tracé, pics R, fréquence cardiaque, QRS.">
+  <meta property="og:image" content="https://valentin-auger-laboratoire.github.io/portfolio/assets/projets/vision-ecg.jpg">
+  <meta property="og:image:width" content="960">
+  <meta property="og:image:height" content="600">
+  <meta name="twitter:card" content="summary_large_image">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="../_commun/commun.css">
+  <style>
+    .papier { overflow-x: auto; border: 1px solid var(--border-hi); border-radius: 6px; background: #fff6f6; }
+    .papier canvas { display: block; }
+    .interp { font: 0.85rem var(--mono); color: var(--line); margin: 10px 0 0; }
+    .interp b { color: var(--text); }
+    .interp .x { color: #ff8a8a; }
+    .fichier { font: 0.78rem var(--mono); color: var(--dim); width: 100%; }
+    .msg { font: 0.78rem var(--mono); color: var(--warn); min-height: 1em; margin: 6px 0 0; }
+  </style>
+</head>
+<body>
+  <div class="wrap">
+    <div class="top">
+      <a class="back" href="../../index.html#projets" data-t="back">← Retour au portfolio</a>
+      <div class="lang" role="group" aria-label="Langue / Language"><button type="button" data-lang="fr">FR</button><button type="button" data-lang="en">EN</button></div>
+    </div>
+    <p class="eyebrow" data-t="eyebrow"></p>
+    <h1 data-t="title"></h1>
+    <p class="intro" data-t="intro"></p>
+    <p class="warnbox" data-t="warn"></p>
+    <div class="grid">
+      <div class="stack">
+        <div class="panel">
+          <h2 data-t="scT"></h2>
+          <div class="scen">
+            <button type="button" class="btn" data-sc="normal" data-t="sNormal"></button>
+            <button type="button" class="btn" data-sc="brady" data-t="sBrady"></button>
+            <button type="button" class="btn" data-sc="tachy" data-t="sTachy"></button>
+            <button type="button" class="btn" data-sc="irr" data-t="sIrr"></button>
+            <button type="button" class="btn" data-sc="qrs" data-t="sQrs"></button>
+          </div>
+          <h3 data-t="cœurT"></h3>
+          <div class="ctl"><label for="fc" data-t="fcL"></label><output id="ofc"></output><input type="range" id="fc" min="35" max="180" step="1"></div>
+          <div class="ctl"><label for="irr" data-t="irrL"></label><output id="oirr"></output><input type="range" id="irr" min="0" max="0.3" step="0.01"></div>
+          <div class="ctl"><label for="lq" data-t="lqL"></label><output id="olq"></output><input type="range" id="lq" min="1" max="3" step="0.1"></div>
+          <h3 data-t="imT"></h3>
+          <div class="ctl"><label for="ppm" data-t="ppmL"></label><output id="oppm"></output><input type="range" id="ppm" min="5" max="14" step="0.5"></div>
+          <div class="ctl"><label for="bruit" data-t="bruitL"></label><output id="obruit"></output><input type="range" id="bruit" min="0" max="0.05" step="0.005"></div>
+          <div class="ctl"><label for="grain" data-t="grainL"></label><output id="ograin"></output><input type="range" id="grain" min="0" max="0.006" step="0.0005"></div>
+          <div class="seg"><button type="button" class="btn" id="tirage" data-t="tirage"></button></div>
+          <h3 data-t="upT"></h3>
+          <input type="file" id="fichier" class="fichier" accept="image/*">
+          <p class="hint" data-t="upH"></p>
+          <p class="msg" id="msg"></p>
+        </div>
+        <div class="panel">
+          <h2 data-t="vueT"></h2>
+          <label class="check"><input type="checkbox" id="vMasque"> <span data-t="vMasque"></span></label>
+          <label class="check"><input type="checkbox" id="vCourbe" checked> <span data-t="vCourbe"></span></label>
+          <label class="check"><input type="checkbox" id="vR" checked> <span data-t="vR"></span></label>
+        </div>
+      </div>
+      <div class="stack">
+        <div class="panel">
+          <div class="papier"><canvas id="papier"></canvas></div>
+          <p class="interp" id="interp"></p>
+        </div>
+        <div class="panel"><dl class="kpis" id="kpis"></dl></div>
+        <div class="panel">
+          <div class="chart"><p><span><i style="background:#8a8a8e"></i><b data-t="lgVrai"></b></span><span><i style="background:#ff6b7a"></i><b data-t="lgNum"></b></span><span data-t="lgR"></span></p><canvas id="cvS" style="height:220px"></canvas></div>
+          <div class="ctl" style="margin-top:6px"><label for="t0" data-t="t0L"></label><output id="ot0"></output><input type="range" id="t0" min="0" max="7" step="0.1" value="0"></div>
+        </div>
+        <div class="panel row2">
+          <div class="chart"><p><span data-t="lgAc"></span></p><canvas id="cvA" style="height:190px"></canvas></div>
+          <div class="chart"><p><span data-t="lgE"></span></p><canvas id="cvE" style="height:190px"></canvas></div>
+        </div>
+        <div class="panel row2">
+          <div class="chart"><p><span data-t="lgRR"></span></p><canvas id="cvR" style="height:190px"></canvas></div>
+          <div class="note"><h2 data-t="howT"></h2><p data-t="how1"></p><p data-t="how2"></p><p data-t="how3"></p>
+            <p><a href="https://github.com/Valentin-Auger-Laboratoire/Vision-ECG-Extracteur-de-Param-tres-Physiologiques-sur-Image" target="_blank" rel="noopener" data-t="repo"></a></p></div>
+        </div>
+      </div>
+    </div>
+  </div>
+  <script src="../_commun/commun.js"></script>
+  <script src="visionecg.js"></script>
+  <script>
+  (function () {
+    'use strict';
+    const E = window.VisionECG, C = window.Commun, $ = (id) => document.getElementById(id), DUREE = 10;
+    const T = {
+      fr: {
+        back: '← Retour au portfolio', eyebrow: 'Démo · projet personnel en Python (mars 2026)', title: 'Vision-ECG : extraire les paramètres d\'une image d\'électrocardiogramme',
+        intro: "Beaucoup d'ECG n'existent que sur papier ou en image scannée. Le programme retrouve le signal à partir des seuls pixels : il sépare le tracé de la grille, mesure l'échelle sur la grille elle-même, numérise le trait puis mesure la fréquence cardiaque, la variabilité, l'amplitude de l'onde R et la durée du QRS.",
+        warn: "ECG de synthèse imprimé par la page sur un papier millimétré généré : aucune donnée de patient. Comme l'image est fabriquée, on connaît la vérité et on peut comparer. Projet d'étude, pas un dispositif médical.",
+        scT: 'Exemples', sNormal: 'Rythme normal', sBrady: 'Bradycardie', sTachy: 'Tachycardie', sIrr: 'Rythme irrégulier', sQrs: 'QRS élargi',
+        'cœurT': 'Cœur (ECG de synthèse)', fcL: 'Fréquence (/min)', irrL: 'Irrégularité des RR', lqL: 'Largeur du QRS (×)',
+        imT: 'Image', ppmL: 'Résolution (px/mm)', bruitL: 'Bruit sur le tracé (mV)', grainL: 'Grain de numérisation', tirage: 'Nouveau tirage',
+        upT: 'Ou analyser votre image', upH: "Image droite et propre, une seule dérivation, papier rose et trait sombre, impulsion d'étalonnage dans les 10 premiers mm. Une photo de travers ou mal éclairée ne passera pas (voir les limites). L'image reste dans votre navigateur.",
+        vueT: 'Affichage', vMasque: 'Voir ce que l\'algorithme sépare (tracé / grille)', vCourbe: 'Superposer le tracé numérisé', vR: 'Marquer les pics R détectés',
+        kGrille: 'Grille (px/mm)', kGain: 'Étalonnage (mm/mV)', kBat: 'Battements', kFc: 'FC (/min)', kRR: 'RR moyen (ms)', kSdnn: 'SDNN (ms)', kAmp: 'Onde R (mV)', kQrs: 'QRS (ms)', vrai: 'vrai',
+        interp: 'Lecture : <b>{n}</b> battements · FC <b>{fc}</b> /min ({f}) · rythme <b>{r}</b> · QRS <b>{q}</b>', normale: 'normale', bradycardie: 'bradycardie', tachycardie: 'tachycardie', regulier: 'régulier', irregulier: 'irrégulier', fin: 'fin', elargi: 'élargi (≥ 120 ms)',
+        manque: '{v} battement(s) manqué(s) ou en trop', lgVrai: 'signal vrai', lgNum: 'signal numérisé depuis l\'image', lgR: 'points : pics R détectés', t0L: 'Fenêtre de 3 s à partir de (s)',
+        lgAc: 'Autocorrélation du profil de la grille (décalage en px) : 1er pic = 1 mm, affiné sur le pic à 5 mm', lgE: 'Énergie de la dérivée et seuil de détection', lgRR: 'Intervalles RR successifs (ms)',
+        axT: 's', axMv: 'mV', axPx: 'px', axN: 'battement',
+        errGrille: "Grille introuvable : l'image ne ressemble pas à un papier d'ECG rose.", errTrace: 'Tracé introuvable (trait sombre attendu).', errImg: 'Image illisible.', perso: 'Votre image (pas de vérité connue).',
+        howT: "Comment c'est calculé", how1: "Couleur : un pixel sombre est du tracé, un pixel rosé de la grille. Échelle : on additionne la grille colonne par colonne ; l'autocorrélation de ce profil a un pic tous les millimètres. On affine sur le pic des gros carreaux (5 mm) avec une interpolation parabolique : moins de 1 % d'erreur.",
+        how2: "Numérisation : une valeur par colonne de pixels. Sur les ondes raides, le trait est presque vertical et toute la colonne est noire : on garde alors le pixel le plus éloigné de la ligne de base, sinon les pics R seraient écrasés. Le gain est contrôlé sur l'impulsion de 1 mV du début de bande.",
+        how3: "Mesures : signal rééchantillonné à 250 Hz ; pics R par l'énergie de la dérivée (seuil à 30 % du 99e centile, période réfractaire 250 ms) ; amplitude R au-dessus du segment PR ; QRS = zone où la pente dépasse 15 % de son maximum. Mêmes règles et mêmes tests que le code Python.",
+        repo: 'Code Python, tests et explications sur GitHub ↗',
+      },
+      en: {
+        back: '← Back to portfolio', eyebrow: 'Demo · personal project in Python (March 2026)', title: 'Vision-ECG: extracting parameters from an ECG image',
+        intro: 'Many ECGs only exist on paper or as scanned images. The program recovers the signal from the pixels alone: it separates the trace from the grid, measures the scale on the grid itself, digitises the line, then measures heart rate, variability, R-wave amplitude and QRS duration.',
+        warn: 'Synthetic ECG printed by the page on generated graph paper: no patient data. Since the image is generated, the truth is known and can be compared. Study project, not a medical device.',
+        scT: 'Examples', sNormal: 'Normal rhythm', sBrady: 'Bradycardia', sTachy: 'Tachycardia', sIrr: 'Irregular rhythm', sQrs: 'Wide QRS',
+        'cœurT': 'Heart (synthetic ECG)', fcL: 'Rate (/min)', irrL: 'RR irregularity', lqL: 'QRS width (×)',
+        imT: 'Image', ppmL: 'Resolution (px/mm)', bruitL: 'Noise on the trace (mV)', grainL: 'Scanning grain', tirage: 'New draw',
+        upT: 'Or analyse your own image', upH: 'Straight, clean image, a single lead, pink paper and dark trace, calibration pulse in the first 10 mm. A tilted or poorly lit photo will not work (see limits). The image stays in your browser.',
+        vueT: 'Display', vMasque: 'Show what the algorithm separates (trace / grid)', vCourbe: 'Overlay the digitised trace', vR: 'Mark detected R peaks',
+        kGrille: 'Grid (px/mm)', kGain: 'Calibration (mm/mV)', kBat: 'Beats', kFc: 'HR (/min)', kRR: 'Mean RR (ms)', kSdnn: 'SDNN (ms)', kAmp: 'R wave (mV)', kQrs: 'QRS (ms)', vrai: 'true',
+        interp: 'Reading: <b>{n}</b> beats · HR <b>{fc}</b> /min ({f}) · <b>{r}</b> rhythm · <b>{q}</b> QRS', normale: 'normal', bradycardie: 'bradycardia', tachycardie: 'tachycardia', regulier: 'regular', irregulier: 'irregular', fin: 'narrow', elargi: 'wide (≥ 120 ms)',
+        manque: '{v} beat(s) missed or extra', lgVrai: 'true signal', lgNum: 'signal digitised from the image', lgR: 'dots: detected R peaks', t0L: '3 s window starting at (s)',
+        lgAc: 'Autocorrelation of the grid profile (lag in px): 1st peak = 1 mm, refined on the 5 mm peak', lgE: 'Derivative energy and detection threshold', lgRR: 'Successive RR intervals (ms)',
+        axT: 's', axMv: 'mV', axPx: 'px', axN: 'beat',
+        errGrille: 'Grid not found: the image does not look like pink ECG paper.', errTrace: 'Trace not found (dark line expected).', errImg: 'Unreadable image.', perso: 'Your image (no known truth).',
+        howT: 'How it is computed', how1: 'Colour: a dark pixel is trace, a pinkish pixel is grid. Scale: the grid is summed column by column; the autocorrelation of this profile peaks every millimetre. It is refined on the large-square peak (5 mm) with parabolic interpolation: under 1 % error.',
+        how2: 'Digitisation: one value per pixel column. On steep waves the line is nearly vertical and the whole column is dark: the pixel farthest from the baseline is kept, otherwise R peaks would be flattened. The gain is checked on the 1 mV pulse at the start of the strip.',
+        how3: 'Measurements: signal resampled at 250 Hz; R peaks from the derivative energy (threshold at 30 % of the 99th percentile, 250 ms refractory period); R amplitude above the PR segment; QRS = zone where the slope exceeds 15 % of its maximum. Same rules and same tests as the Python code.',
+        repo: 'Python code, tests and explanations on GitHub ↗',
+      },
+    };
+    const SC = { normal: [72, 0, 1], brady: [45, 0, 1], tachy: [130, 0, 1], irr: [90, 0.18, 1], qrs: [65, 0, 2.4] };
+    let sc = 'normal', graine = 0, im = null, verite = null, res = null, erreur = '';
+    const L = C.Langue(T, () => { afficher(); });
+    const t = (k, v) => L.t(k).replace('{v}', v === undefined ? '' : v);
+    const nf = (x, d) => C.nf(x, d, L.lang);
+
+    function scenario(nom) { sc = nom; const [fc, irr, lq] = SC[nom]; $('fc').value = fc; $('irr').value = irr; $('lq').value = lq; generer(); }
+    function generer() {
+      document.querySelectorAll('[data-sc]').forEach((b) => b.setAttribute('aria-pressed', String(b.dataset.sc === sc)));
+      const o = { duree: DUREE, fc: +$('fc').value, irregularite: +$('irr').value, largeurQrs: +$('lq').value, pxParMm: +$('ppm').value, bruitMv: +$('bruit').value, bruitPixels: +$('grain').value, graine };
+      $('ofc').textContent = o.fc; $('oirr').textContent = nf(o.irregularite, 2); $('olq').textContent = nf(o.largeurQrs, 1);
+      $('oppm').textContent = nf(o.pxParMm, 1); $('obruit').textContent = nf(o.bruitMv, 3); $('ograin').textContent = nf(o.bruitPixels * 100, 2) + ' %';
+      const p = E.imprimer(o); im = p.image; verite = p.verite; $('msg').textContent = ''; $('fichier').value = '';
+      analyser();
+    }
+    function analyser() {
+      erreur = ''; res = null;
+      try { res = E.analyser(im); } catch (e) { erreur = e.message === 'grille introuvable' ? 'errGrille' : e.message === 'tracé introuvable' ? 'errTrace' : 'errImg'; }
+      const dur = res ? res.signal.t[res.signal.t.length - 1] : DUREE;
+      $('t0').max = Math.max(0, Math.floor((dur - 3) * 10) / 10); if (+$('t0').value > +$('t0').max) $('t0').value = $('t0').max;
+      afficher();
+    }
+    function dessinPapier() {
+      const cv = $('papier'); cv.width = im.width; cv.height = im.height; cv.style.width = im.width + 'px'; cv.style.height = im.height + 'px';
+      const ctx = cv.getContext('2d');
+      if ($('vMasque').checked && res) {
+        const m = res.numerisation.masques, d = new ImageData(im.width, im.height);
+        for (let i = 0; i < m.w * m.h; i++) { const c = m.trace[i] ? [10, 10, 12] : m.grille[i] ? [200, 16, 46] : [255, 255, 255]; d.data[4 * i] = c[0]; d.data[4 * i + 1] = c[1]; d.data[4 * i + 2] = c[2]; d.data[4 * i + 3] = 255; }
+        ctx.putImageData(d, 0, 0);
+      } else ctx.putImageData(new ImageData(im.data, im.width, im.height), 0, 0);
+      if (!res) return;
+      const ppm = res.pxParMm, x0 = res.debut, y0 = res.baseImage, pmv = ppm * E.GAIN;
+      if ($('vCourbe').checked) {
+        ctx.strokeStyle = 'rgba(0, 150, 255, 0.85)'; ctx.lineWidth = 1.5; ctx.beginPath();
+        res.brut.t.forEach((tt, i) => { const x = x0 + i, y = y0 - res.brut.v[i] * pmv; if (i) ctx.lineTo(x, y); else ctx.moveTo(x, y); }); ctx.stroke();
+      }
+      if ($('vR').checked) {
+        ctx.fillStyle = '#c8102e';
+        res.instantsR.forEach((tr, i) => {
+          const x = x0 + tr * E.VITESSE * ppm, y = y0 - res.signal.v[res.detection.pics[i]] * pmv - 8;
+          ctx.beginPath(); ctx.moveTo(x, y); ctx.lineTo(x - 6, y - 10); ctx.lineTo(x + 6, y - 10); ctx.closePath(); ctx.fill();
+        });
+      }
+    }
+    function afficher() {
+      if (!im) return;
+      dessinPapier();
+      const kpi = (lab, v, vr, bad) => `<div class="kpi${bad ? ' bad' : ''}"><dt>${lab}</dt><dd>${v}${vr !== null && vr !== undefined ? ` <small>${t('vrai')} ${vr}</small>` : ''}</dd></div>`;
+      if (!res) { $('kpis').innerHTML = ''; $('interp').innerHTML = `<span class="x">${t(erreur)}</span>`; ['cvS', 'cvA', 'cvE', 'cvR'].forEach((id) => { const c = $(id); c.getContext('2d').clearRect(0, 0, c.width, c.height); }); return; }
+      const v = verite, nbOk = !v || res.nbBattements === v.picsR.length;
+      const rrV = v ? v.picsR.slice(1).map((x, i) => x - v.picsR[i]) : null;
+      $('kpis').innerHTML = kpi(t('kGrille'), nf(res.pxParMm, 2), v ? nf(v.pxParMm, 2) : null) + kpi(t('kGain'), nf(res.gainMesure, 1), v ? '10,0'.replace(',', L.lang === 'en' ? '.' : ',') : null, Math.abs(res.gainMesure - 10) > 0.5) +
+        kpi(t('kBat'), res.nbBattements, v ? v.picsR.length : null, !nbOk) + kpi(t('kFc'), nf(res.fc, 0), v ? nf(v.fc, 0) : null) +
+        kpi(t('kRR'), nf(res.rrMoyenMs, 0), rrV ? nf(rrV.reduce((a, b) => a + b, 0) / rrV.length * 1000, 0) : null) + kpi(t('kSdnn'), nf(res.sdnnMs, 0), rrV && rrV.length > 2 ? nf(E.ecartType(rrV, 1) * 1000, 0) : null) +
+        kpi(t('kAmp'), nf(res.amplitudeRMv, 2), v ? nf(v.amplitudeR, 2) : null) + kpi(t('kQrs'), nf(res.qrsMs, 0), null, res.qrsMs >= 120);
+      $('interp').innerHTML = L.t('interp').replace('{n}', res.nbBattements).replace('{fc}', nf(res.fc, 0)).replace('{f}', t(res.frequence)).replace('{r}', t(res.rythme)).replace('{q}', t(res.qrs)) +
+        (nbOk ? '' : ` · <span class="x">${t('manque', Math.abs(res.nbBattements - v.picsR.length))}</span>`) + (v ? '' : ` · ${t('perso')}`);
+      // Signal sur une fenêtre de 3 s
+      const t0 = +$('t0').value, t1 = t0 + 3; $('ot0').textContent = nf(t0, 1);
+      const fen = (tt, vv) => { const x = [], y = []; tt.forEach((q, i) => { if (q >= t0 - 0.01 && q <= t1 + 0.01) { x.push(q); y.push(vv[i]); } }); return { x, y }; };
+      const sN = fen(res.signal.t, res.signal.v), series = [];
+      if (v) { const sV = fen(v.t, v.v); series.push({ x: sV.x, y: sV.y, color: '#8a8a8e', width: 3 }); }
+      series.push({ x: sN.x, y: sN.y, color: '#ff6b7a', width: 1.4 });
+      const all = sN.y.concat(v ? fen(v.t, v.v).y : []);
+      C.graphique($('cvS'), { xmin: t0, xmax: t1, ymin: Math.min(-0.5, ...all) - 0.1, ymax: Math.max(1.4, ...all) + 0.1, xlabel: t('axT'), ylabel: t('axMv'), series,
+        marques: res.detection.pics.filter((p) => res.signal.t[p] >= t0 && res.signal.t[p] <= t1).map((p) => ({ x: res.signal.t[p], y: res.signal.v[p], color: '#c8102e', r: 4 })),
+        fmtx: (q) => nf(q, 1), fmty: (q) => nf(q, 1) });
+      // Autocorrélation
+      const g = res.grille, lmax = Math.min(g.ac.length - 1, Math.ceil(g.k5 * 1.3)), xs = [], ys = [];
+      for (let k = 0; k <= lmax; k++) { xs.push(k); ys.push(g.ac[k]); }
+      C.graphique($('cvA'), { xmin: 0, xmax: lmax, ymin: Math.min(...ys) - 0.05, ymax: 1.05, xlabel: t('axPx'), series: [{ x: xs, y: ys, color: '#c9c9cc', width: 1.2 }],
+        vlignes: [{ x: g.k1, color: '#c8102e', dash: [4, 3] }, { x: g.k5, color: '#c8102e' }], fmty: (q) => nf(q, 1) });
+      // Énergie
+      const ex = res.signal.t, ey = Array.from(res.detection.energie), emax = Math.max(...ey);
+      C.graphique($('cvE'), { xmin: 0, xmax: ex[ex.length - 1], ymin: 0, ymax: emax * 1.05, xlabel: t('axT'), series: [{ x: ex, y: ey, color: '#c9c9cc', width: 1 }],
+        hlignes: [{ y: res.detection.seuil, color: '#c8102e', dash: [5, 4] }], marques: res.detection.pics.map((p) => ({ x: ex[p], y: ey[p], color: '#c8102e', r: 3 })), fmty: () => '' });
+      // Tachogramme
+      const rr = res.rr.map((x) => x * 1000), sR = [{ x: rr.map((_, i) => i + 1), y: rr, color: '#ff6b7a', points: true, r: 3.5 }];
+      if (rrV && nbOk) sR.unshift({ x: rrV.map((_, i) => i + 1), y: rrV.map((x) => x * 1000), color: '#8a8a8e', width: 1.2, dash: [4, 3] });
+      const lo = Math.min(...rr, ...(rrV || []).map((x) => x * 1000)), hi = Math.max(...rr, ...(rrV || []).map((x) => x * 1000));
+      C.graphique($('cvR'), { xmin: 0.5, xmax: Math.max(2, rr.length) + 0.5, ymin: Math.max(0, lo - 80), ymax: hi + 80, xlabel: t('axN'), series: sR, fmtx: (q) => (Number.isInteger(q) ? String(q) : '') });
+    }
+    $('fichier').addEventListener('change', () => {
+      const f = $('fichier').files[0]; if (!f) return;
+      const url = URL.createObjectURL(f), img = new Image();
+      img.onload = () => {
+        const s = Math.min(1, 4000 / img.naturalWidth), c = document.createElement('canvas');
+        c.width = Math.round(img.naturalWidth * s); c.height = Math.round(img.naturalHeight * s);
+        const x = c.getContext('2d'); x.drawImage(img, 0, 0, c.width, c.height);
+        const d = x.getImageData(0, 0, c.width, c.height); URL.revokeObjectURL(url);
+        im = { width: d.width, height: d.height, data: d.data }; verite = null; sc = '';
+        document.querySelectorAll('[data-sc]').forEach((b) => b.setAttribute('aria-pressed', 'false'));
+        $('msg').textContent = f.name; analyser();
+      };
+      img.onerror = () => { $('msg').textContent = t('errImg'); };
+      img.src = url;
+    });
+    document.querySelectorAll('[data-sc]').forEach((b) => b.addEventListener('click', () => scenario(b.dataset.sc)));
+    ['fc', 'irr', 'lq', 'ppm', 'bruit', 'grain'].forEach((id) => $(id).addEventListener('input', () => { sc = ''; generer(); }));
+    $('tirage').addEventListener('click', () => { graine++; generer(); });
+    $('t0').addEventListener('input', afficher);
+    ['vMasque', 'vCourbe', 'vR'].forEach((id) => $(id).addEventListener('change', afficher));
+    window.addEventListener('resize', afficher);
+    $('ppm').value = 8; $('bruit').value = 0; $('grain').value = 0;
+    scenario('irr'); L.appliquer(L.lang);
+  })();
+  </script>
+</body>
+</html>
