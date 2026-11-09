@@ -76,12 +76,15 @@ document.querySelectorAll('#accueil, main section[id]').forEach(s => observer.ob
     try { localStorage.setItem('lang', lang); } catch (e) {}
   }
 
+  // Un clic sur FR / EN est mémorisé ('langChoix') ; 'lang' sert aussi aux démos
   document.querySelectorAll('.lang-switch button').forEach(b =>
-    b.addEventListener('click', () => setLang(b.dataset.lang)));
+    b.addEventListener('click', () => {
+      try { localStorage.setItem('langChoix', b.dataset.lang); } catch (e) {}
+      setLang(b.dataset.lang);
+    }));
 
-  // Langue au chargement : choix mémorisé, sinon langue du navigateur
+  // Langue au chargement : anglais pour tout le monde, sauf si le visiteur a cliqué sur FR
   let lang = null;
-  try { lang = localStorage.getItem('lang'); } catch (e) {}
-  if (!lang) lang = (navigator.language || 'fr').toLowerCase().startsWith('fr') ? 'fr' : 'en';
-  setLang(lang);
+  try { lang = localStorage.getItem('langChoix'); } catch (e) {}
+  setLang(lang === 'fr' ? 'fr' : 'en');
 })();
