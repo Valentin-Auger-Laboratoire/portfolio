@@ -86,8 +86,8 @@
     <div class="top">
       <a class="back" href="../../index.html#projets" data-t="back">← Retour au portfolio</a>
       <div class="lang" role="group" aria-label="Langue / Language">
-        <button type="button" data-lang="fr" aria-pressed="true">FR</button>
         <button type="button" data-lang="en" aria-pressed="false">EN</button>
+        <button type="button" data-lang="fr" aria-pressed="true">FR</button>
       </div>
     </div>
 
@@ -193,8 +193,8 @@
         time: 'Time (s)', freq: 'Frequency (Hz)', amp: 'Amplitude',
       },
     };
-    let lang = 'fr';
-    try { lang = localStorage.getItem('lang') || ((navigator.language || 'fr').toLowerCase().startsWith('fr') ? 'fr' : 'en'); } catch (e) {}
+    let lang = 'en';
+    try { lang = (localStorage.getItem('langChoix') === 'fr' ? 'fr' : 'en'); } catch (e) {}
 
     // Plages de P0 / P1 selon la déformation (P0 inutile pour GAIN, P1 inutile pour OFFSET)
     const RANGES = {
@@ -356,7 +356,7 @@
       });
       document.title = l === 'fr' ? 'Chaîne de mesure FFT — démo' : 'FFT measurement chain — demo';
       document.querySelectorAll('.lang button').forEach((b) => b.setAttribute('aria-pressed', b.dataset.lang === l));
-      try { localStorage.setItem('lang', l); } catch (e) {}
+      try { localStorage.setItem('lang', l); localStorage.setItem('langChoix', l); } catch (e) {}
       update();
     }
 

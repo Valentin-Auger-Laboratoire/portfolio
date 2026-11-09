@@ -103,8 +103,8 @@
     <div class="top">
       <a class="back" href="../../index.html#projets" data-t="back">← Retour au portfolio</a>
       <div class="lang" role="group" aria-label="Langue / Language">
-        <button type="button" data-lang="fr" aria-pressed="true">FR</button>
         <button type="button" data-lang="en" aria-pressed="false">EN</button>
+        <button type="button" data-lang="fr" aria-pressed="true">FR</button>
       </div>
     </div>
     <p class="eyebrow" data-t="eyebrow">Démo · module IHM (Python / PyQt)</p>
@@ -244,8 +244,8 @@
         dlJson: 'Download resultats.json', dlCsv: 'Download resultats.csv', hTitle: 'Title', hCompany: 'Company', hPlace: 'Location',
       },
     };
-    let lang = 'fr';
-    try { lang = localStorage.getItem('lang') || ((navigator.language || 'fr').toLowerCase().startsWith('fr') ? 'fr' : 'en'); } catch (e) {}
+    let lang = 'en';
+    try { lang = (localStorage.getItem('langChoix') === 'fr' ? 'fr' : 'en'); } catch (e) {}
     if (!T[lang]) lang = 'fr';
     const t = (k) => T[lang][k];
     const logTo = (id) => (msg, cls) => { const el = $(id); el.insertAdjacentHTML('beforeend', '<span class="' + (cls || '') + '">' + esc(msg) + '</span>\n'); el.scrollTop = el.scrollHeight; };
@@ -475,7 +475,7 @@
       document.querySelectorAll('[data-t]').forEach((el) => { const v = T[l][el.dataset.t]; if (typeof v === 'string') el.innerHTML = v; });
       document.title = l === 'fr' ? 'Démo des projets IHM' : 'HCI projects demo';
       document.querySelectorAll('.lang button').forEach((b) => b.setAttribute('aria-pressed', b.dataset.lang === l));
-      try { localStorage.setItem('lang', l); } catch (e) {}
+      try { localStorage.setItem('lang', l); localStorage.setItem('langChoix', l); } catch (e) {}
       $('explSuivi').innerHTML = '<h2>' + (l === 'fr' ? 'Ce que montre cette version' : 'What this version shows') + '</h2>' + t(ver === 'v1' ? 'explV1' : 'explV2');
       $('explSalle').innerHTML = '<h2>Architecture</h2>' + t(arch === 'mvp' ? 'explMvp' : 'explMvvm');
       $('explMon').innerHTML = '<h2>' + (l === 'fr' ? 'Ce que fait le code' : 'What the code does') + '</h2>' + t('explMon');

@@ -109,7 +109,7 @@
   <div class="wrap">
     <div class="top">
       <a class="back" href="../../index.html#projets" data-t="back">← Retour au portfolio</a>
-      <div class="lang" role="group" aria-label="Langue / Language"><button type="button" data-lang="fr">FR</button><button type="button" data-lang="en">EN</button></div>
+      <div class="lang" role="group" aria-label="Langue / Language"><button type="button" data-lang="en">EN</button><button type="button" data-lang="fr">FR</button></div>
     </div>
     <p class="eyebrow" data-t="eyebrow">Démo · TP de sciences de l'ingénieur, CPGE TSI (septembre 2024)</p>
     <h1 data-t="title">Cordeuse de raquette : le réducteur et la boucle d'effort</h1>
@@ -156,8 +156,8 @@
   (function () {
     'use strict';
     const C = window.Cordeuse, $ = (id) => document.getElementById(id);
-    let lang = 'fr';
-    try { lang = localStorage.getItem('lang') || ((navigator.language || 'fr').toLowerCase().startsWith('fr') ? 'fr' : 'en'); } catch (e) {}
+    let lang = 'en';
+    try { lang = (localStorage.getItem('langChoix') === 'fr' ? 'fr' : 'en'); } catch (e) {}
     const T = {
       fr: {
         back: '← Retour au portfolio', eyebrow: "Démo · TP de sciences de l'ingénieur, CPGE TSI (septembre 2024)", title: "Cordeuse de raquette : le réducteur et la boucle d'effort",
@@ -340,7 +340,7 @@
       document.querySelectorAll('[data-t]').forEach((el) => { const v = T[l][el.dataset.t]; if (typeof v === 'string') el.textContent = v; });
       document.querySelectorAll('[data-alt]').forEach((el) => { const v = T[l][el.dataset.alt]; if (typeof v === 'string') el.alt = v; });
       document.querySelectorAll('.lang button').forEach((b) => b.setAttribute('aria-pressed', b.dataset.lang === l));
-      try { localStorage.setItem('lang', l); } catch (e) {}
+      try { localStorage.setItem('lang', l); localStorage.setItem('langChoix', l); } catch (e) {}
       renderCtl(); if (sim) { kpis(); issues(); drawZ(); }
     }
     document.querySelectorAll('.lang button').forEach((b) => b.addEventListener('click', () => setLang(b.dataset.lang)));

@@ -69,8 +69,8 @@ const COL = { fixed: '#5be35b', ghost: '#5fe3ff', fist: '#ffa600', off: '#c8102e
 
 const $ = (id) => document.getElementById(id);
 const video = $('video'), canvas = $('canvas'), ctx = canvas.getContext('2d');
-let lang = 'fr';
-try { lang = localStorage.getItem('lang') || ((navigator.language || 'fr').toLowerCase().startsWith('fr') ? 'fr' : 'en'); } catch (e) {}
+let lang = 'en';
+try { lang = (localStorage.getItem('langChoix') === 'fr' ? 'fr' : 'en'); } catch (e) {}
 let mode = 2, landmarker = null, stream = null, running = false;
 let cubes = [], pinchLock = {}, fistLock = {}, fps = 0, prev = 0, quitSince = 0, lastVideoTime = -1;
 let button = [0, 0, 0, 0];
@@ -84,7 +84,7 @@ function setLang(l) {
   if (!running && $('start').dataset.state === 'restart') $('start').textContent = t('restart');
   document.title = l === 'fr' ? 'Vision IA — démo' : 'Vision AI — demo';
   document.querySelectorAll('.lang button').forEach((b) => b.setAttribute('aria-pressed', b.dataset.lang === l));
-  try { localStorage.setItem('lang', l); } catch (e) {}
+  try { localStorage.setItem('lang', l); localStorage.setItem('langChoix', l); } catch (e) {}
 }
 
 function setMode(m) {

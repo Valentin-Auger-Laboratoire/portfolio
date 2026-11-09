@@ -119,8 +119,8 @@
     <div class="top">
       <a class="back" href="../../index.html#projets" data-t="back">← Retour au portfolio</a>
       <div class="lang" role="group" aria-label="Langue / Language">
-        <button type="button" data-lang="fr" aria-pressed="true">FR</button>
         <button type="button" data-lang="en" aria-pressed="false">EN</button>
+        <button type="button" data-lang="fr" aria-pressed="true">FR</button>
       </div>
     </div>
     <p class="eyebrow" data-t="eyebrow">Outil réseau · supervision</p>
@@ -237,8 +237,8 @@
         svc: { router: 'Router (gateway)', switch: 'Managed switch', nas: 'NAS (shares, backups)', ha: 'Home automation server', dns: 'Local DNS', print: '3D printer', wan: 'Internet access' },
       },
     };
-    let lang = 'fr';
-    try { lang = localStorage.getItem('lang') || ((navigator.language || 'fr').toLowerCase().startsWith('fr') ? 'fr' : 'en'); } catch (e) {}
+    let lang = 'en';
+    try { lang = (localStorage.getItem('langChoix') === 'fr' ? 'fr' : 'en'); } catch (e) {}
     if (!T[lang]) lang = 'fr';
     const t = (k) => T[lang][k];
     const fill = (s, p) => s.replace(/\{(\w+)\}/g, (_, k) => (p[k] != null ? p[k] : ''));
@@ -460,7 +460,7 @@
       if (sim) $('pause').textContent = sim.paused ? t('resume') : t('pause');
       document.title = l === 'fr' ? 'Tableau de bord homelab' : 'Homelab dashboard';
       document.querySelectorAll('.lang button').forEach((b) => b.setAttribute('aria-pressed', b.dataset.lang === l));
-      try { localStorage.setItem('lang', l); } catch (e) {}
+      try { localStorage.setItem('lang', l); localStorage.setItem('langChoix', l); } catch (e) {}
       renderTargets(); if (sim) render();
     }
     document.querySelectorAll('.lang button').forEach((b) => b.addEventListener('click', () => setLang(b.dataset.lang)));
