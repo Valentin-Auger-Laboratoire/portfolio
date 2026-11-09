@@ -47,7 +47,7 @@
 - traduction-anglais.js (ancien nom : i18n.js, renommé pour être compris tout de suite) — traductions ANGLAISES (clé → texte). Le français est dans index.html.
 
 ## Bilingue FR / EN (obligatoire : stage de 16 semaines à l'étranger)
-- Sélecteur FR | EN en haut à droite (à gauche sur mobile). Choix mémorisé (localStorage), sinon langue du navigateur.
+- Sélecteur EN | FR en haut à droite (à gauche sur mobile). Nov. 2026, DEMANDÉ PAR VALENTIN : le site s'ouvre en ANGLAIS pour tout le monde (même navigateur français) et le bouton EN est en premier ; seul un CLIC sur FR est mémorisé (localStorage 'langChoix') ; 'lang' est toujours écrit pour que les démos suivent. Le français reste le texte du HTML (index.html), l'anglais vient de traduction-anglais.js.
 - TOUT nouveau texte : ajouter data-i18n="clé" dans index.html + la traduction dans traduction-anglais.js. Attributs : data-i18n-attr="alt:clé;aria-label:clé".
 - assets/ — cv.pdf, images de projets
 
