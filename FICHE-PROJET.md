@@ -136,5 +136,5 @@ Images des cartes (nov. 2026, demandé par Valentin pour alléger) : chaque cart
 - [x] Déployer sur GitHub Pages
 - [x] Couleur d'accent choisie : rouge profond #c8102e (sélecteur retiré)
 - Bouton principal : texte blanc avec contour noir (text-shadow) — demandé par Valentin.
-- CV : deux boutons rouges côte à côte SOUS la carte Contact, icône fine + "Télécharger le CV / Version française · PDF" (assets/cv-fr.pdf) et "Download my resume / English version · PDF" (assets/cv-en.pdf). Pas de grosses flèches. PDF à fournir par Valentin.
+- CV : deux boutons rouges côte à côte SOUS la carte Contact, icône fine + "Télécharger le CV / Version française · PDF" (assets/cv-fr.pdf) et "Download my resume / English version · PDF" (assets/cv-en.pdf). Pas de grosses flèches. PDF à fournir par Valentin. Nov. 2026 (demandé par Valentin) : le bouton du CV dans la langue choisie passe EN PREMIER (script.js, setLang déplace le lien dans .cv-block).
 - Pied de page : nom + deux lignes dans le MÊME style (gris italique, rien en couleur) : "Connecter, sécuriser, faire durer." / "Mais ce qui compte, c'est que ça marche. Et que ça tienne."  (les phrases slogan santé type "technologie qui prend soin" ont été jugées trop clichées) + liens LinkedIn / GitHub / Haut de page. PAS de ©, d'année ni de mention GitHub Pages.

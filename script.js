@@ -69,6 +69,10 @@ document.querySelectorAll('#accueil, main section[id]').forEach(s => observer.ob
     });
     document.querySelectorAll('.lang-switch button').forEach(b =>
       b.setAttribute('aria-pressed', b.dataset.lang === lang));
+    // CV : la version dans la langue choisie passe en premier
+    const cv = document.querySelector('.cv-block');
+    const cvLang = cv && cv.querySelector(en ? 'a[href$="cv-en.pdf"]' : 'a[href$="cv-fr.pdf"]');
+    if (cvLang && cv.firstElementChild !== cvLang) cv.prepend(cvLang);
     try { localStorage.setItem('lang', lang); } catch (e) {}
   }
 
