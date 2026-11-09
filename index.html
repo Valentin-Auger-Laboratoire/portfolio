@@ -809,16 +809,16 @@
           </div>
         </article>
         <article class="project-card project-card--wide" data-tags="electronique sante embarque">
-          <div class="card-media card-media--fit"><img src="assets/projets/athletix-data.jpg" alt="Deux écrans de l'application Athletix-Data (accueil et séance) et schéma du capteur" data-i18n-attr="alt:p9.img" width="1440" height="600" loading="lazy" decoding="async"></div>
+          <div class="card-media card-media--fit"><img src="assets/projets/athletix-data.jpg" alt="Deux écrans de l'application Athletix-Data (accueil et séance) et résultat de la simulation Simulink du brassard EMG" data-i18n-attr="alt:p9.img" width="1440" height="600" loading="lazy" decoding="async"></div>
           <div class="card-top">
             <span class="card-type" data-i18n="tag.electronics">Électronique</span>
-            <span class="card-date" data-i18n="p9.date">Avril 2026</span>
+            <span class="card-date" data-i18n="p9.date">Juin 2026</span>
           </div>
-          <h3 data-i18n="p9.title">Athletix-Data : suivi sportif relié à un capteur cardiaque sur ESP32</h3>
-          <p data-i18n="p9.desc">Projet complet du capteur à l'application. Côté matériel : un photopléthysmographe (LED infrarouge, phototransistor, amplificateur LM358) lu par un ESP32 à 50 Hz, simulé sur Wokwi. Côté logiciel : une application Flutter (inscription vérifiée par e-mail, séances par famille de sports, questionnaire de profil, conseils générés par règles, classement) et une API PHP/MySQL sécurisée (mots de passe hachés, requêtes préparées, jeton de session). Le brassard n'est pas encore relié à l'appli : les BPM affichés sont simulés et indiqués comme tels.</p>
-          <ul class="tags"><li>ESP32 / Arduino</li><li>LM358</li><li>Wokwi</li><li>Flutter / Dart</li><li>PHP / MySQL</li><li>API REST</li></ul>
+          <h3 data-i18n="p9.title">Athletix-Data : brassard EMG connecté et application de suivi sportif</h3>
+          <p data-i18n="p9.desc">Projet de groupe à l'EPISEN, mené avec Maxence Olivier et Othmen Al Bydeoi. Un brassard mesure l'activité du biceps : capteur MyoWare 2.0, SparkFun ESP32-S3 (conversion 12 bits à 500 Hz, valeur efficace sur 200 ms, envoi en Bluetooth Low Energy) et batterie LiPo. Ma partie : le schéma électrique du brassard, le firmware ESP32, l'acquisition et le calcul RMS, et l'interface Flutter du prototype. La chaîne de mesure a été modélisée sous Simulink, avec ses limites écrites dans le dépôt. L'application (inscription vérifiée par e-mail, séances, profil, classement, API PHP/MySQL sécurisée) date de la première piste du projet, un capteur cardiaque : les battements qu'elle affiche sont simulés et indiqués comme tels.</p>
+          <ul class="tags"><li>ESP32-S3</li><li>MyoWare 2.0</li><li>Bluetooth LE</li><li>Simulink</li><li>Flutter / Dart</li><li>PHP / MySQL</li></ul>
           <div class="card-foot">
-            <span class="card-context" data-i18n="projects.contextIot">Objet connecté · capteur → appli → serveur</span>
+            <span class="card-context" data-i18n="projects.contextTeam">Projet de groupe · EPISEN, 3 étudiants</span>
             <span class="card-links">
               <a class="card-link card-link--secondary" href="https://github.com/Valentin-Auger-Laboratoire/athletix-data" target="_blank" rel="noopener" data-i18n="projects.code">Voir le code ↗</a>
               <a class="card-link" href="https://valentin-auger-laboratoire.github.io/athletix-data/" target="_blank" rel="noopener" data-i18n="projects.demo">Essayer la démo ↗</a>
