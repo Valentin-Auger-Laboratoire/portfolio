@@ -101,8 +101,8 @@
     <div class="top">
       <a class="back" href="../../index.html#projets" data-t="back">← Retour au portfolio</a>
       <div class="lang" role="group" aria-label="Langue / Language">
-        <button type="button" data-lang="fr" aria-pressed="true">FR</button>
         <button type="button" data-lang="en" aria-pressed="false">EN</button>
+        <button type="button" data-lang="fr" aria-pressed="true">FR</button>
       </div>
     </div>
 
@@ -188,8 +188,8 @@
         presetsList: [['T01', 'pc-paris', 'pc-lyon', 'icmp'], ['T03', 'pc-paris', 'web-dmz', 'icmp'], ['T04', 'vm-radio', 'web-dmz', 'icmp'], ['T05', 'vm-radio', 'pc-paris', 'icmp'], ['T07', 'vm-radio', 'web-dmz', 'http'], ['T08', 'vm-etabli', 'web-dmz', 'http'], ['Radio → LAN SSH', 'vm-radio', 'pc-paris', 'ssh'], ['Facility → Cloud', 'vm-etabli', 'pc-cloud', 'https']],
       },
     };
-    let lang = 'fr';
-    try { lang = localStorage.getItem('lang') || ((navigator.language || 'fr').toLowerCase().startsWith('fr') ? 'fr' : 'en'); } catch (e) {}
+    let lang = 'en';
+    try { lang = (localStorage.getItem('langChoix') === 'fr' ? 'fr' : 'en'); } catch (e) {}
     const $ = (id) => document.getElementById(id);
 
     // ---------- Topologie (positions dans le viewBox 900x600) ----------
@@ -297,7 +297,7 @@
       document.querySelectorAll('[data-t]').forEach((el) => { const v = T[l][el.dataset.t]; if (typeof v === 'string') el.innerHTML = v; });
       document.title = l === 'fr' ? 'Simulateur PoC réseau — démo' : 'Network PoC simulator — demo';
       document.querySelectorAll('.lang button').forEach((b) => b.setAttribute('aria-pressed', b.dataset.lang === l));
-      try { localStorage.setItem('lang', l); } catch (e) {}
+      try { localStorage.setItem('lang', l); localStorage.setItem('langChoix', l); } catch (e) {}
       fillSelects(); run();
     }
 

@@ -94,8 +94,8 @@
     <div class="top">
       <a class="back" href="../../index.html#projets" data-t="back">← Retour au portfolio</a>
       <div class="lang" role="group" aria-label="Langue / Language">
-        <button type="button" data-lang="fr" aria-pressed="true">FR</button>
         <button type="button" data-lang="en" aria-pressed="false">EN</button>
+        <button type="button" data-lang="fr" aria-pressed="true">FR</button>
       </div>
     </div>
     <p class="eyebrow" data-t="eyebrow">Démo · électronique analogique</p>
@@ -228,8 +228,8 @@
         nb: 'Teaching simulation: the signals are generated, they are not the lab recordings.',
       },
     };
-    let lang = 'fr';
-    try { lang = localStorage.getItem('lang') || ((navigator.language || 'fr').toLowerCase().startsWith('fr') ? 'fr' : 'en'); } catch (e) {}
+    let lang = 'en';
+    try { lang = (localStorage.getItem('langChoix') === 'fr' ? 'fr' : 'en'); } catch (e) {}
     if (!T[lang]) lang = 'fr';
     const t = (k) => T[lang][k];
     const num = (v, d) => v.toLocaleString(lang === 'fr' ? 'fr-FR' : 'en-GB', { maximumFractionDigits: d, minimumFractionDigits: 0 });
@@ -395,7 +395,7 @@
       $('run').textContent = running ? t('stop') : t('run');
       document.title = l === 'fr' ? 'Oscilloscope virtuel des TP' : 'Lab virtual oscilloscope';
       document.querySelectorAll('.lang button').forEach((b) => b.setAttribute('aria-pressed', b.dataset.lang === l));
-      try { localStorage.setItem('lang', l); } catch (e) {}
+      try { localStorage.setItem('lang', l); localStorage.setItem('langChoix', l); } catch (e) {}
       fillSel('tdiv', TDIV, 's', st.tdiv[view]); fillSel('v1', VDIV, 'V', st.v1[view]); fillSel('v2', VDIV, 'V', st.v2[view]);
       const keep = (id, list, unit, def) => { const v = $(id).value || def; fillSel(id, list, unit, v); };
       keep('Rf', RES, 'Ω', 1e6); keep('Cf', CAP, 'F', 10e-12); keep('pR', RES, 'Ω', 1e6); keep('pC', CAP, 'F', 0.47e-6); keep('sR', RES, 'Ω', 330e3); keep('sC', CAP, 'F', 0.47e-6);
