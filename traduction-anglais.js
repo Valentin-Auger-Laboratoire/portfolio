@@ -234,7 +234,7 @@ window.I18N_EN = {
   'projects.contextTeam': 'Group project · EPISEN, 3 students',
   'p9.date': 'Jun 2026',
   'p9.title': 'Athletix-Data: connected EMG armband and sports-tracking app',
-  'p9.desc': 'Group project at EPISEN, with Maxence Olivier and Othmen Al Bydeoi. An armband measures biceps activity: MyoWare 2.0 sensor, SparkFun ESP32-S3 (12-bit conversion at 500 Hz, 200 ms RMS, Bluetooth Low Energy) and a LiPo battery. My part: the armband wiring diagram, the ESP32 firmware, acquisition and RMS computation, and the prototype Flutter UI. The measurement chain was modelled in Simulink, with its limits written in the repository. The app (e-mail-verified sign-up, workouts, profile, leaderboard, secured PHP/MySQL API) dates from the project\'s first track, a heart-rate sensor: the heart rates it shows are simulated and labelled as such.',
+  'p9.desc': 'Group project at EPISEN with Maxence Olivier and Othmen Al Bydeoi, which I led. An armband measures biceps activity: MyoWare 2.0 sensor, SparkFun ESP32-S3 (12-bit conversion at 500 Hz, 200 ms RMS, Bluetooth Low Energy) and a LiPo battery. My part: running the project, the armband wiring diagram and wiring, the ESP32 firmware, acquisition and RMS computation, and the Flutter app with its secured PHP/MySQL API (e-mail-verified sign-up, profile, advice, leaderboard). Maxence modelled the measurement chain in Simulink, Othmen wrote the Bluetooth architecture. The hardware has not arrived yet: during a workout, the app shows readings from a simulated armband, labelled as such.',
   'tag.signal': 'Signal processing',
   'projects.contextMatlab': 'Course project · EPISEN, ECUE 325',
   'p10.date': 'Sept 2026',
