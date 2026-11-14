@@ -382,7 +382,7 @@ window.I18N_EN = {
   'p20.img': 'Bearing verdict and life curve',
   'p21.img': 'Wing deformed shape coloured by stress, with support reactions',
   'p7.img': 'Pharmacy back-office dashboard (demo)',
-  'p9.img': 'Three Athletix-Data app screens (live session, connected MSGM115 watch, progress) and the Simulink simulation result of the EMG armband',
+  'p9.img': 'Three Athletix-Data app screens (live session, connected MSGM115 watch, progress), the armband enclosure in Fusion 360 and the Simulink simulation result',
   'p8.img': 'SantéConnect patient area (demo)',
   'p6.img': 'Hand tracking demo page',
   'p10.img': 'Reference signal, distorted signal and FFT spectrum (demo)',
