@@ -1,4 +1,5 @@
-MediaPipe Tasks Vision 0.10.14 (vision_bundle.mjs, wasm/) et le modèle hand_landmarker.task
+MediaPipe Tasks Vision 0.10.14 (vision_bundle.mjs, wasm/) et les modèles hand_landmarker.task et face_landmarker.task
 © Google LLC — distribués sous licence Apache 2.0 : https://www.apache.org/licenses/LICENSE-2.0
 Source : https://www.npmjs.com/package/@mediapipe/tasks-vision et https://developers.google.com/mediapipe
+Modèles : https://storage.googleapis.com/mediapipe-models/ (hand_landmarker, face_landmarker float16 v1)
 Fichiers inclus tels quels, sans modification, pour que la démo fonctionne sans CDN.
