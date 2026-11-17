@@ -5,11 +5,11 @@
   <meta name="google" content="notranslate">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Vision IA — démo</title>
-  <meta name="description" content="Démo web : suivi de la main en temps réel et construction de cubes par gestes, avec MediaPipe Hands dans le navigateur.">
+  <meta name="description" content="Démo web : suivi de la main, construction 3D avec les deux mains, lecture de l'alphabet des signes (LSF / ASL) et humeur lue sur le visage, avec MediaPipe dans le navigateur.">
   <meta property="og:type" content="website">
   <meta property="og:url" content="https://valentin-auger-laboratoire.github.io/portfolio/demos/vision-main/">
   <meta property="og:title" content="Vision IA — démo">
-  <meta property="og:description" content="Démo web : suivi de la main en temps réel et construction de cubes par gestes, avec MediaPipe Hands dans le navigateur.">
+  <meta property="og:description" content="Démo web : suivi de la main, construction 3D avec les deux mains, lecture de l'alphabet des signes (LSF / ASL) et humeur lue sur le visage, avec MediaPipe dans le navigateur.">
   <meta property="og:image" content="https://valentin-auger-laboratoire.github.io/portfolio/assets/projets/vision-ia.jpg">
   <meta property="og:image:width" content="960">
   <meta property="og:image:height" content="600">
@@ -51,7 +51,7 @@
     .stage { position: relative; aspect-ratio: 4 / 3; max-width: 100%; background: #000; border: 1px solid var(--border); border-radius: 8px; overflow: hidden; }
     .stage canvas { position: absolute; inset: 0; width: 100%; height: 100%; display: block; }
     .stage video { display: none; }
-    .overlay { position: absolute; inset: 0; display: grid; place-items: center; text-align: center; padding: 24px; }
+    .overlay { position: absolute; inset: 0; display: grid; place-items: center; text-align: center; padding: 24px; background: rgba(0,0,0,.78); }
     .overlay[hidden] { display: none; }
     .overlay p { color: var(--dim); max-width: 46ch; margin: 10px auto 0; font-size: 0.9rem; }
     .start { font: 600 1rem var(--sans); color: #fff; background: var(--accent); border: 0; border-radius: 8px; padding: 14px 24px; cursor: pointer; }
@@ -63,6 +63,7 @@
     .small { font: 500 0.82rem var(--sans); background: none; color: var(--text); border: 1px solid var(--border-hi); border-radius: 6px; padding: 7px 12px; cursor: pointer; }
     .small:hover { border-color: var(--accent); color: var(--accent); }
     .small[hidden] { display: none; }
+    .small[aria-pressed="true"] { border-color: var(--accent); color: var(--accent); }
 
     .help dl { display: grid; gap: 10px; }
     .help dt { font: 500 0.82rem var(--mono); color: var(--text); }
@@ -71,6 +72,28 @@
     kbd { font: 0.78rem var(--mono); border: 1px solid var(--border-hi); border-bottom-width: 2px; border-radius: 4px; padding: 0 5px; color: var(--text); }
     .privacy { margin-top: 16px; padding-top: 14px; border-top: 1px solid var(--border); font-size: 0.8rem; color: var(--dim); }
 
+    [data-show][hidden] { display: none !important; }
+    .alt { margin-top: 10px; font: 500 0.85rem var(--sans); background: none; color: var(--text); border: 1px solid var(--border-hi); border-radius: 8px; padding: 9px 16px; cursor: pointer; }
+    .alt:hover { border-color: var(--accent); }
+    .message { margin-top: 12px; min-height: 52px; background: var(--panel); border: 1px solid var(--border); border-radius: 8px; padding: 10px 14px; font: 600 1.35rem var(--mono); letter-spacing: .08em; word-break: break-all; }
+    .message small { display: block; font: 500 0.72rem var(--mono); color: var(--dim); letter-spacing: .1em; text-transform: uppercase; margin-bottom: 4px; }
+    .seg { display: flex; border: 1px solid var(--border-hi); border-radius: 6px; overflow: hidden; margin-bottom: 12px; }
+    .seg button { flex: 1; font: 600 0.82rem var(--mono); background: none; color: var(--dim); border: 0; padding: 7px 10px; cursor: pointer; }
+    .seg button + button { border-left: 1px solid var(--border-hi); }
+    .seg button[aria-pressed="true"] { background: var(--text); color: var(--bg); }
+    .learn { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; margin: 6px 0 4px; }
+    .learn select { font: 0.85rem var(--mono); background: var(--bg); color: var(--text); border: 1px solid var(--border-hi); border-radius: 6px; padding: 6px 8px; }
+    .counts { font: 0.75rem var(--mono); color: var(--dim); margin-top: 4px; }
+    .alpha { margin-top: 14px; display: grid; gap: 4px; max-height: 260px; overflow: auto; padding-right: 4px; }
+    .alpha div { font-size: 0.8rem; color: var(--dim); }
+    .alpha b { display: inline-block; width: 1.6em; color: var(--text); font-family: var(--mono); }
+    .bars { display: grid; gap: 7px; margin: 4px 0 14px; }
+    .bars .row { display: grid; grid-template-columns: 7.5em minmax(0, 1fr) 3em; align-items: center; gap: 8px; font-size: 0.8rem; color: var(--dim); }
+    .bars .track { height: 8px; background: var(--border); border-radius: 4px; overflow: hidden; }
+    .bars .fill { height: 100%; width: 0; background: var(--text); transition: width .15s linear; }
+    .bars .val { font: 0.75rem var(--mono); text-align: right; }
+    .help h3 { font: 600 0.72rem var(--mono); letter-spacing: .1em; text-transform: uppercase; color: var(--dim); margin: 14px 0 8px; }
+    .limits { margin-top: 12px; font-size: 0.78rem; color: var(--dim); border-left: 2px solid var(--border-hi); padding-left: 10px; }
     @media (max-width: 860px) { .layout { grid-template-columns: 1fr; } }
   </style>
 </head>
@@ -85,15 +108,18 @@
     </div>
 
     <p class="eyebrow" data-t="eyebrow">Démo interactive · vision par ordinateur</p>
-    <h1 data-t="title">Suivre la main, puis construire des cubes avec des gestes</h1>
-    <p class="intro" data-t="intro">La webcam détecte les 21 points de chaque main en temps réel. Étape 1 : touchez le bouton QUITTER du bout de l'index. Étape 2 : pincez le pouce et l'index pour poser des cubes, fermez le poing pour effacer.</p>
-    <p class="note" data-t="note">Version web de démonstration (JavaScript, MediaPipe Hands) qui reprend la logique des scripts Python du projet : <a href="https://github.com/Valentin-Auger-Laboratoire/vision-main" target="_blank" rel="noopener">voir le code Python ↗</a></p>
+    <h1 data-t="title">Suivre la main, construire en 3D, lire les signes et le visage</h1>
+    <p class="intro" data-t="intro">La webcam détecte les 21 points de chaque main et les 478 points du visage en temps réel. Cinq étapes : un bouton touché du doigt, des cubes posés par pince, un vrai monde 3D construit avec les deux mains, l'alphabet des signes lu lettre par lettre, puis l'humeur lue sur le visage.</p>
+    <p class="note" data-t="note">Étapes 1 et 2 : portage web des scripts Python du projet. Étapes 3 à 5 : ajoutées en 2026, écrites directement pour le web (JavaScript, MediaPipe Hands et Face Landmarker). <a href="https://github.com/Valentin-Auger-Laboratoire/vision-main" target="_blank" rel="noopener">voir le code ↗</a></p>
 
     <div class="layout">
       <section>
         <div class="modes" role="group" aria-label="Étape">
           <button type="button" class="mode" data-mode="1" aria-pressed="false" data-t="mode1">Étape 1 · Suivi de la main</button>
-          <button type="button" class="mode" data-mode="2" aria-pressed="true" data-t="mode2">Étape 2 · Construction de cubes</button>
+          <button type="button" class="mode" data-mode="2" aria-pressed="false" data-t="mode2">Étape 2 · Construction de cubes</button>
+          <button type="button" class="mode" data-mode="3" aria-pressed="true" data-t="mode3">Étape 3 · Monde 3D</button>
+          <button type="button" class="mode" data-mode="4" aria-pressed="false" data-t="mode4">Étape 4 · Alphabet des signes</button>
+          <button type="button" class="mode" data-mode="5" aria-pressed="false" data-t="mode5">Étape 5 · Visage et humeur</button>
         </div>
         <div class="stage" id="stage">
           <video id="video" playsinline muted></video>
@@ -101,30 +127,84 @@
           <div class="overlay" id="overlay">
             <div>
               <button type="button" class="start" id="start" data-t="start">Activer la caméra</button>
-              <p id="status" data-t="statusIdle">La caméra ne s'allume qu'après ce clic. Le modèle de la main (≈ 8 Mo) se charge une seule fois.</p>
+              <p id="status" data-t="statusIdle">La caméra ne s'allume qu'après ce clic. Les modèles (main ≈ 8 Mo, visage ≈ 4 Mo) se chargent une seule fois.</p>
+              <button type="button" class="alt" id="souris" data-show="3" data-t="mouseTry">Essayer à la souris, sans caméra</button>
             </div>
           </div>
         </div>
         <div class="bar">
-          <button type="button" class="small" id="undo" data-t="undo" hidden>Annuler le dernier cube (Z)</button>
-          <button type="button" class="small" id="clear" data-t="clear" hidden>Tout effacer (C)</button>
+          <button type="button" class="small" id="undo" data-t="undo" data-show="2">Annuler le dernier cube (Z)</button>
+          <button type="button" class="small" id="clear" data-t="clear" data-show="2">Tout effacer (C)</button>
+          <button type="button" class="small" id="undo3" data-t="undo3" data-show="3">Annuler (Z)</button>
+          <button type="button" class="small" id="clear3" data-t="clear" data-show="3">Tout effacer (C)</button>
+          <button type="button" class="small" id="style3" data-t="styleNeon" data-show="3">Rendu néon</button>
+          <button type="button" class="small" id="view3" data-t="view3" data-show="3">Vue initiale</button>
+          <button type="button" class="small" id="sample3" data-t="sample3" data-show="3">Charger un exemple</button>
+          <button type="button" class="small" id="sym3" data-t="sym3" data-show="3" aria-pressed="false">Symétrie miroir</button>
+          <button type="button" class="small" id="rot3" data-t="rot3" data-show="3" aria-pressed="false">Rotation automatique</button>
+          <button type="button" class="small" id="export3" data-t="export3" data-show="3">Exporter en OBJ (Fusion 360, Blender)</button>
+          <button type="button" class="small" id="stl3" data-t="stl3" data-show="3">Exporter en STL (impression 3D)</button>
+          <button type="button" class="small" id="lefty3" data-t="lefty" data-show="3" aria-pressed="false">Inverser les mains</button>
+          <button type="button" class="small" id="calib5" data-t="calib" data-show="5">Calibrer mon visage au repos (2 s)</button>
+          <button type="button" class="small" id="uncalib5" data-t="uncalib" data-show="5">Oublier la calibration</button>
           <button type="button" class="small" id="stop" data-t="stop" hidden>Arrêter la caméra (Q)</button>
+        </div>
+        <div data-show="4">
+          <div class="message" aria-live="polite"><small data-t="msgTitle">Message</small><span id="msg"></span><span style="color:var(--accent)">▌</span></div>
+          <div class="bar">
+            <button type="button" class="small" id="space4" data-t="space">Espace</button>
+            <button type="button" class="small" id="back4" data-t="backspace">Effacer une lettre</button>
+            <button type="button" class="small" id="clear4" data-t="clearMsg">Tout effacer</button>
+            <button type="button" class="small" id="speak4" data-t="speak">Lire à voix haute</button>
+          </div>
         </div>
       </section>
 
       <aside class="panel help">
         <h2 data-t="controls">Commandes</h2>
-        <dl class="step" data-step="1">
+        <dl class="step" data-step="1" hidden>
           <div><dt data-t="h1a">Index sur QUITTER</dt><dd data-t="h1b">Le bouton passe au vert, puis la caméra s'arrête au bout de 0,3 s.</dd></div>
           <div><dt data-t="h1c">Clic sur QUITTER ou touche Q</dt><dd data-t="h1d">Arrêt immédiat.</dd></div>
         </dl>
-        <dl class="step" data-step="2">
+        <dl class="step" data-step="2" hidden>
           <div><dt data-t="h2a">Viser avec l'index</dt><dd data-t="h2b">Un cube fantôme suit le bout de l'index, aimanté sur une grille.</dd></div>
           <div><dt data-t="h2c">Pincer pouce + index</dt><dd data-t="h2d">Pose un cube. Un seul cube par pince : relâchez pour en poser un autre.</dd></div>
           <div><dt data-t="h2e">Avancer ou reculer la main</dt><dd data-t="h2f">Change la taille du cube (profondeur simulée).</dd></div>
           <div><dt data-t="h2g">Fermer le poing</dt><dd data-t="h2h">Efface le dernier cube.</dd></div>
           <div><dt><kbd>Z</kbd> <kbd>C</kbd> <kbd>Q</kbd></dt><dd data-t="h2i">Annuler, tout effacer, arrêter.</dd></div>
         </dl>
+        <dl class="step" data-step="3">
+          <div><dt data-t="h3a">Main droite : pincer pouce + index</dt><dd data-t="h3b">Pose un cube sur la face visée. Gardez la pince et déplacez la main : vous tracez une ligne ou un mur dans le même plan.</dd></div>
+          <div><dt data-t="h3c">Main droite : pincer pouce + majeur</dt><dd data-t="h3d">Retire le cube visé.</dd></div>
+          <div><dt data-t="h3e">Main gauche : pincer et déplacer</dt><dd data-t="h3f">Fait tourner la scène autour de la construction.</dd></div>
+          <div><dt data-t="h3g">Main gauche : poing, monter ou descendre</dt><dd data-t="h3h">Zoom avant ou arrière.</dd></div>
+          <div><dt data-t="h3i">Index sur une couleur</dt><dd data-t="h3j">Change la couleur au bout de 0,45 s.</dd></div>
+          <div><dt data-t="h3k">À la souris</dt><dd data-t="h3l">Clic : poser · clic droit ou Maj + clic : retirer · glisser : tourner · molette : zoom.</dd></div>
+          <p class="limits" data-t="lim3">Moteur 3D écrit à la main (projection, visée par parcours de grille, faces cachées), vérifié par des tests automatiques. La construction est gardée dans ce navigateur.</p>
+        </dl>
+        <div class="step" data-step="4">
+          <div class="seg" role="group" aria-label="Alphabet">
+            <button type="button" data-alpha="lsf" aria-pressed="true">LSF</button>
+            <button type="button" data-alpha="asl" aria-pressed="false">ASL</button>
+          </div>
+          <dl>
+            <div><dt data-t="h4a">Montrer une lettre à la caméra</dt><dd data-t="h4b">La lettre reconnue s'affiche avec sa confiance. Tenue 0,9 s, elle s'ajoute au message.</dd></div>
+          </dl>
+          <h3 data-t="learnTitle">Apprendre mes signes</h3>
+          <div class="learn"><select id="learnLetter" aria-label="Lettre"></select><button type="button" class="small" id="learnBtn" data-t="learnBtn">Enregistrer 25 images</button></div>
+          <p class="counts" id="learnCounts"></p>
+          <button type="button" class="small" id="forget4" data-t="forget" style="margin-top:8px">Oublier mes exemples</button>
+          <h3 data-t="alphaTitle">Lettres reconnues</h3>
+          <div class="alpha" id="alpha"></div>
+          <p class="limits" data-t="lim4">J et Z se font avec un mouvement : elles ne sont pas reconnues. Les modèles des lettres viennent d'une main de synthèse : les lettres proches (A, S, E, M, N, T) peuvent se confondre avec une vraie main. Enregistrer ses propres exemples corrige la plupart des erreurs.</p>
+        </div>
+        <div class="step" data-step="5">
+          <h3 data-t="moodTitle">Humeur</h3>
+          <div class="bars" id="moodBars"></div>
+          <h3 data-t="cuesTitle">Indices du visage</h3>
+          <div class="bars" id="cueBars"></div>
+          <p class="limits" data-t="lim5">Reconnaissance d'expressions, pas d'identification : le modèle ne sait pas qui vous êtes. L'humeur est déduite par des règles sur 52 coefficients d'expression (sourire, sourcils, bouche…). Une expression n'est pas une émotion : c'est une démonstration, pas un diagnostic.</p>
+        </div>
         <p class="privacy" data-t="privacy">Les images de la caméra sont analysées dans votre navigateur. Rien n'est enregistré ni envoyé.</p>
       </aside>
     </div>
