@@ -64,7 +64,7 @@ export function creerModeSignes(app) {
     }
     // cadre autour de la main suivie
     if (etat.main) {
-      const xs = etat.main.map((p) => (1 - p.x) * w), ys = etat.main.map((p) => p.y * h);
+      const pts = etat.main.map((p) => app.px(p)), xs = pts.map((q) => q[0]), ys = pts.map((q) => q[1]);
       const m = 18, a = Math.min(...xs) - m, b = Math.min(...ys) - m;
       ctx.strokeStyle = '#4fc46a'; ctx.lineWidth = 2; ctx.strokeRect(a, b, Math.max(...xs) + m - a, Math.max(...ys) + m - b);
     }
