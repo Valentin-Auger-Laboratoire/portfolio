@@ -85,3 +85,15 @@ export function vitesseAngulaire(qa, qb, dt) {
   if (s < 1e-6 || dt <= 0) return { axe: [0, 1, 0], w: 0 };
   return { axe: [d[0] / s, d[1] / s, d[2] / s], w: ang / dt };
 }
+
+// Condition tenue pendant `duree` ms (ex. les deux mains ouvertes) : vrai une seule fois, puis il faut relâcher
+export class Maintien {
+  constructor(duree = 1000) { this.duree = duree; this.depuis = null; this.fait = false; }
+  maj(cond, t) {
+    if (!cond) { this.depuis = null; this.fait = false; return false; }
+    if (this.depuis === null) this.depuis = t;
+    if (!this.fait && t - this.depuis >= this.duree) { this.fait = true; return true; }
+    return false;
+  }
+  progression(t) { return this.depuis === null || this.fait ? 0 : Math.min((t - this.depuis) / this.duree, 1); }
+}

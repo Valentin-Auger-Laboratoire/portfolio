@@ -1,6 +1,7 @@
 // =====================================================================
 //  Vision IA — atelier 3D piloté par les mains
-//  Pages : Atelier 3D · Langue des signes · Visage (balayage de la main ouverte)
+//  Pages : Atelier 3D · Langue des signes · Visage. Une seule à la fois : les gestes de l'une
+//  n'agissent pas sur l'autre. Changer de page : les deux mains ouvertes 1 s ouvrent le menu.
 //  Mode casque : vue stéréo côte à côte, caméra arrière, gyroscope du téléphone.
 //  Modules écrits à la main : m3d (calcul), formes (STL/OBJ, formes), rendu (WebGL),
 //  gestes, atelier, signes, humeur. MediaPipe Tasks Vision (Apache 2.0) dans lib/.
@@ -9,7 +10,7 @@ import { FilesetResolver, HandLandmarker, FaceLandmarker } from './lib/vision_bu
 import { creerRendu } from './rendu.js';
 import { creerAtelier, COULEURS } from './atelier.js';
 import { FORMES, lireFichier, normaliser, zVersY, ecrireSTL } from './formes.js';
-import { lireMain, Balayage, Seuil, PINCE_ON, PINCE_OFF } from './gestes.js';
+import { lireMain, Maintien, Seuil, PINCE_ON, PINCE_OFF } from './gestes.js';
 import { q4, v3 } from './m3d.js';
 import { creerModeSignes } from './modesignes.js';
 import { creerModeVisage } from './modevisage.js';
@@ -17,7 +18,7 @@ import { creerModeVisage } from './modevisage.js';
 const T = {
   fr: {
     back: '← Retour au portfolio', eyebrow: 'Démo interactive · vision par ordinateur · 3D', title: 'Atelier 3D piloté par les mains',
-    intro: "Importez une pièce (STL, OBJ) ou faites apparaître une forme, puis saisissez-la, déplacez-la et faites-la tourner avec les mains, comme un objet réel. Un balayage de la main ouverte change de page : lecture de l'alphabet des signes, expressions du visage. Avec un casque où l'on glisse son téléphone, l'écran se coupe en deux et les pièces flottent devant vous.",
+    intro: "Devant la webcam de l'ordinateur, importez une pièce (STL, OBJ) ou faites apparaître une forme, puis saisissez-la, déplacez-la et faites-la tourner avec les mains, comme un objet réel. Les deux mains ouvertes ouvrent le menu des pages : lecture de l'alphabet des signes, expressions du visage. Une seule page agit à la fois. Un mode casque pour téléphone existe aussi en option.",
     pAtelier: 'Atelier 3D', pSignes: 'Langue des signes', pVisage: 'Visage',
     start: 'Activer la caméra', startRear: 'Caméra arrière (téléphone)', mouseTry: 'Essayer sans caméra (souris ou doigt)', restart: 'Relancer la caméra',
     statusIdle: "La caméra ne s'allume qu'après ce clic. Les images restent dans votre navigateur.",
@@ -31,27 +32,27 @@ const T = {
     g3: 'Deux mains qui pincent la même pièce', g3d: 'Écarter pour agrandir, rapprocher pour réduire, tourner les mains pour la faire pivoter.',
     g4: 'Lâcher sur la corbeille', g4d: "Supprime la pièce (en bas à droite de l'image).",
     g5: 'Pincer sur une forme de la colonne', g5d: "Fait apparaître la forme (cube, sphère…), sans toucher l'écran.",
-    g6: 'Balayer avec la main ouverte', g6d: 'Page suivante ou précédente.',
+    g6: 'Les deux mains ouvertes pendant 1 s', g6d: "Ouvre le menu des pages ; pincer la page voulue. Une seule page agit à la fois : en langue des signes, les gestes ne déplacent pas les pièces, et dans l'atelier aucune lettre n'est lue.",
     g7: 'À la souris', g7d: "Glisser une pièce : la déplacer · clic droit ou Maj + glisser : la tourner · molette : taille · fichier glissé sur l'image : importé.",
-    hsTitle: 'Mode casque', ipd: 'Écart des yeux',
+    hsTitle: 'Mode casque (option)', ipd: 'Écart des yeux',
     lim1: "Moteur 3D WebGL écrit à la main (projection, éclairage, profondeur, vue stéréo) et lecture STL / OBJ maison. La profondeur d'une pièce suit la taille apparente de la main. En mode casque, le gyroscope du téléphone garde les pièces à leur place quand on tourne la tête.",
-    s1: 'Montrer une lettre à la caméra', s1d: "Pour une personne qui ne parle pas : la lettre s'affiche, tenue 0,9 s elle s'ajoute au message, qui peut être lu à voix haute. Avec la caméra arrière ou le casque, on lit les signes de la personne en face.",
+    s1: 'Montrer une lettre à la caméra', s1d: "Pour une personne qui ne parle pas : la webcam lit vos signes, la lettre tenue 0,9 s s'ajoute au message, qui peut être lu à voix haute. Sur cette page, les gestes ne touchent pas aux pièces de l'atelier.",
     learnTitle: 'Apprendre mes signes', learnBtn: 'Enregistrer 25 images', forget: 'Oublier mes exemples', alphaTitle: 'Lettres reconnues',
     lim4: "J et Z se font avec un mouvement : elles ne sont pas reconnues. Les lettres proches (A, S, E, M, N, T) peuvent se confondre : enregistrer ses propres exemples corrige la plupart des erreurs.",
     msgTitle: 'Message', space: 'Espace', backspace: 'Effacer une lettre', clearMsg: 'Tout effacer', speak: 'Lire à voix haute',
     letterSeen: 'LETTRE', confidence: 'confiance', recording: 'Enregistrement', myExamples: 'Mes exemples', none: 'aucun', needCam: 'Activez la caméra pour enregistrer vos exemples.',
-    v1: 'Expression du visage filmé', v1d: 'Sur un ordinateur : votre propre visage. Avec la caméra arrière ou le casque : le visage de la personne en face de vous.',
+    v1: 'Expression du visage filmé', v1d: "La webcam filme votre visage et affiche son expression. (En option, avec la caméra arrière d'un téléphone, ce serait le visage de la personne en face.)",
     moodTitle: 'Humeur', cuesTitle: 'Indices du visage', calib: 'Calibrer le visage au repos (2 s)', uncalib: 'Oublier la calibration',
     calibrating: 'Gardez un visage neutre…', noFace: 'Aucun visage détecté', moodLabel: 'HUMEUR',
     cue_sourire: 'Sourire', cue_moue: 'Coins de bouche bas', cue_bouche: 'Bouche ouverte', cue_sourcilsLeves: 'Sourcils levés', cue_sourcilsFronces: 'Sourcils froncés', cue_yeuxOuverts: 'Yeux écarquillés',
     lim5: "Reconnaissance d'expressions, pas d'identification : le modèle ne sait pas qui est filmé. L'humeur est déduite par des règles sur 52 coefficients d'expression. Une expression n'est pas une émotion : c'est une démonstration, pas un diagnostic.",
     privacy: 'Les images de la caméra et les fichiers importés restent dans votre navigateur. Rien n\'est enregistré ni envoyé.',
     trash: 'Corbeille', showHands: 'Montrez vos mains à la caméra', held: 'tenue', imported: 'Importées :', importErr: 'Fichier non lu :', tooBig: 'fichier trop gros (> 80 Mo)',
-    triangles: 'triangles', swipeHint: 'main ouverte : balayer pour changer de page', mousePage: 'Souris : glisser = déplacer · clic droit = tourner · molette = taille',
+    triangles: 'triangles', swipeHint: 'les deux mains ouvertes 1 s : changer de page', menuTitle: 'Choisir la page', menuHint: 'Pincer la page voulue · les deux mains ouvertes 1 s pour fermer', mousePage: 'Souris : glisser = déplacer · clic droit = tourner · molette = taille',
   },
   en: {
     back: '← Back to portfolio', eyebrow: 'Interactive demo · computer vision · 3D', title: 'A 3D workshop driven by your hands',
-    intro: 'Import a part (STL, OBJ) or spawn a shape, then grab it, move it and turn it with your hands, like a real object. A swipe of the open hand changes page: sign alphabet reading, facial expressions. With a headset you slide your phone into, the screen splits in two and the parts float in front of you.',
+    intro: 'In front of the computer webcam, import a part (STL, OBJ) or spawn a shape, then grab it, move it and turn it with your hands, like a real object. Both hands open bring up the page menu: sign alphabet reading, facial expressions. Only one page acts at a time. An optional phone-headset mode also exists.',
     pAtelier: '3D workshop', pSignes: 'Sign language', pVisage: 'Face',
     start: 'Turn on the camera', startRear: 'Rear camera (phone)', mouseTry: 'Try it without a camera (mouse or finger)', restart: 'Restart the camera',
     statusIdle: 'The camera only turns on after this click. Images stay in your browser.',
@@ -65,23 +66,23 @@ const T = {
     g3: 'Both hands pinching the same part', g3d: 'Spread to enlarge, bring together to shrink, turn the hands to rotate it.',
     g4: 'Release over the bin', g4d: 'Deletes the part (bottom right of the image).',
     g5: 'Pinch on a shape in the column', g5d: 'Spawns the shape (cube, sphere…) without touching the screen.',
-    g6: 'Swipe with the open hand', g6d: 'Next or previous page.',
+    g6: 'Both hands open for 1 s', g6d: 'Opens the page menu; pinch the page you want. Only one page acts at a time: in sign language, gestures do not move parts, and in the workshop no letter is read.',
     g7: 'With the mouse', g7d: 'Drag a part: move it · right click or Shift + drag: turn it · wheel: size · file dropped on the image: imported.',
-    hsTitle: 'Headset mode', ipd: 'Eye separation',
+    hsTitle: 'Headset mode (option)', ipd: 'Eye separation',
     lim1: "Hand-written WebGL 3D engine (projection, lighting, depth, stereo view) and home-made STL / OBJ reader. A part's depth follows the apparent size of the hand. In headset mode, the phone's gyroscope keeps the parts in place when you turn your head.",
-    s1: 'Show a letter to the camera', s1d: 'For someone who cannot speak: the letter is shown, held for 0.9 s it is added to the message, which can be read aloud. With the rear camera or the headset, you read the signs of the person facing you.',
+    s1: 'Show a letter to the camera', s1d: 'For someone who cannot speak: the webcam reads your signs, a letter held for 0.9 s is added to the message, which can be read aloud. On this page, gestures do not touch the workshop parts.',
     learnTitle: 'Teach my signs', learnBtn: 'Record 25 frames', forget: 'Forget my examples', alphaTitle: 'Recognised letters',
     lim4: 'J and Z need a movement: they are not recognised. Close letters (A, S, E, M, N, T) can be confused: recording your own examples fixes most errors.',
     msgTitle: 'Message', space: 'Space', backspace: 'Delete a letter', clearMsg: 'Clear all', speak: 'Read aloud',
     letterSeen: 'LETTER', confidence: 'confidence', recording: 'Recording', myExamples: 'My examples', none: 'none', needCam: 'Turn on the camera to record your examples.',
-    v1: 'Expression of the filmed face', v1d: 'On a computer: your own face. With the rear camera or the headset: the face of the person in front of you.',
+    v1: 'Expression of the filmed face', v1d: "The webcam films your face and shows its expression. (Optionally, with a phone's rear camera, it would be the face of the person in front of you.)",
     moodTitle: 'Mood', cuesTitle: 'Face cues', calib: 'Calibrate the resting face (2 s)', uncalib: 'Forget the calibration',
     calibrating: 'Keep a neutral face…', noFace: 'No face detected', moodLabel: 'MOOD',
     cue_sourire: 'Smile', cue_moue: 'Mouth corners down', cue_bouche: 'Mouth open', cue_sourcilsLeves: 'Brows raised', cue_sourcilsFronces: 'Brows lowered', cue_yeuxOuverts: 'Eyes wide',
     lim5: 'Expression recognition, not identification: the model does not know who is filmed. The mood is inferred by rules on 52 expression coefficients. An expression is not an emotion: this is a demo, not a diagnosis.',
     privacy: 'Camera images and imported files stay in your browser. Nothing is recorded or sent.',
     trash: 'Bin', showHands: 'Show your hands to the camera', held: 'held', imported: 'Imported:', importErr: 'File not read:', tooBig: 'file too large (> 80 MB)',
-    triangles: 'triangles', swipeHint: 'open hand: swipe to change page', mousePage: 'Mouse: drag = move · right click = turn · wheel = size',
+    triangles: 'triangles', swipeHint: 'both hands open for 1 s: change page', menuTitle: 'Choose the page', menuHint: 'Pinch the page you want · both hands open for 1 s to close', mousePage: 'Mouse: drag = move · right click = turn · wheel = size',
   },
 };
 const NOMS_FORMES = { cube: 'fCube', sphere: 'fSphere', cylindre: 'fCyl', cone: 'fCone', tore: 'fTore', pyramide: 'fPyr' };
@@ -97,11 +98,13 @@ const t = (k) => T[lang][k] ?? k;
 
 let page = 'atelier', running = false, sourisSeule = false, miroir = true, stream = null;
 let stereo = 0, ipd = 0.064, files = null, mainsLm = null, visageLm = null, chargeVisage = null;
-let derniereImage = -1, resMains = null, resVisage = null, fps = 0, tPrec = 0, majBarresT = 0, holoParDefaut = false;
+let imagesVisage = 0, derniereImage = -1, resMains = null, resVisage = null, fps = 0, tPrec = 0, majBarresT = 0, holoParDefaut = false;
 let rendu = null;
 try { rendu = creerRendu(cv3d); } catch (e) { $('status').textContent = 'WebGL indisponible : ' + e.message; }
 const atelier = creerAtelier();
-const balayage = new Balayage();
+const ouvrirMenu = new Maintien(1000);
+let menu = null;                  // { depuis } quand le menu des pages est ouvert
+const pincePrec = {};
 const bibliotheque = [];          // pièces importées (pour les remettre dans la scène)
 let message = '', vue = { l: 960, h: 720, rec: [0, 0, 1, 1] };
 
@@ -271,6 +274,11 @@ function boutonsHud() {
   const ids = ['cube', 'sphere', 'cylindre', 'cone', 'tore', 'pyramide', 'holo', 'toupie'];
   return ids.map((id, i) => ({ id, r: [x, Math.round(64 * u) + i * (bh + g), x + bw, Math.round(64 * u) + i * (bh + g) + bh] }));
 }
+const dansR = (p, r) => p[0] >= r[0] && p[0] <= r[2] && p[1] >= r[1] && p[1] <= r[3];
+function boutonsMenu() {
+  const u = echelleHud(), bw = Math.round(240 * u), bh = Math.round(120 * u), g = Math.round(24 * u), x0 = vue.l / 2 - (3 * bw + 2 * g) / 2, y0 = vue.h / 2 - bh / 2;
+  return PAGES.map((id, i) => ({ id, r: [x0 + i * (bw + g), y0, x0 + i * (bw + g) + bw, y0 + bh] }));
+}
 function corbeille() { const u = echelleHud(), s = Math.round(96 * u); return [vue.l - s - 14 * u, vue.h - s - 14 * u, vue.l - 14 * u, vue.h - 14 * u]; }
 
 function dessinerHud(lues, now) {
@@ -311,18 +319,32 @@ function dessinerHud(lues, now) {
     }
   }
   // mains : squelette + pointeur
-  if (resMains && resMains.landmarks && page !== 'visage') resMains.landmarks.forEach((lm) => {
+  if (resMains && resMains.landmarks && (page !== 'visage' || menu)) resMains.landmarks.forEach((lm) => {
     ctx.strokeStyle = 'rgba(255,255,255,.55)'; ctx.lineWidth = 2 * u;
     CONNEXIONS.forEach(([a, b]) => { ctx.beginPath(); ctx.moveTo(...px(lm[a])); ctx.lineTo(...px(lm[b])); ctx.stroke(); });
     ctx.fillStyle = 'rgba(56,217,245,.9)'; lm.forEach((p) => { const [x, y] = px(p); ctx.beginPath(); ctx.arc(x, y, 3 * u, 0, 7); ctx.fill(); });
   });
-  if (page === 'atelier') for (const m of lues) {
+  if (page === 'atelier' || menu) for (const m of lues) {
     ctx.strokeStyle = m.tient ? '#c8102e' : '#fff'; ctx.lineWidth = 2.5 * u;
     ctx.beginPath(); ctx.arc(m.pointeur[0], m.pointeur[1], (m.pince ? 7 : 12) * u, 0, 7); ctx.stroke();
     if (m.pince) { ctx.fillStyle = m.tient ? '#c8102e' : '#fff'; ctx.fill(); }
   }
-  if (page === 'signes') m4s.dessiner(ctx, now);
-  if (page === 'visage') m5.dessiner(ctx, now);
+  if (page === 'signes' && !menu) m4s.dessiner(ctx, now);
+  if (page === 'visage' && !menu) m5.dessiner(ctx, now);
+  // progression « deux mains ouvertes » puis menu des pages
+  const prog = ouvrirMenu.progression(now);
+  if (prog > 0) { ctx.strokeStyle = '#fff'; ctx.lineWidth = 6 * u; ctx.beginPath(); ctx.arc(L / 2, H / 2, 46 * u, -Math.PI / 2, -Math.PI / 2 + prog * 2 * Math.PI); ctx.stroke(); }
+  if (menu) {
+    ctx.fillStyle = 'rgba(0,0,0,.6)'; ctx.fillRect(0, 0, L, H);
+    ctx.fillStyle = '#fff'; ctx.textAlign = 'center'; ctx.font = `600 ${Math.round(18 * u)}px Inter, sans-serif`; ctx.fillText(t('menuTitle'), L / 2, H / 2 - 100 * u);
+    for (const b of boutonsMenu()) {
+      const survol = lues.some((m) => dansR(m.pointeur, b.r)), ici = b.id === page;
+      ctx.fillStyle = survol ? 'rgba(200,16,46,.9)' : ici ? 'rgba(255,255,255,.22)' : 'rgba(20,20,22,.9)'; ctx.fillRect(b.r[0], b.r[1], b.r[2] - b.r[0], b.r[3] - b.r[1]);
+      ctx.strokeStyle = '#fff'; ctx.lineWidth = 2 * u; ctx.strokeRect(b.r[0], b.r[1], b.r[2] - b.r[0], b.r[3] - b.r[1]);
+      ctx.fillStyle = '#fff'; ctx.font = `700 ${Math.round(20 * u)}px Inter, sans-serif`; ctx.fillText(t({ atelier: 'pAtelier', signes: 'pSignes', visage: 'pVisage' }[b.id]), (b.r[0] + b.r[2]) / 2, (b.r[1] + b.r[3]) / 2);
+    }
+    ctx.font = `500 ${Math.round(14 * u)}px Inter, sans-serif`; ctx.fillStyle = 'rgba(255,255,255,.8)'; ctx.fillText(t('menuHint'), L / 2, H / 2 + 100 * u);
+  }
   // aide en bas
   if (running && page === 'atelier' && !(resMains && resMains.landmarks && resMains.landmarks.length)) {
     ctx.fillStyle = 'rgba(0,0,0,.55)'; ctx.font = `500 ${Math.round(15 * u)}px Inter, sans-serif`; const s = t('showHands') + ' · ' + t('swipeHint'), w = ctx.measureText(s).width + 24 * u;
@@ -354,24 +376,31 @@ function boucle(now) {
   // détection
   if (running && video.currentTime !== derniereImage) {
     derniereImage = video.currentTime;
-    if (page === 'visage') { if (visageLm) { resVisage = visageLm.detectForVideo(video, now); m5.traiter(resVisage, now); } resMains = null; }
-    else if (mainsLm) { resMains = mainsLm.detectForVideo(video, now); if (page === 'signes') m4s.traiter(resMains, now); }
+    if (page === 'visage') { if (visageLm) { resVisage = visageLm.detectForVideo(video, now); m5.traiter(resVisage, now); } if (mainsLm && (++imagesVisage % 3 === 0)) resMains = mainsLm.detectForVideo(video, now); }
+    else if (mainsLm) { resMains = mainsLm.detectForVideo(video, now); if (page === 'signes' && !menu && !ouvrirMenu.depuis) m4s.traiter(resMains, now); }
   }
   // mains -> gestes
   const lues = [];
-  if (running && resMains && resMains.landmarks && page !== 'visage') resMains.landmarks.forEach((lm, i) => {
+  if (running && resMains && resMains.landmarks) resMains.landmarks.forEach((lm, i) => {
     const W = resMains.worldLandmarks && resMains.worldLandmarks[i]; if (!W) return;
     const m = lireMain(lm, W, { miroir, versVue: px }); m.id = 'm' + i;
     const s = pinces[m.id] || (pinces[m.id] = new Seuil(PINCE_ON, PINCE_OFF)); m.pince = s.maj(m.dPince);
     lues.push(m);
   });
   if (page === 'atelier' && souris.dedans && (sourisSeule || running)) { const appui = souris.gauche || souris.droit || souris.min > 0; if (souris.min > 0) souris.min--; lues.push({ id: 'souris', pointeur: [souris.x, souris.y], dPince: appui ? 0.01 : 0.1, pince: appui, taille: 100, q: souris.q, ouverte: false }); }
-  // balayage de la main ouverte : page suivante / précédente
-  const ouverte = lues.find((m) => m.ouverte && !m.pince);
-  const sens = balayage.pousser(ouverte ? ouverte.centre[0] : 0, ouverte ? ouverte.centre[1] : 0, now, vue.l, !!ouverte && !atelier.tenu());
-  if (sens) { const i = PAGES.indexOf(page); setPage(PAGES[(i + (sens === 'gauche' ? 1 : PAGES.length - 1)) % PAGES.length]); }
-  // atelier
-  if (page === 'atelier') {
+  // menu des pages : les deux mains ouvertes pendant 1 s (aucune lettre de l'alphabet ne se fait à deux mains,
+  // et on ne tient pas de pièce mains ouvertes : pas de changement de page par accident)
+  const mainsCam = lues.filter((m) => m.id !== 'souris');
+  const deuxOuvertes = mainsCam.length >= 2 && mainsCam.filter((m) => m.ouverte && !m.pince).length >= 2 && !atelier.tenu();
+  if (ouvrirMenu.maj(deuxOuvertes, now)) menu = menu ? null : { depuis: now };
+  if (menu && now - menu.depuis > 8000) menu = null;
+  const clics = lues.filter((m) => m.pince && !pincePrec[m.id]);
+  for (const m of lues) pincePrec[m.id] = m.pince;
+  if (menu) {
+    for (const m of clics) { const b = boutonsMenu().find((x) => dansR(m.pointeur, x.r)); if (b) { setPage(b.id); menu = null; break; } }
+  }
+  // atelier (rien ne bouge pendant que le menu est ouvert)
+  if (page === 'atelier' && !menu) {
     const evts = atelier.mettreAJour(lues, vue.l, vue.h, now, { corbeille: corbeille(), boutons: boutonsHud() });
     for (const e of evts) if (e.type === 'bouton') actionHud(e.b.id);
     for (const m of lues) m.tient = !!(atelier.mains[m.id] && atelier.mains[m.id].saisie);
@@ -460,4 +489,4 @@ setLang(lang); setPage('atelier');
 dimensionner(); if (rendu) rendu.dessiner(atelier.cam, atelier.scene, {});
 
 // Point d'accès pour les tests (sans effet en usage normal)
-window.__visionDemo = { atelier, getState: () => ({ running, page, stereo, objets: atelier.scene.objets.length, fps, message: m4s.etat.message, humeur: m5.etat.h && m5.etat.h.humeur }), readyHands: () => !!mainsLm, readyFace: () => !!visageLm, setPage, importer, entrerCasque, quitterCasque, stereo: (v) => { stereo = v; } };
+window.__visionDemo = { atelier, getState: () => ({ running, page, stereo, objets: atelier.scene.objets.length, fps, message: m4s.etat.message, humeur: m5.etat.h && m5.etat.h.humeur }), readyHands: () => !!mainsLm, readyFace: () => !!visageLm, setPage, importer, entrerCasque, quitterCasque, stereo: (v) => { stereo = v; }, ouvrirMenu: () => { menu = { depuis: performance.now() }; } };

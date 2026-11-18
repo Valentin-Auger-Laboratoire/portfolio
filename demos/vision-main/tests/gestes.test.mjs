@@ -1,4 +1,4 @@
-import { lireMain, repereMain, quatRepere, Seuil, Balayage, vitesseAngulaire, PINCE_ON, PINCE_OFF } from '../gestes.js';
+import { lireMain, repereMain, quatRepere, Seuil, Balayage, Maintien, vitesseAngulaire, PINCE_ON, PINCE_OFF } from '../gestes.js';
 import { creerAtelier } from '../atelier.js';
 import { FORMES } from '../formes.js';
 import { lettres, mainLocale, versImage } from '../signes.js';
@@ -43,6 +43,18 @@ check(errMax < 1e-6, `rotation de la main retrouvée (erreur max ${errMax.toExpo
   check(r3 === null, 'main lente : pas de balayage');
   let r4 = null; const b2 = new Balayage(); for (let t = 0; t <= 300; t += 30) r4 = r4 || b2.pousser(500, 100 + t * 1.5, t, 960, true);
   check(r4 === null, 'mouvement vertical : pas de balayage');
+}
+// 4 bis. menu : les deux mains ouvertes tenues 1 s, une seule fois ; une main ouverte (lettre B) ne suffit pas
+{
+  const m = new Maintien(1000); const v = [];
+  for (let t = 0; t <= 2500; t += 50) if (m.maj(t >= 200 && t < 2000, t)) v.push(t);
+  check(v.length === 1 && v[0] === 1200, 'menu ouvert une fois après 1 s ' + v);
+  const b1 = main(L.B, { main: 'droite' }), b2 = main(L.B, { main: 'gauche' });
+  const deux = [lireMain(b1.image, b1.monde), lireMain(b2.image, b2.monde)].filter((x) => x.ouverte).length >= 2;
+  const une = [lireMain(b1.image, b1.monde)].filter((x) => x.ouverte).length >= 2;
+  check(deux && !une, 'deux mains ouvertes = menu, une seule (lettre B) = rien');
+  const ok2 = lettres('lsf').every((l) => { const h = main(l); const r = lireMain(h.image, h.monde); return true; });
+  check(ok2, 'lecture de toutes les lettres sans erreur');
 }
 // 5. vitesse angulaire
 { const v = vitesseAngulaire(q4.id(), q4.axeAngle([0, 0, 1], 0.3), 0.1); check(Math.abs(v.w - 3) < 1e-9 && Math.abs(v.axe[2] - 1) < 1e-9, 'vitesse angulaire 3 rad/s'); }
