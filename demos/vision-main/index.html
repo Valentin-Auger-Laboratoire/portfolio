@@ -116,7 +116,7 @@
 
     <p class="eyebrow" data-t="eyebrow">Démo interactive · vision par ordinateur · 3D</p>
     <h1 data-t="title">Atelier 3D piloté par les mains</h1>
-    <p class="intro" data-t="intro">Importez une pièce (STL, OBJ) ou faites apparaître une forme, puis saisissez-la, déplacez-la et faites-la tourner avec les mains, comme un objet réel. Un balayage de la main ouverte change de page : lecture de l'alphabet des signes, expressions du visage. Avec un casque où l'on glisse son téléphone, l'écran se coupe en deux et les pièces flottent devant vous.</p>
+    <p class="intro" data-t="intro">Devant la webcam de l'ordinateur, importez une pièce (STL, OBJ) ou faites apparaître une forme, puis saisissez-la, déplacez-la et faites-la tourner avec les mains, comme un objet réel. Les deux mains ouvertes ouvrent le menu des pages : lecture de l'alphabet des signes, expressions du visage. Une seule page agit à la fois. Un mode casque pour téléphone existe aussi en option.</p>
 
     <div class="layout">
       <section>
@@ -168,15 +168,13 @@
             <button type="button" class="small" id="back4" data-t="backspace">Effacer une lettre</button>
             <button type="button" class="small" id="clear4" data-t="clearMsg">Tout effacer</button>
             <button type="button" class="small" id="speak4" data-t="speak">Lire à voix haute</button>
-            <span class="sep"></span>
-            <button type="button" class="small" id="casque4" data-t="headset">Mode casque (téléphone)</button>
+            <button type="button" class="small" id="casque4" data-t="headset" hidden>Mode casque (téléphone)</button>
           </div>
         </div>
         <div class="bar" data-montre="visage" hidden>
           <button type="button" class="small" id="calib5" data-t="calib">Calibrer le visage au repos (2 s)</button>
           <button type="button" class="small" id="uncalib5" data-t="uncalib">Oublier la calibration</button>
-          <span class="sep"></span>
-          <button type="button" class="small" id="casque5" data-t="headset">Mode casque (téléphone)</button>
+          <button type="button" class="small" id="casque5" data-t="headset" hidden>Mode casque (téléphone)</button>
         </div>
       </section>
 
@@ -189,10 +187,10 @@
             <div><dt data-t="g3">Deux mains qui pincent la même pièce</dt><dd data-t="g3d">Écarter pour agrandir, rapprocher pour réduire, tourner les mains pour la faire pivoter.</dd></div>
             <div><dt data-t="g4">Lâcher sur la corbeille</dt><dd data-t="g4d">Supprime la pièce (en bas à droite de l'image).</dd></div>
             <div><dt data-t="g5">Pincer sur une forme de la colonne</dt><dd data-t="g5d">Fait apparaître la forme (cube, sphère…), sans toucher l'écran.</dd></div>
-            <div><dt data-t="g6">Balayer avec la main ouverte</dt><dd data-t="g6d">Page suivante ou précédente.</dd></div>
+            <div><dt data-t="g6">Les deux mains ouvertes pendant 1 s</dt><dd data-t="g6d">Ouvre le menu des pages ; pincer la page voulue. Une seule page agit à la fois : en langue des signes, les gestes ne déplacent pas les pièces, et dans l'atelier aucune lettre n'est lue.</dd></div>
             <div><dt data-t="g7">À la souris</dt><dd data-t="g7d">Glisser une pièce : la déplacer · clic droit ou Maj + glisser : la tourner · molette : taille · fichier glissé sur l'image : importé.</dd></div>
           </dl>
-          <h3 data-t="hsTitle">Mode casque</h3>
+          <h3 data-t="hsTitle">Mode casque (option)</h3>
           <div class="reglages">
             <label><span data-t="ipd">Écart des yeux</span><input type="range" id="ipd" min="0" max="0.1" step="0.002" value="0.064"><span id="ipdV">64 mm</span></label>
           </div>
