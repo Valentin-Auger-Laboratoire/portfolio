@@ -28,11 +28,10 @@ export function creerModeVisage(app) {
   }
 
   function relier(ctx, pts, connexions, col, lw) {
-    const w = app.canvas.width, h = app.canvas.height;
     ctx.strokeStyle = col; ctx.lineWidth = lw; ctx.beginPath();
     for (const { start, end } of connexions) {
       const a = pts[start], b = pts[end]; if (!a || !b) continue;
-      ctx.moveTo((1 - a.x) * w, a.y * h); ctx.lineTo((1 - b.x) * w, b.y * h);
+      ctx.moveTo(...app.px(a)); ctx.lineTo(...app.px(b));
     }
     ctx.stroke();
   }

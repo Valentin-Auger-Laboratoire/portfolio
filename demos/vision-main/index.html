@@ -3,20 +3,20 @@
 <head>
   <meta charset="UTF-8">
   <meta name="google" content="notranslate">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Vision IA — démo</title>
-  <meta name="description" content="Démo web : suivi de la main, construction 3D avec les deux mains, lecture de l'alphabet des signes (LSF / ASL) et humeur lue sur le visage, avec MediaPipe dans le navigateur.">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+  <title>Vision IA — atelier 3D gestuel</title>
+  <meta name="description" content="Atelier 3D piloté par les mains : importer une pièce STL ou OBJ, la saisir, la déplacer et la faire tourner en 3D, changer de page d'un geste, lire l'alphabet des signes et l'expression d'un visage ; mode casque pour téléphone.">
   <meta property="og:type" content="website">
   <meta property="og:url" content="https://valentin-auger-laboratoire.github.io/portfolio/demos/vision-main/">
-  <meta property="og:title" content="Vision IA — démo">
-  <meta property="og:description" content="Démo web : suivi de la main, construction 3D avec les deux mains, lecture de l'alphabet des signes (LSF / ASL) et humeur lue sur le visage, avec MediaPipe dans le navigateur.">
+  <meta property="og:title" content="Vision IA — atelier 3D gestuel">
+  <meta property="og:description" content="Atelier 3D piloté par les mains : importer une pièce STL ou OBJ, la saisir, la déplacer et la faire tourner en 3D, changer de page d'un geste, lire l'alphabet des signes et l'expression d'un visage ; mode casque pour téléphone.">
   <meta property="og:image" content="https://valentin-auger-laboratoire.github.io/portfolio/assets/projets/vision-ia.jpg">
   <meta property="og:image:width" content="960">
   <meta property="og:image:height" content="600">
   <meta name="twitter:card" content="summary_large_image">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
   <style>
     :root {
       --bg: #0c0c0d; --panel: #161618; --border: #262628; --border-hi: #3a3a3d;
@@ -26,8 +26,8 @@
     }
     *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
     body { background: var(--bg); color: var(--text); font-family: var(--sans); line-height: 1.55; -webkit-font-smoothing: antialiased; }
-    .wrap { max-width: 1180px; margin: 0 auto; padding: 24px max(16px, env(safe-area-inset-right, 0px)) 48px max(16px, env(safe-area-inset-left, 0px)); }
-    .top { display: flex; justify-content: space-between; align-items: center; gap: 12px; flex-wrap: wrap; margin-bottom: 24px; }
+    .wrap { max-width: 1240px; margin: 0 auto; padding: 24px max(16px, env(safe-area-inset-right, 0px)) 48px max(16px, env(safe-area-inset-left, 0px)); }
+    .top { display: flex; justify-content: space-between; align-items: center; gap: 12px; flex-wrap: wrap; margin-bottom: 22px; }
     .back { font-size: 0.9rem; color: var(--dim); text-decoration: none; }
     .back:hover { color: var(--accent); }
     .lang { display: flex; border: 1px solid var(--border-hi); }
@@ -36,45 +36,51 @@
     .lang button[aria-pressed="true"] { background: var(--text); color: var(--bg); }
     .eyebrow { font: 500 0.82rem var(--mono); color: var(--accent); letter-spacing: .04em; }
     h1 { font-size: clamp(1.6rem, 3.4vw, 2.3rem); line-height: 1.15; margin: 6px 0 10px; text-wrap: balance; }
-    .intro { color: var(--dim); max-width: 75ch; }
-    .note { margin-top: 12px; font: 0.8rem var(--mono); color: var(--dim); border-left: 2px solid var(--accent); padding-left: 10px; max-width: 95ch; }
-    .note a { color: var(--text); }
+    .intro { color: var(--dim); max-width: 80ch; }
 
-    .layout { display: grid; grid-template-columns: minmax(0, 1fr) 300px; gap: 20px; margin-top: 28px; align-items: start; }
+    .layout { display: grid; grid-template-columns: minmax(0, 1fr) 310px; gap: 20px; margin-top: 24px; align-items: start; }
     .panel { background: var(--panel); border: 1px solid var(--border); border-radius: 8px; padding: 18px; }
     .panel h2 { font: 600 0.78rem var(--mono); letter-spacing: .12em; text-transform: uppercase; color: var(--dim); margin-bottom: 12px; }
+    .panel h3 { font: 600 0.72rem var(--mono); letter-spacing: .1em; text-transform: uppercase; color: var(--dim); margin: 14px 0 8px; }
 
-    .modes { display: flex; gap: 8px; margin-bottom: 14px; flex-wrap: wrap; }
-    .mode { font: 0.85rem var(--mono); background: none; color: var(--dim); border: 1px solid var(--border); border-radius: 999px; padding: 6px 14px; cursor: pointer; }
-    .mode[aria-pressed="true"] { color: var(--accent); border-color: var(--accent); }
+    .pages { display: flex; gap: 8px; margin-bottom: 12px; flex-wrap: wrap; }
+    .page { font: 0.85rem var(--mono); background: none; color: var(--dim); border: 1px solid var(--border); border-radius: 999px; padding: 6px 14px; cursor: pointer; }
+    .page[aria-pressed="true"] { color: var(--accent); border-color: var(--accent); }
 
-    .stage { position: relative; aspect-ratio: 4 / 3; max-width: 100%; background: #000; border: 1px solid var(--border); border-radius: 8px; overflow: hidden; }
+    .stage { position: relative; aspect-ratio: 4 / 3; max-width: 100%; background: #000; border: 1px solid var(--border); border-radius: 8px; overflow: hidden; touch-action: none; }
     .stage canvas { position: absolute; inset: 0; width: 100%; height: 100%; display: block; }
     .stage video { display: none; }
+    .stage.glisse { outline: 2px dashed var(--accent); outline-offset: -6px; }
+    .stage:fullscreen { border: 0; border-radius: 0; aspect-ratio: auto; width: 100vw; height: 100vh; }
     .overlay { position: absolute; inset: 0; display: grid; place-items: center; text-align: center; padding: 24px; background: rgba(0,0,0,.78); }
     .overlay[hidden] { display: none; }
-    .overlay p { color: var(--dim); max-width: 46ch; margin: 10px auto 0; font-size: 0.9rem; }
+    .overlay p { color: var(--dim); max-width: 50ch; margin: 10px auto 0; font-size: 0.9rem; }
     .start { font: 600 1rem var(--sans); color: #fff; background: var(--accent); border: 0; border-radius: 8px; padding: 14px 24px; cursor: pointer; }
     .start:disabled { opacity: .6; cursor: progress; }
-    .start:focus-visible, .mode:focus-visible, .lang button:focus-visible, .small:focus-visible { outline: 2px solid var(--text); outline-offset: 2px; }
+    .alt { margin: 10px 4px 0; font: 500 0.85rem var(--sans); background: none; color: var(--text); border: 1px solid var(--border-hi); border-radius: 8px; padding: 9px 16px; cursor: pointer; }
+    .alt:hover { border-color: var(--accent); }
     .msg { color: var(--warn); }
+    .quitter { position: absolute; top: 10px; right: 10px; z-index: 3; font: 600 0.8rem var(--sans); color: #fff; background: rgba(0,0,0,.55); border: 1px solid rgba(255,255,255,.4); border-radius: 6px; padding: 6px 10px; cursor: pointer; }
+    .quitter[hidden] { display: none; }
 
-    .bar { display: flex; gap: 10px; margin-top: 12px; flex-wrap: wrap; }
+    .bar { display: flex; gap: 8px; margin-top: 12px; flex-wrap: wrap; align-items: center; }
     .small { font: 500 0.82rem var(--sans); background: none; color: var(--text); border: 1px solid var(--border-hi); border-radius: 6px; padding: 7px 12px; cursor: pointer; }
     .small:hover { border-color: var(--accent); color: var(--accent); }
-    .small[hidden] { display: none; }
     .small[aria-pressed="true"] { border-color: var(--accent); color: var(--accent); }
+    .small.plein { background: var(--accent); border-color: var(--accent); color: #fff; }
+    [hidden] { display: none !important; }
+    .start:focus-visible, .page:focus-visible, .lang button:focus-visible, .small:focus-visible, .alt:focus-visible { outline: 2px solid var(--text); outline-offset: 2px; }
+    .sep { width: 1px; height: 22px; background: var(--border-hi); }
+    .biblio { margin-top: 10px; font-size: 0.8rem; color: var(--dim); }
+    .biblio button { margin: 4px 6px 0 0; }
 
     .help dl { display: grid; gap: 10px; }
     .help dt { font: 500 0.82rem var(--mono); color: var(--text); }
     .help dd { font-size: 0.85rem; color: var(--dim); }
-    .help .step[hidden] { display: none; }
     kbd { font: 0.78rem var(--mono); border: 1px solid var(--border-hi); border-bottom-width: 2px; border-radius: 4px; padding: 0 5px; color: var(--text); }
+    .limits { margin-top: 12px; font-size: 0.78rem; color: var(--dim); border-left: 2px solid var(--border-hi); padding-left: 10px; }
     .privacy { margin-top: 16px; padding-top: 14px; border-top: 1px solid var(--border); font-size: 0.8rem; color: var(--dim); }
 
-    [data-show][hidden] { display: none !important; }
-    .alt { margin-top: 10px; font: 500 0.85rem var(--sans); background: none; color: var(--text); border: 1px solid var(--border-hi); border-radius: 8px; padding: 9px 16px; cursor: pointer; }
-    .alt:hover { border-color: var(--accent); }
     .message { margin-top: 12px; min-height: 52px; background: var(--panel); border: 1px solid var(--border); border-radius: 8px; padding: 10px 14px; font: 600 1.35rem var(--mono); letter-spacing: .08em; word-break: break-all; }
     .message small { display: block; font: 500 0.72rem var(--mono); color: var(--dim); letter-spacing: .1em; text-transform: uppercase; margin-bottom: 4px; }
     .seg { display: flex; border: 1px solid var(--border-hi); border-radius: 6px; overflow: hidden; margin-bottom: 12px; }
@@ -84,7 +90,7 @@
     .learn { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; margin: 6px 0 4px; }
     .learn select { font: 0.85rem var(--mono); background: var(--bg); color: var(--text); border: 1px solid var(--border-hi); border-radius: 6px; padding: 6px 8px; }
     .counts { font: 0.75rem var(--mono); color: var(--dim); margin-top: 4px; }
-    .alpha { margin-top: 14px; display: grid; gap: 4px; max-height: 260px; overflow: auto; padding-right: 4px; }
+    .alpha { margin-top: 8px; display: grid; gap: 4px; max-height: 240px; overflow: auto; padding-right: 4px; }
     .alpha div { font-size: 0.8rem; color: var(--dim); }
     .alpha b { display: inline-block; width: 1.6em; color: var(--text); font-family: var(--mono); }
     .bars { display: grid; gap: 7px; margin: 4px 0 14px; }
@@ -92,9 +98,10 @@
     .bars .track { height: 8px; background: var(--border); border-radius: 4px; overflow: hidden; }
     .bars .fill { height: 100%; width: 0; background: var(--text); transition: width .15s linear; }
     .bars .val { font: 0.75rem var(--mono); text-align: right; }
-    .help h3 { font: 600 0.72rem var(--mono); letter-spacing: .1em; text-transform: uppercase; color: var(--dim); margin: 14px 0 8px; }
-    .limits { margin-top: 12px; font-size: 0.78rem; color: var(--dim); border-left: 2px solid var(--border-hi); padding-left: 10px; }
-    @media (max-width: 860px) { .layout { grid-template-columns: 1fr; } }
+    .reglages { display: grid; gap: 8px; margin-top: 6px; font-size: 0.8rem; color: var(--dim); }
+    .reglages label { display: grid; grid-template-columns: 9em minmax(0, 1fr) 3.5em; align-items: center; gap: 8px; }
+    .reglages input[type=range] { width: 100%; accent-color: var(--accent); }
+    @media (max-width: 900px) { .layout { grid-template-columns: 1fr; } }
   </style>
 </head>
 <body>
@@ -107,88 +114,97 @@
       </div>
     </div>
 
-    <p class="eyebrow" data-t="eyebrow">Démo interactive · vision par ordinateur</p>
-    <h1 data-t="title">Suivre la main, construire en 3D, lire les signes et le visage</h1>
-    <p class="intro" data-t="intro">La webcam détecte les 21 points de chaque main et les 478 points du visage en temps réel. Cinq étapes : un bouton touché du doigt, des cubes posés par pince, un vrai monde 3D construit avec les deux mains, l'alphabet des signes lu lettre par lettre, puis l'humeur lue sur le visage.</p>
-    <p class="note" data-t="note">Étapes 1 et 2 : portage web des scripts Python du projet. Étapes 3 à 5 : ajoutées en 2026, écrites directement pour le web (JavaScript, MediaPipe Hands et Face Landmarker). <a href="https://github.com/Valentin-Auger-Laboratoire/vision-main" target="_blank" rel="noopener">voir le code ↗</a></p>
+    <p class="eyebrow" data-t="eyebrow">Démo interactive · vision par ordinateur · 3D</p>
+    <h1 data-t="title">Atelier 3D piloté par les mains</h1>
+    <p class="intro" data-t="intro">Importez une pièce (STL, OBJ) ou faites apparaître une forme, puis saisissez-la, déplacez-la et faites-la tourner avec les mains, comme un objet réel. Un balayage de la main ouverte change de page : lecture de l'alphabet des signes, expressions du visage. Avec un casque où l'on glisse son téléphone, l'écran se coupe en deux et les pièces flottent devant vous.</p>
 
     <div class="layout">
       <section>
-        <div class="modes" role="group" aria-label="Étape">
-          <button type="button" class="mode" data-mode="1" aria-pressed="false" data-t="mode1">Étape 1 · Suivi de la main</button>
-          <button type="button" class="mode" data-mode="2" aria-pressed="false" data-t="mode2">Étape 2 · Construction de cubes</button>
-          <button type="button" class="mode" data-mode="3" aria-pressed="true" data-t="mode3">Étape 3 · Monde 3D</button>
-          <button type="button" class="mode" data-mode="4" aria-pressed="false" data-t="mode4">Étape 4 · Alphabet des signes</button>
-          <button type="button" class="mode" data-mode="5" aria-pressed="false" data-t="mode5">Étape 5 · Visage et humeur</button>
+        <div class="pages" role="group" aria-label="Pages">
+          <button type="button" class="page" data-page="atelier" aria-pressed="true" data-t="pAtelier">Atelier 3D</button>
+          <button type="button" class="page" data-page="signes" aria-pressed="false" data-t="pSignes">Langue des signes</button>
+          <button type="button" class="page" data-page="visage" aria-pressed="false" data-t="pVisage">Visage</button>
         </div>
         <div class="stage" id="stage">
           <video id="video" playsinline muted></video>
-          <canvas id="canvas"></canvas>
+          <canvas id="vue3d"></canvas>
+          <canvas id="hud"></canvas>
+          <button type="button" class="quitter" id="quitterCasque" data-t="quitHeadset" hidden>Quitter le mode casque</button>
           <div class="overlay" id="overlay">
             <div>
               <button type="button" class="start" id="start" data-t="start">Activer la caméra</button>
-              <p id="status" data-t="statusIdle">La caméra ne s'allume qu'après ce clic. Les modèles (main ≈ 8 Mo, visage ≈ 4 Mo) se chargent une seule fois.</p>
-              <button type="button" class="alt" id="souris" data-show="3" data-t="mouseTry">Essayer à la souris, sans caméra</button>
+              <div><button type="button" class="alt" id="startArriere" data-t="startRear">Caméra arrière (téléphone)</button><button type="button" class="alt" id="souris" data-t="mouseTry">Essayer sans caméra (souris ou doigt)</button></div>
+              <p id="status" data-t="statusIdle">La caméra ne s'allume qu'après ce clic. Les images restent dans votre navigateur.</p>
             </div>
           </div>
         </div>
-        <div class="bar">
-          <button type="button" class="small" id="undo" data-t="undo" data-show="2">Annuler le dernier cube (Z)</button>
-          <button type="button" class="small" id="clear" data-t="clear" data-show="2">Tout effacer (C)</button>
-          <button type="button" class="small" id="undo3" data-t="undo3" data-show="3">Annuler (Z)</button>
-          <button type="button" class="small" id="clear3" data-t="clear" data-show="3">Tout effacer (C)</button>
-          <button type="button" class="small" id="style3" data-t="styleNeon" data-show="3">Rendu néon</button>
-          <button type="button" class="small" id="view3" data-t="view3" data-show="3">Vue initiale</button>
-          <button type="button" class="small" id="sample3" data-t="sample3" data-show="3">Charger un exemple</button>
-          <button type="button" class="small" id="sym3" data-t="sym3" data-show="3" aria-pressed="false">Symétrie miroir</button>
-          <button type="button" class="small" id="rot3" data-t="rot3" data-show="3" aria-pressed="false">Rotation automatique</button>
-          <button type="button" class="small" id="export3" data-t="export3" data-show="3">Exporter en OBJ (Fusion 360, Blender)</button>
-          <button type="button" class="small" id="stl3" data-t="stl3" data-show="3">Exporter en STL (impression 3D)</button>
-          <button type="button" class="small" id="lefty3" data-t="lefty" data-show="3" aria-pressed="false">Inverser les mains</button>
-          <button type="button" class="small" id="calib5" data-t="calib" data-show="5">Calibrer mon visage au repos (2 s)</button>
-          <button type="button" class="small" id="uncalib5" data-t="uncalib" data-show="5">Oublier la calibration</button>
-          <button type="button" class="small" id="stop" data-t="stop" hidden>Arrêter la caméra (Q)</button>
+
+        <div class="bar" data-montre="atelier">
+          <label class="small plein" for="fichier" data-t="import">Importer STL / OBJ</label>
+          <input type="file" id="fichier" accept=".stl,.obj" multiple hidden>
+          <span class="sep"></span>
+          <button type="button" class="small" data-forme="cube" data-t="fCube">Cube</button>
+          <button type="button" class="small" data-forme="sphere" data-t="fSphere">Sphère</button>
+          <button type="button" class="small" data-forme="cylindre" data-t="fCyl">Cylindre</button>
+          <button type="button" class="small" data-forme="cone" data-t="fCone">Cône</button>
+          <button type="button" class="small" data-forme="tore" data-t="fTore">Tore</button>
+          <button type="button" class="small" data-forme="pyramide" data-t="fPyr">Pyramide</button>
         </div>
-        <div data-show="4">
+        <div class="bar" data-montre="atelier">
+          <button type="button" class="small" id="holo" aria-pressed="false" data-t="holo">Hologramme</button>
+          <button type="button" class="small" id="toupie" aria-pressed="false" data-t="spin">Faire tourner</button>
+          <button type="button" class="small" id="vider" data-t="clearAll">Tout effacer</button>
+          <button type="button" class="small" id="exporter" data-t="export">Exporter la scène (STL)</button>
+          <span class="sep"></span>
+          <button type="button" class="small" id="casque" data-t="headset">Mode casque (téléphone)</button>
+          <button type="button" class="small" id="stop" data-t="stop" hidden>Arrêter la caméra</button>
+        </div>
+        <p class="biblio" id="biblio" data-montre="atelier"></p>
+
+        <div data-montre="signes" hidden>
           <div class="message" aria-live="polite"><small data-t="msgTitle">Message</small><span id="msg"></span><span style="color:var(--accent)">▌</span></div>
           <div class="bar">
             <button type="button" class="small" id="space4" data-t="space">Espace</button>
             <button type="button" class="small" id="back4" data-t="backspace">Effacer une lettre</button>
             <button type="button" class="small" id="clear4" data-t="clearMsg">Tout effacer</button>
             <button type="button" class="small" id="speak4" data-t="speak">Lire à voix haute</button>
+            <span class="sep"></span>
+            <button type="button" class="small" id="casque4" data-t="headset">Mode casque (téléphone)</button>
           </div>
+        </div>
+        <div class="bar" data-montre="visage" hidden>
+          <button type="button" class="small" id="calib5" data-t="calib">Calibrer le visage au repos (2 s)</button>
+          <button type="button" class="small" id="uncalib5" data-t="uncalib">Oublier la calibration</button>
+          <span class="sep"></span>
+          <button type="button" class="small" id="casque5" data-t="headset">Mode casque (téléphone)</button>
         </div>
       </section>
 
       <aside class="panel help">
         <h2 data-t="controls">Commandes</h2>
-        <dl class="step" data-step="1" hidden>
-          <div><dt data-t="h1a">Index sur QUITTER</dt><dd data-t="h1b">Le bouton passe au vert, puis la caméra s'arrête au bout de 0,3 s.</dd></div>
-          <div><dt data-t="h1c">Clic sur QUITTER ou touche Q</dt><dd data-t="h1d">Arrêt immédiat.</dd></div>
-        </dl>
-        <dl class="step" data-step="2" hidden>
-          <div><dt data-t="h2a">Viser avec l'index</dt><dd data-t="h2b">Un cube fantôme suit le bout de l'index, aimanté sur une grille.</dd></div>
-          <div><dt data-t="h2c">Pincer pouce + index</dt><dd data-t="h2d">Pose un cube. Un seul cube par pince : relâchez pour en poser un autre.</dd></div>
-          <div><dt data-t="h2e">Avancer ou reculer la main</dt><dd data-t="h2f">Change la taille du cube (profondeur simulée).</dd></div>
-          <div><dt data-t="h2g">Fermer le poing</dt><dd data-t="h2h">Efface le dernier cube.</dd></div>
-          <div><dt><kbd>Z</kbd> <kbd>C</kbd> <kbd>Q</kbd></dt><dd data-t="h2i">Annuler, tout effacer, arrêter.</dd></div>
-        </dl>
-        <dl class="step" data-step="3">
-          <div><dt data-t="h3a">Main droite : pincer pouce + index</dt><dd data-t="h3b">Pose un cube sur la face visée. Gardez la pince et déplacez la main : vous tracez une ligne ou un mur dans le même plan.</dd></div>
-          <div><dt data-t="h3c">Main droite : pincer pouce + majeur</dt><dd data-t="h3d">Retire le cube visé.</dd></div>
-          <div><dt data-t="h3e">Main gauche : pincer et déplacer</dt><dd data-t="h3f">Fait tourner la scène autour de la construction.</dd></div>
-          <div><dt data-t="h3g">Main gauche : poing, monter ou descendre</dt><dd data-t="h3h">Zoom avant ou arrière.</dd></div>
-          <div><dt data-t="h3i">Index sur une couleur</dt><dd data-t="h3j">Change la couleur au bout de 0,45 s.</dd></div>
-          <div><dt data-t="h3k">À la souris</dt><dd data-t="h3l">Clic : poser · clic droit ou Maj + clic : retirer · glisser : tourner · molette : zoom.</dd></div>
-          <p class="limits" data-t="lim3">Moteur 3D écrit à la main (projection, visée par parcours de grille, faces cachées), vérifié par des tests automatiques. La construction est gardée dans ce navigateur.</p>
-        </dl>
-        <div class="step" data-step="4">
+        <div data-montre="atelier">
+          <dl>
+            <div><dt data-t="g1">Pincer pouce + index sur une pièce</dt><dd data-t="g1d">La saisir : elle suit la main, recule ou avance avec elle et tourne comme elle.</dd></div>
+            <div><dt data-t="g2">Lâcher en tournant la main vite</dt><dd data-t="g2d">La pièce continue de tourner sur elle-même, puis ralentit.</dd></div>
+            <div><dt data-t="g3">Deux mains qui pincent la même pièce</dt><dd data-t="g3d">Écarter pour agrandir, rapprocher pour réduire, tourner les mains pour la faire pivoter.</dd></div>
+            <div><dt data-t="g4">Lâcher sur la corbeille</dt><dd data-t="g4d">Supprime la pièce (en bas à droite de l'image).</dd></div>
+            <div><dt data-t="g5">Pincer sur une forme de la colonne</dt><dd data-t="g5d">Fait apparaître la forme (cube, sphère…), sans toucher l'écran.</dd></div>
+            <div><dt data-t="g6">Balayer avec la main ouverte</dt><dd data-t="g6d">Page suivante ou précédente.</dd></div>
+            <div><dt data-t="g7">À la souris</dt><dd data-t="g7d">Glisser une pièce : la déplacer · clic droit ou Maj + glisser : la tourner · molette : taille · fichier glissé sur l'image : importé.</dd></div>
+          </dl>
+          <h3 data-t="hsTitle">Mode casque</h3>
+          <div class="reglages">
+            <label><span data-t="ipd">Écart des yeux</span><input type="range" id="ipd" min="0" max="0.1" step="0.002" value="0.064"><span id="ipdV">64 mm</span></label>
+          </div>
+          <p class="limits" data-t="lim1">Moteur 3D WebGL écrit à la main (projection, éclairage, profondeur, vue stéréo) et lecture STL / OBJ maison. La profondeur d'une pièce suit la taille apparente de la main. En mode casque, le gyroscope du téléphone garde les pièces à leur place quand on tourne la tête.</p>
+        </div>
+        <div data-montre="signes" hidden>
           <div class="seg" role="group" aria-label="Alphabet">
             <button type="button" data-alpha="lsf" aria-pressed="true">LSF</button>
             <button type="button" data-alpha="asl" aria-pressed="false">ASL</button>
           </div>
           <dl>
-            <div><dt data-t="h4a">Montrer une lettre à la caméra</dt><dd data-t="h4b">La lettre reconnue s'affiche avec sa confiance. Tenue 0,9 s, elle s'ajoute au message.</dd></div>
+            <div><dt data-t="s1">Montrer une lettre à la caméra</dt><dd data-t="s1d">Pour une personne qui ne parle pas : la lettre s'affiche, tenue 0,9 s elle s'ajoute au message, qui peut être lu à voix haute. Avec la caméra arrière ou le casque, on lit les signes de la personne en face.</dd></div>
           </dl>
           <h3 data-t="learnTitle">Apprendre mes signes</h3>
           <div class="learn"><select id="learnLetter" aria-label="Lettre"></select><button type="button" class="small" id="learnBtn" data-t="learnBtn">Enregistrer 25 images</button></div>
@@ -196,20 +212,20 @@
           <button type="button" class="small" id="forget4" data-t="forget" style="margin-top:8px">Oublier mes exemples</button>
           <h3 data-t="alphaTitle">Lettres reconnues</h3>
           <div class="alpha" id="alpha"></div>
-          <p class="limits" data-t="lim4">J et Z se font avec un mouvement : elles ne sont pas reconnues. Les modèles des lettres viennent d'une main de synthèse : les lettres proches (A, S, E, M, N, T) peuvent se confondre avec une vraie main. Enregistrer ses propres exemples corrige la plupart des erreurs.</p>
+          <p class="limits" data-t="lim4">J et Z se font avec un mouvement : elles ne sont pas reconnues. Les lettres proches (A, S, E, M, N, T) peuvent se confondre : enregistrer ses propres exemples corrige la plupart des erreurs.</p>
         </div>
-        <div class="step" data-step="5">
+        <div data-montre="visage" hidden>
+          <dl><div><dt data-t="v1">Expression du visage filmé</dt><dd data-t="v1d">Sur un ordinateur : votre propre visage. Avec la caméra arrière ou le casque : le visage de la personne en face de vous.</dd></div></dl>
           <h3 data-t="moodTitle">Humeur</h3>
           <div class="bars" id="moodBars"></div>
           <h3 data-t="cuesTitle">Indices du visage</h3>
           <div class="bars" id="cueBars"></div>
-          <p class="limits" data-t="lim5">Reconnaissance d'expressions, pas d'identification : le modèle ne sait pas qui vous êtes. L'humeur est déduite par des règles sur 52 coefficients d'expression (sourire, sourcils, bouche…). Une expression n'est pas une émotion : c'est une démonstration, pas un diagnostic.</p>
+          <p class="limits" data-t="lim5">Reconnaissance d'expressions, pas d'identification : le modèle ne sait pas qui est filmé. L'humeur est déduite par des règles sur 52 coefficients d'expression. Une expression n'est pas une émotion : c'est une démonstration, pas un diagnostic.</p>
         </div>
-        <p class="privacy" data-t="privacy">Les images de la caméra sont analysées dans votre navigateur. Rien n'est enregistré ni envoyé.</p>
+        <p class="privacy" data-t="privacy">Les images de la caméra et les fichiers importés restent dans votre navigateur. Rien n'est enregistré ni envoyé.</p>
       </aside>
     </div>
   </div>
-
   <script type="module" src="app.js"></script>
 </body>
 </html>
