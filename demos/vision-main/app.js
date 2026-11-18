@@ -47,7 +47,7 @@ const T = {
     cue_sourire: 'Sourire', cue_moue: 'Coins de bouche bas', cue_bouche: 'Bouche ouverte', cue_sourcilsLeves: 'Sourcils levés', cue_sourcilsFronces: 'Sourcils froncés', cue_yeuxOuverts: 'Yeux écarquillés',
     lim5: "Reconnaissance d'expressions, pas d'identification : le modèle ne sait pas qui est filmé. L'humeur est déduite par des règles sur 52 coefficients d'expression. Une expression n'est pas une émotion : c'est une démonstration, pas un diagnostic.",
     privacy: 'Les images de la caméra et les fichiers importés restent dans votre navigateur. Rien n\'est enregistré ni envoyé.',
-    trash: 'Corbeille', showHands: 'Montrez vos mains à la caméra', held: 'tenue', imported: 'Importées :', importErr: 'Fichier non lu :', tooBig: 'fichier trop gros (> 80 Mo)',
+    guide: "Guide d'utilisation (PDF) ↗", trash: 'Corbeille', showHands: 'Montrez vos mains à la caméra', held: 'tenue', imported: 'Importées :', importErr: 'Fichier non lu :', tooBig: 'fichier trop gros (> 80 Mo)',
     triangles: 'triangles', swipeHint: 'les deux mains ouvertes 1 s : changer de page', menuTitle: 'Choisir la page', menuHint: 'Pincer la page voulue · les deux mains ouvertes 1 s pour fermer', mousePage: 'Souris : glisser = déplacer · clic droit = tourner · molette = taille',
   },
   en: {
@@ -81,7 +81,7 @@ const T = {
     cue_sourire: 'Smile', cue_moue: 'Mouth corners down', cue_bouche: 'Mouth open', cue_sourcilsLeves: 'Brows raised', cue_sourcilsFronces: 'Brows lowered', cue_yeuxOuverts: 'Eyes wide',
     lim5: 'Expression recognition, not identification: the model does not know who is filmed. The mood is inferred by rules on 52 expression coefficients. An expression is not an emotion: this is a demo, not a diagnosis.',
     privacy: 'Camera images and imported files stay in your browser. Nothing is recorded or sent.',
-    trash: 'Bin', showHands: 'Show your hands to the camera', held: 'held', imported: 'Imported:', importErr: 'File not read:', tooBig: 'file too large (> 80 MB)',
+    guide: 'User guide (PDF, in French) ↗', trash: 'Bin', showHands: 'Show your hands to the camera', held: 'held', imported: 'Imported:', importErr: 'File not read:', tooBig: 'file too large (> 80 MB)',
     triangles: 'triangles', swipeHint: 'both hands open for 1 s: change page', menuTitle: 'Choose the page', menuHint: 'Pinch the page you want · both hands open for 1 s to close', mousePage: 'Mouse: drag = move · right click = turn · wheel = size',
   },
 };
