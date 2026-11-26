@@ -101,8 +101,8 @@ main { max-width: var(--maxw); margin: 0 auto; padding: 0 16px; }
   -webkit-mask-image: linear-gradient(270deg, transparent 0%, #000 45%);
   mask-image: linear-gradient(270deg, transparent 0%, #000 45%);
 }
-/* texte calé juste à droite de la photo (largeur photo ≈ 0,48 × hauteur du bloc) */
-.hero-left { justify-content: flex-start; padding-left: calc((100vh - 57px) * 0.42) !important; }
+/* texte calé juste à droite de la photo (largeur photo ≈ 0,52 × hauteur du bloc) */
+.hero-left { justify-content: flex-start; padding-left: calc((100vh - 57px) * 0.46) !important; }
 .hero-left .hero-text { max-width: max(28rem, 34vw); }
 /* voile sombre pour garder le nom lisible par-dessus la photo */
 /* image de code (retournée en miroir) qui comble la zone entre la photo et le côté droit ;
