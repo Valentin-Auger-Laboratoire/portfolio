@@ -5,7 +5,7 @@
 //  Pour modifier un texte anglais : changer la valeur ici.
 // ==========================================================
 window.I18N_EN = {
-  'meta.title': 'Valentin Auger — Engineering student · Networks & AI',
+  'meta.title': 'Portfolio Valentin Auger',
   'meta.description': 'Portfolio of Valentin Auger, engineering student: networks, artificial intelligence, electronics and health.',
 
   'nav.menu': 'Open menu',
