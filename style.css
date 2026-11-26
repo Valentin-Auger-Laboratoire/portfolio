@@ -390,4 +390,3 @@ main { max-width: var(--maxw); margin: 0 auto; padding: 0 16px; }
   * { transition: none !important; }
 }
 
-.btn-cv[hidden] { display: none; }
