@@ -41,7 +41,7 @@
 - Pas d'illustrations, pas de framework : HTML/CSS/JS pur.
 
 ## Structure
-- FICHE-PROJET.md — cette fiche (ancien nom : CLAUDE.md). Chargée automatiquement par Claude via .claude/CLAUDE.md (qui l'importe). NE PAS supprimer .claude/CLAUDE.md.
+- FICHE-PROJET.md — cette fiche (ancien nom : CLAUDE.md). Le dossier .claude/ a été RETIRÉ du dépôt le 26 nov. 2026 à la demande de Valentin (aucun fichier « Claude » visible sur son GitHub) : la fiche n'est donc plus chargée automatiquement ; en début de session, la lire (FICHE-PROJET.md). Ne jamais remettre de fichier ou dossier .claude / CLAUDE.md dans un dépôt publié.
 - index.html — sections : Accueil, À propos, Projets (filtres), Compétences, Parcours (formation), Expérience, Contact (chaque section a son onglet dans le menu)
 - style.css — styles (responsive < 820px)
 - script.js — filtres projets, menu mobile, nav active, changement de langue
