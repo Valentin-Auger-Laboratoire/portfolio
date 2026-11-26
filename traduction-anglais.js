@@ -355,8 +355,7 @@ window.I18N_EN = {
   'contact.intro': 'Looking for a 16-week internship abroad. The easiest way to reach me is by email.',
 
   'cv.download': 'Download resume',
-  'cv.fr': 'French version · PDF',
-  'cv.en': 'English version · PDF',
+  'cv.fr': 'English version · PDF',
 
   'footer.line1': 'Connect, secure, make it last.',
   'footer.line2': 'But what matters is that it works. And that it holds.',

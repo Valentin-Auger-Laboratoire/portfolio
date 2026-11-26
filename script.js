@@ -69,10 +69,12 @@ document.querySelectorAll('#accueil, main section[id]').forEach(s => observer.ob
     });
     document.querySelectorAll('.lang-switch button').forEach(b =>
       b.setAttribute('aria-pressed', b.dataset.lang === lang));
-    // CV : la version dans la langue choisie passe en premier
-    const cv = document.querySelector('.cv-block');
-    const cvLang = cv && cv.querySelector(en ? 'a[href$="cv-en.pdf"]' : 'a[href$="cv-fr.pdf"]');
-    if (cvLang && cv.firstElementChild !== cvLang) cv.prepend(cvLang);
+    // CV : un seul bouton, le PDF suit la langue du site
+    const cv = document.getElementById('cv-lien');
+    if (cv) {
+      cv.setAttribute('href', en ? 'assets/cv-en.pdf' : 'assets/cv-fr.pdf');
+      cv.setAttribute('download', en ? 'CV-Valentin-Auger-EN.pdf' : 'CV-Valentin-Auger-FR.pdf');
+    }
     try { localStorage.setItem('lang', lang); } catch (e) {}
   }
 
