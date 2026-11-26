@@ -330,7 +330,7 @@ main { max-width: var(--maxw); margin: 0 auto; padding: 0 16px; }
 }
 .contact-links a:hover { border-color: var(--accent); }
 /* CV : deux grands boutons rouges côte à côte, sous la carte contact */
-.cv-block { display: grid; grid-template-columns: 1fr; gap: 16px; margin-top: 24px; }
+.cv-block { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin-top: 24px; }
 .btn-cv {
   display: flex; align-items: center; justify-content: center; gap: 14px;
   padding: 16px 24px;
