@@ -1,7 +1,7 @@
 /* Interface de l'outil « Entrepôt de données de santé » (les 5 V) */
 (function () {
   'use strict';
-  const E = window.Entrepot, C = window.Commun, $ = (id) => document.getElementById(id);
+  const E = window.Entrepot, K = window.Stockage, C = window.Commun, $ = (id) => document.getElementById(id);
   const T = {
     fr: {
       back: '← Retour au portfolio', eyebrow: 'Outil web · projet personnel, d\'après mon cours de Big Data et NoSQL pour la santé (EPISEN, 2026)',
@@ -10,7 +10,40 @@
       warn: "Tous les patients, séjours et mesures sont fictifs et générés dans le navigateur ; rien n'est envoyé. Les formats suivent la structure de HL7 v2.5 et FHIR R4, simplifiée. Outil pédagogique, pas un entrepôt de données de santé certifié (HDS).",
       V_volume: 'Volume', V_velocite: 'Vélocité', V_variete: 'Variété', V_veracite: 'Véracité', V_valeur: 'Valeur',
       Vd_volume: 'stocker et répartir', Vd_velocite: 'traiter en continu', Vd_variete: 'formats différents', Vd_veracite: 'données fiables ?', Vd_valeur: 'en tirer des décisions',
-      tab_velocite: '1 · Vélocité', tab_variete: '2 · Variété', tab_veracite: '3 · Véracité', tab_valeur: '4 · Valeur : entrepôt, OLAP', tab_volume: '5 · Volume : NoSQL, MapReduce', tab_fouille: '6 · Fouille de données', tab_verif: 'Vérifications',
+      tab_velocite: '1 · Vélocité', tab_variete: '2 · Variété', tab_veracite: '3 · Véracité', tab_valeur: '4 · Valeur : entrepôt, OLAP', tab_volume: '5 · Volume : NoSQL, MapReduce', tab_fouille: '7 · Fouille de données',
+      tab_lac: '6 · Lac, Parquet, Spark',
+      typesT: 'Structuré, semi-structuré, non structuré', tExemple: 'donnée', tS: 'structuré', tM: 'semi-structuré', tN: 'non structuré',
+      typesScore: 'Cliquez sur un type pour chaque donnée : {b} bonnes réponses sur {n}.', typesExpl: 'Structuré : schéma fixe en lignes et colonnes. Semi-structuré : balises ou clés qui décrivent la donnée, mais pas de schéma imposé. Non structuré : aucun champ exploitable directement.',
+      metaT: 'Métadonnées : la donnée sur la donnée', mNom: 'fichier', mTaille: 'taille', mModif: 'modifié le', mFormat: 'format', mLignes: 'lignes', mZone: 'zone',
+      metaNote: "On ne lit pas le contenu pour savoir quoi faire d'un fichier : son nom, sa taille, sa date et son format suffisent pour le ranger, le retrouver et décider s'il faut le retraiter.",
+      lacT: "Du lac de données à l'entrepôt", zZone: 'zone', zContenu: 'contenu', zVolume: 'volume', zTaille: 'taille', zUsage: 'pour qui',
+      z_brut: 'Brute (raw)', z_calcule: 'Calculée (nettoyée, standardisée)', z_metier: 'Métier (agrégats)',
+      zc_brut: 'messages HL7, FHIR et CSV tels que reçus, jamais modifiés', zc_calcule: 'un séjour par ligne, unités et libellés corrigés', zc_metier: 'séjours, DMS et réhospitalisations par mois et par service',
+      zu_brut: 'ingénieur de données, rejouer un traitement', zu_calcule: 'data scientist, fouille de données', zu_metier: 'analyste BI, tableaux de bord',
+      fichiers: 'fichiers', lignesU: 'lignes',
+      lacNote: "Lac de données : stockage massif et bon marché des données brutes, dans leur format d'origine, sans usage défini à l'avance. Entrepôt : données calculées et standardisées, optimisées pour les requêtes SQL, plus coûteuses.",
+      etlT: 'ETL ou ELT', etl: "ETL : on transforme AVANT de charger. Fiable et contrôlé, mais rigide : si une règle de qualité change, les données brutes ont déjà été jetées.",
+      elt: "ELT : on charge le brut dans le lac, puis on transforme à la demande. Plus souple : avec une nouvelle règle de qualité, il suffit de relancer la transformation sur le brut conservé. En contrepartie, la gouvernance du lac est plus difficile.",
+      batchTxt: "Traitement par lots : ici, l'entrepôt est recalculé d'un bloc à partir de tous les messages (comme un rapport de fin de journée). Temps réel : le flux de l'onglet 1, traité mesure par mesure dès son arrivée.",
+      parqT: 'CSV ou colonnes (façon Parquet)', parqNote: "Requête : durée moyenne de séjour pour un service et une année. Le CSV doit être lu en entier. Le stockage en colonnes ne lit que les 3 colonnes utiles et saute les groupes de lignes dont les statistiques min/max excluent la valeur cherchée. Partitionner par année et service ne laisse plus qu'un fichier à ouvrir.",
+      pFormat: 'stockage', pTaille: 'taille totale', pLus: 'octets lus', pGroupes: 'blocs lus', pRes: 'DMS (j)',
+      p_csv: 'CSV (par lignes)', p_col: 'colonnes, non trié', p_tri: 'colonnes, trié par année et service', p_part: 'colonnes, partitionné annee=/service=',
+      parqInfo: '{n} séjours correspondent. Même résultat dans les 4 cas ; seule la quantité lue change.',
+      encT: 'Encodage de chaque colonne', eCol: 'colonne', eEnc: 'encodage', eCard: 'valeurs distinctes', eOct: 'octets',
+      e_dictionnaire: 'dictionnaire', e_bits: 'entiers sur le minimum de bits',
+      scaleT: "Passer à l'échelle : vertical ou horizontal", sN: 'nœuds (4 cœurs chacun)', sP: 'partitions des données', sS: 'part séquentielle (pilote)', sD: 'déséquilibre (une partition trop grosse)', sF: 'un nœud tombe en panne pendant le calcul',
+      scaleNote: "Le travail est découpé en partitions, une tâche par partition, réparties sur les cœurs. Moins de partitions que de cœurs : des cœurs restent inoccupés. Trop de partitions : le coût fixe de chaque tâche s'accumule. La partie séquentielle limite l'accélération (loi d'Amdahl). En cas de panne, les tâches du nœud perdu sont relancées ailleurs (tolérance aux pannes).",
+      kDuree: 'durée', kAcc: 'accélération', kAmdahl: "maximum d'Amdahl", kEff: 'efficacité', kRel: 'tâches relancées', kCoeurs: 'cœurs',
+      scaleInfo: "Scale up (une seule machine plus grosse) : {u}. Scale out ({c} cœurs en {n} machines) : environ {o} €/h. Indicatif : le prix d'une grosse machine monte plus vite que ses cœurs, et plafonne.",
+      plafond: 'impossible au-delà de 128 cœurs', parH: '€/h', lgTache: 'tâche', lgSeq: 'partie séquentielle', lgPerdue: 'tâche perdue (panne)',
+      lazyT: 'Évaluation paresseuse (façon Spark)', lazyNote: "Les transformations (withColumn, filter, select) ne font que construire un plan. Rien n'est calculé avant l'action (avg). L'optimiseur réécrit alors le plan : les filtres sont poussés dans la lecture et seules les colonnes utiles sont lues.",
+      planT: 'Plan exécuté', lP: 'plan', lLues: 'cellules lues', lCalc: 'cellules calculées', lRes: 'résultat (semaines)', l_naif: "naïf, dans l'ordre écrit", l_opt: 'optimisé',
+      acidT: 'Transactions ACID et time travel', tx_upsert: 'Corriger 3 glycémies (upsert)', tx_coupure: 'Supprimer un patient… coupure au milieu', tx_refus: 'Insérer une glycémie de 99 mmol/L', tx_rgpd: "Effacer un patient (droit à l'effacement)", tx_raz: 'Recommencer',
+      ver: 'version affichée (time travel)', acidNote: "Atomicité : une transaction interrompue ne laisse aucune trace. Cohérence : une règle métier violée fait refuser toute la transaction. Isolation : chaque transaction travaille sur sa propre copie. Durabilité : une version validée reste lisible. Attention : le time travel garde la ligne effacée dans les anciennes versions ; pour respecter le droit à l'effacement, il faut aussi purger l'historique (VACUUM).",
+      journalTxT: 'Journal des transactions', jV: 'version', jOp: 'opération', jRes: 'résultat', jDet: 'détail', valide: 'validée', annulee: 'annulée', lignesTouchees: '{n} lignes',
+      vueT: 'Table à la version {v} ({n} lignes)', vId: 'séjour', vPat: 'patient', vSvc: 'service', vGly: 'glycémie',
+      c_parquet: 'colonnes et partitions : même résultat que le CSV', c_lazy: 'plan optimisé : même résultat, moins de lectures', c_acid: 'transaction interrompue sans effet',
+      tab_verif: 'Vérifications',
       fluxT: 'Moniteurs des chambres', lits: 'lits surveillés', hz: 'mesures par seconde et par lit', cap: 'capacité de traitement (mesures/s)', desat: 'part de patients qui désaturent',
       go: 'Lancer', pause: 'Pause', raz: 'Recommencer',
       fluxNote: "Chaque lit envoie sa fréquence cardiaque et sa SpO₂. Les mesures entrent dans une file d'attente ; le traitement calcule la SpO₂ moyenne sur une fenêtre glissante de 10 s par lit et déclenche une alerte sous 90 %. Si la capacité est inférieure au débit, la file grossit sans fin et les alertes arrivent trop tard : c'est la Vélocité.",
@@ -52,7 +85,7 @@
       lim1: "Formats simplifiés : seuls les segments et ressources utiles sont produits (PID, PV1, DG1, RXE, OBX ; Patient, Encounter, Condition, MedicationRequest, Observation).",
       lim2: "Identité : on suppose un identifiant national commun aux trois sites ; dans la réalité, rapprocher les identités entre établissements (identitovigilance) est un problème à part entière.",
       lim3: "MapReduce et le flux tournent dans une seule page : la répartition, les nœuds et la file d'attente sont simulés pour montrer le principe, pas pour mesurer des performances.",
-      lim4: "Moteur vérifié par 87 tests (node tests/test.js) : lecture sans perte des trois formats, détection des erreurs, cube, MapReduce = comptage direct, Apriori = comptage exhaustif, k-means, flux.",
+      lim4: "Moteur vérifié par 117 tests (node tests/test.js) : lecture sans perte des trois formats, détection des erreurs, cube, MapReduce = comptage direct, Apriori = comptage exhaustif, k-means, flux.",
       repo: 'Code, tests et explications sur GitHub ↗',
       c_formats: 'les 3 formats relus sans perte', c_doublon: 'doublons tous retrouvés', c_dates: 'dates inversées toutes retrouvées', c_unite: 'erreurs d\'unité retrouvées', c_cube: 'somme des cellules du cube = total', c_rollup: 'mois agrégés = année', c_mr: 'MapReduce = comptage direct', c_apr: 'supports Apriori = comptage direct', c_pseudo: 'aucun identifiant en clair dans l\'entrepôt', c_rh: 'réhospitalisations recalculées = vraies',
       Patient: 'Patient', Sejour: 'Séjour', F: 'F', M: 'M',
@@ -64,7 +97,40 @@
       warn: 'All patients, stays and measurements are fictitious and generated in the browser; nothing is sent. Formats follow the structure of HL7 v2.5 and FHIR R4, simplified. Educational tool, not a certified health data warehouse.',
       V_volume: 'Volume', V_velocite: 'Velocity', V_variete: 'Variety', V_veracite: 'Veracity', V_valeur: 'Value',
       Vd_volume: 'store and distribute', Vd_velocite: 'process continuously', Vd_variete: 'different formats', Vd_veracite: 'reliable data?', Vd_valeur: 'turn into decisions',
-      tab_velocite: '1 · Velocity', tab_variete: '2 · Variety', tab_veracite: '3 · Veracity', tab_valeur: '4 · Value: warehouse, OLAP', tab_volume: '5 · Volume: NoSQL, MapReduce', tab_fouille: '6 · Data mining', tab_verif: 'Checks',
+      tab_velocite: '1 · Velocity', tab_variete: '2 · Variety', tab_veracite: '3 · Veracity', tab_valeur: '4 · Value: warehouse, OLAP', tab_volume: '5 · Volume: NoSQL, MapReduce', tab_fouille: '7 · Data mining',
+      tab_lac: '6 · Lake, Parquet, Spark',
+      typesT: 'Structured, semi-structured, unstructured', tExemple: 'data', tS: 'structured', tM: 'semi-structured', tN: 'unstructured',
+      typesScore: 'Click a type for each item: {b} correct answers out of {n}.', typesExpl: 'Structured: fixed schema in rows and columns. Semi-structured: tags or keys describe the data, but no imposed schema. Unstructured: no directly usable field.',
+      metaT: 'Metadata: data about the data', mNom: 'file', mTaille: 'size', mModif: 'modified', mFormat: 'format', mLignes: 'lines', mZone: 'zone',
+      metaNote: 'You do not read the content to know what to do with a file: its name, size, date and format are enough to store it, find it and decide whether it must be reprocessed.',
+      lacT: 'From data lake to warehouse', zZone: 'zone', zContenu: 'content', zVolume: 'volume', zTaille: 'size', zUsage: 'for whom',
+      z_brut: 'Raw', z_calcule: 'Calculated (cleaned, standardised)', z_metier: 'Business (aggregates)',
+      zc_brut: 'HL7, FHIR and CSV messages as received, never modified', zc_calcule: 'one stay per row, units and ward names fixed', zc_metier: 'stays, LOS and readmissions per month and ward',
+      zu_brut: 'data engineer, replay a pipeline', zu_calcule: 'data scientist, data mining', zu_metier: 'BI analyst, dashboards',
+      fichiers: 'files', lignesU: 'rows',
+      lacNote: 'Data lake: massive, cheap storage of raw data in its native format, with no predefined use. Warehouse: calculated, standardised data, optimised for SQL queries, more expensive.',
+      etlT: 'ETL or ELT', etl: 'ETL: transform BEFORE loading. Reliable and controlled, but rigid: if a quality rule changes, the raw data is already gone.',
+      elt: 'ELT: load the raw data into the lake, then transform on demand. More flexible: with a new quality rule, just rerun the transformation on the kept raw data. In return, governing the lake is harder.',
+      batchTxt: 'Batch processing: here the warehouse is rebuilt in one go from all the messages (like an end-of-day report). Real time: the stream of tab 1, processed measurement by measurement as it arrives.',
+      parqT: 'CSV or columns (Parquet-like)', parqNote: 'Query: average length of stay for one ward and one year. The CSV must be read entirely. Columnar storage reads only the 3 useful columns and skips row groups whose min/max statistics exclude the value. Partitioning by year and ward leaves a single file to open.',
+      pFormat: 'storage', pTaille: 'total size', pLus: 'bytes read', pGroupes: 'blocks read', pRes: 'LOS (d)',
+      p_csv: 'CSV (row-based)', p_col: 'columns, unsorted', p_tri: 'columns, sorted by year and ward', p_part: 'columns, partitioned annee=/service=',
+      parqInfo: '{n} stays match. Same result in all 4 cases; only the amount read changes.',
+      encT: 'Encoding of each column', eCol: 'column', eEnc: 'encoding', eCard: 'distinct values', eOct: 'bytes',
+      e_dictionnaire: 'dictionary', e_bits: 'integers on the minimum bits',
+      scaleT: 'Scaling: up or out', sN: 'nodes (4 cores each)', sP: 'data partitions', sS: 'sequential share (driver)', sD: 'skew (one oversized partition)', sF: 'a node fails during the job',
+      scaleNote: "The work is split into partitions, one task per partition, spread over the cores. Fewer partitions than cores: some cores stay idle. Too many partitions: the fixed cost of each task adds up. The sequential part limits the speed-up (Amdahl's law). On failure, the lost node's tasks are rerun elsewhere (fault tolerance).",
+      kDuree: 'duration', kAcc: 'speed-up', kAmdahl: 'Amdahl maximum', kEff: 'efficiency', kRel: 'tasks rerun', kCoeurs: 'cores',
+      scaleInfo: "Scale up (one bigger machine): {u}. Scale out ({c} cores on {n} machines): about €{o}/h. Indicative: a big machine's price rises faster than its cores, and caps out.",
+      plafond: 'impossible beyond 128 cores', parH: '€/h', lgTache: 'task', lgSeq: 'sequential part', lgPerdue: 'lost task (failure)',
+      lazyT: 'Lazy evaluation (Spark-like)', lazyNote: 'Transformations (withColumn, filter, select) only build a plan. Nothing is computed before the action (avg). The optimiser then rewrites the plan: filters are pushed into the scan and only useful columns are read.',
+      planT: 'Executed plan', lP: 'plan', lLues: 'cells read', lCalc: 'cells computed', lRes: 'result (weeks)', l_naif: 'naive, as written', l_opt: 'optimised',
+      acidT: 'ACID transactions and time travel', tx_upsert: 'Fix 3 glucose values (upsert)', tx_coupure: 'Delete a patient… power cut halfway', tx_refus: 'Insert a glucose of 99 mmol/L', tx_rgpd: 'Erase a patient (right to erasure)', tx_raz: 'Restart',
+      ver: 'displayed version (time travel)', acidNote: 'Atomicity: an interrupted transaction leaves no trace. Consistency: a violated business rule rejects the whole transaction. Isolation: each transaction works on its own copy. Durability: a committed version stays readable. Beware: time travel keeps the erased row in old versions; to honour the right to erasure, history must be purged too (VACUUM).',
+      journalTxT: 'Transaction log', jV: 'version', jOp: 'operation', jRes: 'result', jDet: 'detail', valide: 'committed', annulee: 'rolled back', lignesTouchees: '{n} rows',
+      vueT: 'Table at version {v} ({n} rows)', vId: 'stay', vPat: 'patient', vSvc: 'ward', vGly: 'glucose',
+      c_parquet: 'columns and partitions: same result as CSV', c_lazy: 'optimised plan: same result, fewer reads', c_acid: 'interrupted transaction has no effect',
+      tab_verif: 'Checks',
       fluxT: 'Bedside monitors', lits: 'monitored beds', hz: 'measurements per second per bed', cap: 'processing capacity (measurements/s)', desat: 'share of patients desaturating',
       go: 'Start', pause: 'Pause', raz: 'Restart',
       fluxNote: 'Each bed sends its heart rate and SpO₂. Measurements enter a queue; processing computes the mean SpO₂ over a 10 s sliding window per bed and raises an alert below 90%. If capacity is below the input rate, the queue grows forever and alerts come too late: that is Velocity.',
@@ -106,7 +172,7 @@
       lim1: 'Simplified formats: only the useful segments and resources are produced (PID, PV1, DG1, RXE, OBX; Patient, Encounter, Condition, MedicationRequest, Observation).',
       lim2: 'Identity: a national identifier shared by the three sites is assumed; in reality, matching identities across hospitals is a problem of its own.',
       lim3: 'MapReduce and the stream run in a single page: distribution, nodes and queue are simulated to show the principle, not to measure performance.',
-      lim4: 'Engine checked by 87 tests (node tests/test.js): lossless parsing of the three formats, error detection, cube, MapReduce = direct count, Apriori = exhaustive count, k-means, stream.',
+      lim4: 'Engine checked by 117 tests (node tests/test.js): lossless parsing of the three formats, error detection, cube, MapReduce = direct count, Apriori = exhaustive count, k-means, stream.',
       repo: 'Code, tests and explanations on GitHub ↗',
       c_formats: 'the 3 formats parsed without loss', c_doublon: 'all duplicates found', c_dates: 'all swapped dates found', c_unite: 'unit errors found', c_cube: 'sum of cube cells = total', c_rollup: 'months rolled up = year', c_mr: 'MapReduce = direct count', c_apr: 'Apriori supports = direct count', c_pseudo: 'no clear identifier in the warehouse', c_rh: 'recomputed readmissions = true ones',
       Patient: 'Patient', Sejour: 'Stay', F: 'F', M: 'M',
@@ -136,7 +202,7 @@
   }
 
   /* ---------- en-tête : 5 V et onglets ---------- */
-  const PAGES = ['velocite', 'variete', 'veracite', 'valeur', 'volume', 'fouille', 'verif'];
+  const PAGES = ['velocite', 'variete', 'veracite', 'valeur', 'volume', 'lac', 'fouille', 'verif'];
   const V_PAGE = { volume: 'volume', velocite: 'velocite', variete: 'variete', veracite: 'veracite', valeur: 'valeur' };
   let page = 'velocite';
   function statique() {
@@ -306,6 +372,114 @@
     $('tMRres').innerHTML = `<tr><th>${t('rCle')}</th><th class="n">${t('rN')}</th></tr>` + top.map(([k, v]) => { const [s, d] = k.split('|'); return `<tr><td>${nomSvc(s)} | ${nomDiag(d)}</td><td class="n">${v}</td></tr>`; }).join('');
   }
 
+
+  /* ---------- 6. Lac, Parquet, Spark ---------- */
+  const reponses = {};
+  let modeEtl = 'elt', tableTx = null, versionVue = null, cacheLac = null;
+  function nouvelleTable() {
+    tableTx = K.Table(D.W.faits.slice(0, 40).map((f) => ({ id: f.sejour_k, patient: f.patient_k, service: f.service, glyc: f.glyc })), 'id');
+    versionVue = null;
+  }
+  function lac() {
+    // types de données
+    const ex = K.EXEMPLES;
+    $('tTypes').innerHTML = `<tr><th>${t('tExemple')}</th><th>${t('tS')}</th><th>${t('tM')}</th><th>${t('tN')}</th></tr>` + ex.map((e) => {
+      const r = reponses[e.id];
+      return `<tr><td>${e[lng()]}</td>` + ['s', 'm', 'n'].map((ty) => {
+        const style = r === ty ? (ty === e.type ? 'border-color:var(--ok);color:var(--ok)' : 'border-color:#ff8a8a;color:#ff8a8a') : '';
+        return `<td><button type="button" class="btn" data-rep="${e.id}:${ty}" aria-pressed="${r === ty}" style="${style}">${r === ty ? (ty === e.type ? '✓' : '✗') : '·'}</button></td>`;
+      }).join('') + '</tr>';
+    }).join('');
+    const bons = ex.filter((e) => reponses[e.id] === e.type).length;
+    $('typesScore').textContent = fmt(t('typesScore'), { b: bons, n: ex.length }) + ' ' + t('typesExpl');
+    document.querySelectorAll('[data-rep]').forEach((b) => b.addEventListener('click', () => { const [id, ty] = b.dataset.rep.split(':'); reponses[id] = ty; lac(); }));
+    // métadonnées
+    if (!cacheLac || cacheLac.W !== D.W) {
+      cacheLac = { W: D.W, csv: K.versCSV(D.W.faits), col: K.versColonnes(D.W.faits), tri: K.versColonnes(D.W.faits, { trierPar: ['annee', 'service'] }), part: K.partitionner(D.W.faits, ['annee', 'service']) };
+    }
+    const c = cacheLac;
+    const csvC = D.em.msgs.filter((m) => m.site === 'C').map((m) => m.texte).join('\n');
+    const fhir = (D.em.msgs.find((m) => m.site === 'B') || { texte: '' }).texte;
+    const fichiersM = [[K.metadonnees('labo_site_C_2026-11-26.csv', E.ENTETE_CSV + '\n' + csvC, '2026-11-26 23:00'), 'z_brut'],
+      [K.metadonnees('bundle_site_B_S000412.json', fhir, '2026-11-27 08:14'), 'z_brut'],
+      [{ nom: 'sejours_propres/part-00000.parquet', taille: c.col.octets, modifie: '2026-11-27 02:00', format: 'parquet' }, 'z_calcule']];
+    $('tMeta').innerHTML = `<tr><th>${t('mNom')}</th><th class="n">${t('mTaille')}</th><th>${t('mModif')}</th><th>${t('mFormat')}</th><th>${t('mZone')}</th></tr>`
+      + fichiersM.map(([m, z]) => `<tr><td>${m.nom}</td><td class="n">${octets(m.taille)}</td><td>${m.modifie}</td><td>${m.format}</td><td>${t(z)}</td></tr>`).join('');
+    // zones du lac
+    const z = K.zonesLac(D.em.msgs, D.net.propres, D.W.faits);
+    $('tLac').innerHTML = `<tr><th>${t('zZone')}</th><th>${t('zContenu')}</th><th class="n">${t('zVolume')}</th><th class="n">${t('zTaille')}</th><th>${t('zUsage')}</th></tr>`
+      + [['brut', z.brut.fichiers, 'fichiers', z.brut.octets], ['calcule', z.calcule.lignes, 'lignesU', z.calcule.octets], ['metier', z.metier.lignes, 'lignesU', z.metier.octets]]
+        .map(([k, n, u, o]) => `<tr><td>${t('z_' + k)}</td><td>${t('zc_' + k)}</td><td class="n">${nf(n, 0)} ${t(u)}</td><td class="n">${octets(o)}</td><td>${t('zu_' + k)}</td></tr>`).join('');
+    document.querySelectorAll('[data-etl]').forEach((b) => b.setAttribute('aria-pressed', String(b.dataset.etl === modeEtl)));
+    $('cEtl').textContent = modeEtl === 'etl'
+      ? 'sources ─► Extract ─► Transform (qualité, unités) ─► Load ─► entrepôt\n                 (le brut n\'est pas conservé)'
+      : 'sources ─► Extract ─► Load ─► lac (brut conservé)\n                               └─► Transform à la demande ─► entrepôt\n                               └─► nouvelle règle ? on relance sur le brut';
+    if (lng() === 'en') $('cEtl').textContent = modeEtl === 'etl'
+      ? 'sources ─► Extract ─► Transform (quality, units) ─► Load ─► warehouse\n                 (raw data is not kept)'
+      : 'sources ─► Extract ─► Load ─► lake (raw kept)\n                               └─► Transform on demand ─► warehouse\n                               └─► new rule? rerun on the raw data';
+    $('etlTxt').textContent = t(modeEtl);
+    // CSV / colonnes / partitions
+    if (!$('qS').options.length) $('qS').innerHTML = Object.keys(E.SERVICES).map((k) => `<option value="${k}">${nomSvc(k)}</option>`).join('');
+    else [...$('qS').options].forEach((o) => (o.textContent = nomSvc(o.value)));
+    const q = { mesure: 'dms', filtres: { service: $('qS').value || 'CARDIO', annee: $('qA').value } };
+    const r = [['csv', c.csv.length, K.requeteCSV(D.W.faits, c.csv, q)], ['col', c.col.octets, K.requeteColonnes(c.col, q)], ['tri', c.tri.octets, K.requeteColonnes(c.tri, q)],
+      ['part', c.part.reduce((a, x) => a + x.fichier.octets, 0), K.requetePartitions(c.part, ['annee', 'service'], q)]];
+    const ref = r[0][2].octetsLus;
+    $('tParq').innerHTML = `<tr><th>${t('pFormat')}</th><th class="n">${t('pTaille')}</th><th class="n">${t('pLus')}</th><th class="n">${t('pGroupes')}</th><th class="n">${t('pRes')}</th></tr>`
+      + r.map(([k, taille, x]) => `<tr><td>${t('p_' + k)}</td><td class="n">${octets(taille)}</td><td class="n ${x.octetsLus < ref / 20 ? 'good' : ''}">${octets(x.octetsLus)} (${nf(100 * x.octetsLus / ref, 1)} %)</td><td class="n">${k === 'part' ? `${x.fichiersLus} / ${x.fichiersTotal} ${t('fichiers')}` : `${x.groupesLus} / ${x.groupesTotal}`}</td><td class="n">${nf(x.valeur, 3)}</td></tr>`).join('');
+    $('parqInfo').textContent = fmt(t('parqInfo'), { n: r[0][2].n });
+    $('tEnc').innerHTML = `<tr><th>${t('eCol')}</th><th>${t('eEnc')}</th><th class="n">${t('eCard')}</th><th class="n">${t('eOct')}</th></tr>`
+      + K.COLONNES.map((col) => { const e = K.encoderColonne(D.W.faits.map((f) => f[col])); return `<tr><td>${col}</td><td>${t('e_' + e.encodage)}</td><td class="n">${nf(e.cardinalite, 0)}</td><td class="n">${octets(e.octets)}</td></tr>`; }).join('');
+    // passage à l'échelle
+    const nN = +$('sN').value, parts = Math.pow(2, +$('sP').value), sq = +$('sS').value, dq = +$('sD').value;
+    $('osN').textContent = nN; $('osP').textContent = parts; $('osS').textContent = nf(100 * sq, 0) + ' %'; $('osD').textContent = nf(dq, 2);
+    const base = K.ordonnancer({ noeuds: 1, coeursParNoeud: 1, partitions: 1, sequentiel: sq });   // référence : tout le travail sur 1 cœur, sans découpage
+    const sain = K.ordonnancer({ noeuds: nN, partitions: parts, sequentiel: sq, desequilibre: dq });
+    const o = $('sF').checked && nN > 1 ? K.ordonnancer({ noeuds: nN, partitions: parts, sequentiel: sq, desequilibre: dq, panneA: sain.seq + (sain.duree - sain.seq) * 0.4 }) : sain;
+    const coeurs = nN * 4;
+    $('kScale').innerHTML = kpi('kCoeurs', coeurs) + kpi('kDuree', nf(o.duree, 0), 's') + kpi('kAcc', '×' + nf(base.duree / o.duree, 1)) + kpi('kAmdahl', '×' + nf(K.amdahl(sq, coeurs), 1))
+      + kpi('kEff', nf(100 * o.efficacite, 0) + ' %', '', o.efficacite < 0.5 ? 'bad' : o.efficacite < 0.8 ? 'mid' : 'good') + kpi('kRel', o.relances || 0);
+    const up = K.coutScaleUp(coeurs);
+    $('scaleInfo').textContent = fmt(t('scaleInfo'), { u: Number.isFinite(up) ? `≈ ${nf(up, 2)} ${t('parH')}` : t('plafond'), c: coeurs, n: nN, o: nf(K.coutScaleOut(coeurs), 2) });
+    const cv = $('cvGantt'), { ctx, w, h } = C.preparer(cv), gL = 40, gR = 10, gT = 6, gB = 22;
+    const X = (x) => gL + x / o.duree * (w - gL - gR), lh = (h - gT - gB) / coeurs;
+    ctx.fillStyle = '#26262a'; ctx.fillRect(gL, gT, X(o.seq) - gL, h - gT - gB);
+    o.traces.forEach((tr) => { ctx.fillStyle = tr.perdue ? '#e0a458' : '#c8102e'; ctx.fillRect(X(tr.debut), gT + tr.coeur * lh + 0.5, Math.max(1, X(tr.fin) - X(tr.debut) - 1), Math.max(1, lh - 1)); });
+    ctx.fillStyle = '#8a8a8e'; ctx.font = '10px "JetBrains Mono", monospace'; ctx.textAlign = 'right';
+    for (let k = 0; k < coeurs; k += Math.max(1, Math.ceil(coeurs / 8))) ctx.fillText('c' + (k + 1), gL - 4, gT + k * lh + lh / 2 + 3);
+    ctx.textAlign = 'center'; C.graduations(0, o.duree, 6).forEach((v) => ctx.fillText(String(v), X(v), h - 6));
+    // évaluation paresseuse
+    const svc = q.filtres.service, an = q.filtres.annee;
+    $('cLazy').textContent = `df = (spark.read.parquet("entrepot/fait_sejour")\n      .withColumn("dms_semaines", col("dms") / 7)\n      .filter(col("service") == "${svc}")\n      .filter(col("annee") == "${an}")\n      .select("dms_semaines"))\n# ${lng() === 'en' ? 'nothing is computed yet' : "rien n'est encore calculé"}\ndf.agg(avg("dms_semaines")).show()   # ${lng() === 'en' ? 'action: the plan runs' : "action : le plan s'exécute"}`;
+    const df = K.DataFrame(D.W.faits).withColumn('dms_sem', (x) => x.dms / 7, ['dms']).filter('service', svc).filter('annee', an).select('dms_sem');
+    const a1 = df.avg('dms_sem', false), a2 = df.avg('dms_sem', true);
+    $('tLazy').innerHTML = `<tr><th>${t('lP')}</th><th class="n">${t('lLues')}</th><th class="n">${t('lCalc')}</th><th class="n">${t('lRes')}</th></tr>`
+      + [['l_naif', a1], ['l_opt', a2]].map(([k, x]) => `<tr><td>${t(k)}</td><td class="n">${nf(x.cellulesLues, 0)}</td><td class="n">${nf(x.cellulesCalculees, 0)}</td><td class="n">${nf(x.valeur, 4)}</td></tr>`).join('');
+    $('cPlan').textContent = '== ' + t('l_naif') + ' ==\n' + a1.etapes.join('\n') + '\n\n== ' + t('l_opt') + ' ==\n' + a2.etapes.join('\n');
+    // ACID
+    if (!tableTx) nouvelleTable();
+    const der = tableTx.derniere();
+    $('ver').max = der; if (versionVue == null || versionVue > der) versionVue = der; $('ver').value = versionVue; $('over').textContent = 'v' + versionVue;
+    $('tTx').innerHTML = `<tr><th>${t('jV')}</th><th>${t('jOp')}</th><th>${t('jRes')}</th><th>${t('jDet')}</th></tr>`
+      + tableTx.journal.map((j) => `<tr><td>${j.version == null ? '—' : 'v' + j.version}</td><td>${j.op}</td><td class="${j.ok ? 'good' : 'bad'}">${j.ok ? t('valide') : t('annulee')}</td><td>${j.ok ? fmt(t('lignesTouchees'), { n: j.detail }) : j.detail}</td></tr>`).join('');
+    const vue = tableTx.lire(versionVue);
+    $('vueT').textContent = fmt(t('vueT'), { v: versionVue, n: vue.length });
+    $('tVue').innerHTML = `<tr><th>${t('vId')}</th><th>${t('vPat')}</th><th>${t('vSvc')}</th><th class="n">${t('vGly')}</th></tr>`
+      + vue.slice(0, 8).map((l) => `<tr><td>${l.id}</td><td>${l.patient}</td><td>${nomSvc(l.service)}</td><td class="n">${l.glyc == null ? '—' : nf(l.glyc, 1)}</td></tr>`).join('');
+  }
+  function transactionDemo(k) {
+    if (!tableTx) nouvelleTable();
+    const l = tableTx.lire(), cible = l[1].patient;
+    const en = lng() === 'en';
+    if (k === 'raz') nouvelleTable();
+    else if (k === 'upsert') tableTx.transaction('UPSERT', [{ type: 'upsert', lignes: l.slice(0, 3).map((x) => ({ id: x.id, glyc: x.glyc == null ? 5.6 : Math.round((x.glyc + 0.2) * 10) / 10 })) }]);
+    else if (k === 'coupure') tableTx.transaction('DELETE ' + cible.slice(0, 8) + '…', [{ type: 'delete', si: (x) => x.patient === cible }, { type: 'echec', message: en ? 'power cut: nothing written' : "coupure : rien n'est écrit" }]);
+    else if (k === 'refus') tableTx.transaction('INSERT glyc = 99', [{ type: 'upsert', lignes: [{ id: 'S999999', patient: 'P-test', service: 'ENDO', glyc: 99 }] }, { type: 'check', nom: en ? 'rule glucose < 50 mmol/L' : 'règle glycémie < 50 mmol/L', regle: (x) => x.glyc == null || x.glyc < 50 }]);
+    else if (k === 'rgpd') tableTx.transaction((en ? 'DELETE (GDPR) ' : 'DELETE (RGPD) ') + cible.slice(0, 8) + '…', [{ type: 'delete', si: (x) => x.patient === cible }]);
+    versionVue = null;
+    lac();
+  }
+
   /* ---------- 6. Fouille ---------- */
   let cacheFouille = null;
   function fouille() {
@@ -358,6 +532,15 @@
     res.push(['c_apr', a.frequents.every((f) => Math.abs(f.support - T.filter((x) => f.items.every((i) => x.includes(i))).length / T.length) < 1e-12)]);
     res.push(['c_pseudo', !JSON.stringify(D.W.faits).includes('INS')]);
     res.push(['c_rh', D.W.faits.reduce((x, f) => x + f.rh30, 0) === S.filter((s) => s.rh30).length]);
+    {
+      const q = { mesure: 'dms', filtres: { service: 'CARDIO', annee: '2025' } }, csv = K.versCSV(D.W.faits), r1 = K.requeteCSV(D.W.faits, csv, q);
+      const r2 = K.requetePartitions(K.partitionner(D.W.faits, ['annee', 'service']), ['annee', 'service'], q);
+      res.push(['c_parquet', Math.abs(r1.valeur - r2.valeur) < 1e-12 && r2.octetsLus < r1.octetsLus]);
+      const df = K.DataFrame(D.W.faits).withColumn('s', (x) => x.dms / 7, ['dms']).filter('service', 'CARDIO').select('s'), x1 = df.avg('s', false), x2 = df.avg('s', true);
+      res.push(['c_lazy', Math.abs(x1.valeur - x2.valeur) < 1e-12 && x2.cellulesLues < x1.cellulesLues]);
+      const tb = K.Table([{ id: 1 }, { id: 2 }], 'id'), rr = tb.transaction('x', [{ type: 'delete', si: () => true }, { type: 'echec', message: 'x' }]);
+      res.push(['c_acid', !rr.ok && tb.lire().length === 2]);
+    }
     $('chk').innerHTML = res.map(([k, v]) => `<li class="${v ? 'ok' : 'ko'}">${v ? '✓' : '✗'} ${t(k)}</li>`).join('');
   }
 
@@ -367,6 +550,7 @@
     else if (page === 'veracite') veracite();
     else if (page === 'valeur') valeur();
     else if (page === 'volume') volume();
+    else if (page === 'lac') lac();
     else if (page === 'fouille') fouille();
     else if (page === 'verif') verif();
   }
@@ -387,6 +571,11 @@
   $('up').addEventListener('click', () => bouger(-1)); $('down').addEventListener('click', () => bouger(1));
   ['nN', 'nR', 'comb'].forEach((k) => $(k).addEventListener('input', volume));
   ['k', 'sup', 'conf'].forEach((k) => $(k).addEventListener('input', fouille));
+  document.querySelectorAll('[data-etl]').forEach((b) => b.addEventListener('click', () => { modeEtl = b.dataset.etl; lac(); }));
+  ['qS', 'qA'].forEach((k) => $(k).addEventListener('change', lac));
+  ['sN', 'sP', 'sS', 'sD', 'sF'].forEach((k) => $(k).addEventListener('input', lac));
+  document.querySelectorAll('[data-tx]').forEach((b) => b.addEventListener('click', () => transactionDemo(b.dataset.tx)));
+  $('ver').addEventListener('input', () => { versionVue = +$('ver').value; lac(); });
   window.addEventListener('resize', tout);
 
   // démarrage

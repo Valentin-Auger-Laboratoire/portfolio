@@ -179,5 +179,56 @@ ok(W.faits.length === S.length, 'une ligne de fait par séjour');
   near(v.parJour, 300 * 2 * 60 * 86400, 1e-6, 'volume par jour');
 }
 
+// 11. Stockage et calcul distribué (onglet « Lac, Parquet, Spark »)
+const K = require('../stockage.js');
+{
+  ok(K.EXEMPLES.filter((e) => e.type === 's').length >= 3 && K.EXEMPLES.some((e) => e.id === 'json' && e.type === 'm') && K.EXEMPLES.some((e) => e.id === 'img' && e.type === 'n'), 'types : SQL/CSV structurés, JSON semi-structuré, image non structurée');
+  const m = K.metadonnees('labo_C_2026-11.csv', 'a;b\n1;2\n3;4', '2026-11-27');
+  ok(m.taille === 11 && m.lignes === 3 && m.format === 'csv', 'métadonnées d\'un fichier');
+  const z = K.zonesLac(em.msgs, net.propres, W.faits);
+  ok(z.brut.fichiers === em.msgs.length && z.calcule.lignes === net.propres.length && z.brut.octets > z.calcule.octets && z.calcule.octets > z.metier.octets, 'zones du lac : brut > calculé > métier');
+  const csv = K.versCSV(W.faits), col = K.versColonnes(W.faits), tri = K.versColonnes(W.faits, { trierPar: ['annee', 'service'] });
+  ok(col.octets < csv.length / 1.8, `colonnes encodées plus compactes que le CSV (${col.octets} contre ${csv.length} octets)`);
+  const q = { mesure: 'dms', filtres: { service: 'CARDIO', annee: '2025' } };
+  const vrai = W.faits.filter((f) => f.service === 'CARDIO' && f.annee === '2025');
+  const moy = vrai.reduce((a, f) => a + f.dms, 0) / vrai.length;
+  const rC = K.requeteCSV(W.faits, csv, q), rCol = K.requeteColonnes(col, q), rTri = K.requeteColonnes(tri, q);
+  const P = K.partitionner(W.faits, ['annee', 'service']), rP = K.requetePartitions(P, ['annee', 'service'], q);
+  [rC, rCol, rTri, rP].forEach((r, i) => near(r.valeur, moy, 1e-12, `même résultat quelle que soit la lecture (${i})`));
+  ok(rCol.octetsLus < rC.octetsLus / 20, 'colonnes : seules les colonnes utiles sont lues');
+  ok(rTri.groupesLus < rTri.groupesTotal && rTri.octetsLus < rCol.octetsLus, 'données triées : les statistiques min/max sautent des groupes');
+  ok(rP.fichiersLus === 1 && rP.fichiersTotal === 2 * Object.keys(E.SERVICES).length && rP.octetsLus < rTri.octetsLus, 'partitions : un seul fichier lu');
+  ok(P.reduce((a, p) => a + p.n, 0) === W.faits.length, 'partitions : aucune ligne perdue');
+  near(K.amdahl(0.05, 1), 1, 1e-12, 'Amdahl p = 1'); near(K.amdahl(0.05, 1e9), 20, 1e-6, 'Amdahl : plafond 1/s');
+  const seqT = K.ordonnancer({ noeuds: 1, coeursParNoeud: 1, partitions: 64, sequentiel: 0, coutTache: 0 });
+  near(seqT.duree, 1000, 1e-9, '1 cœur : durée = travail total');
+  const d = [1, 2, 4].map((nn) => K.ordonnancer({ noeuds: nn, partitions: 64 }).duree);
+  ok(d[0] > d[1] && d[1] > d[2], 'plus de nœuds → plus rapide');
+  const peu = K.ordonnancer({ noeuds: 16, partitions: 8 }), assez = K.ordonnancer({ noeuds: 16, partitions: 128 });
+  ok(peu.duree > assez.duree * 1.3, 'moins de partitions que de cœurs : cœurs inoccupés');
+  const lim = K.ordonnancer({ noeuds: 64, partitions: 1024, coutTache: 0 }), borne = 0.05 * 1000 + 0.95 * 1000 / 256;
+  ok(lim.duree >= borne - 1e-9, 'jamais mieux que la loi d\'Amdahl');
+  ok(K.ordonnancer({ noeuds: 4, partitions: 64, desequilibre: 1 }).duree > K.ordonnancer({ noeuds: 4, partitions: 64 }).duree * 1.3, 'une partition trop grosse ralentit tout (déséquilibre)');
+  const sain = K.ordonnancer({ noeuds: 4, partitions: 64 }), panne = K.ordonnancer({ noeuds: 4, partitions: 64, panneA: 80 });
+  ok(panne.relances >= 1 && panne.duree > sain.duree && new Set(panne.traces.filter((t) => !t.perdue).map((t) => t.tache)).size === 64, 'panne d\'un nœud : tâches relancées ailleurs, travail complet');
+  ok(K.coutScaleUp(256) === Infinity && K.coutScaleUp(64) > K.coutScaleOut(64), 'scale up : plafond et prix plus que proportionnel');
+  const df = K.DataFrame(W.faits).withColumn('dms_sem', (r) => r.dms / 7, ['dms']).filter('service', 'CARDIO').filter('annee', '2025').select('dms_sem');
+  ok(df.plan.length === 4, 'évaluation paresseuse : rien n\'est calculé avant l\'action');
+  const a1 = df.avg('dms_sem', false), a2 = df.avg('dms_sem', true);
+  near(a1.valeur, moy / 7, 1e-12, 'plan naïf : bon résultat'); near(a2.valeur, moy / 7, 1e-12, 'plan optimisé : même résultat');
+  ok(a2.cellulesLues < a1.cellulesLues / 4 && a2.cellulesCalculees === vrai.length, 'plan optimisé : filtres poussés et colonnes élaguées');
+  ok(/PushedFilters/.test(df.explain(true)[0]), 'plan affiché avec filtres poussés');
+  const T = K.Table(W.faits.slice(0, 50).map((f) => ({ id: f.sejour_k, glyc: f.glyc, patient: f.patient_k })), 'id');
+  const v1 = T.transaction('correction', [{ type: 'upsert', lignes: [{ id: W.faits[0].sejour_k, glyc: 6.1 }] }]);
+  const avant = T.lire().length;
+  const rate = T.transaction('suppression interrompue', [{ type: 'delete', si: (l) => l.patient === W.faits[1].patient_k }, { type: 'echec', message: 'coupure' }]);
+  ok(v1.ok && !rate.ok && T.lire().length === avant && T.derniere() === 1, 'atomicité : transaction interrompue sans effet');
+  const ctl = T.transaction('contrôle', [{ type: 'upsert', lignes: [{ id: 'X', glyc: 99 }] }, { type: 'check', nom: 'glycémie', regle: (l) => l.glyc == null || l.glyc < 50 }]);
+  ok(!ctl.ok && !T.lire().some((l) => l.id === 'X'), 'cohérence : règle métier violée → refus');
+  const del = T.transaction('effacement RGPD', [{ type: 'delete', si: (l) => l.patient === W.faits[1].patient_k }]);
+  ok(del.ok && !T.lire().some((l) => l.patient === W.faits[1].patient_k) && T.lire(0).some((l) => l.patient === W.faits[1].patient_k), 'time travel : l\'ancienne version contient encore la ligne supprimée');
+  ok(T.lire(0).find((l) => l.id === W.faits[0].sejour_k).glyc === W.faits[0].glyc, 'version 0 inchangée (durabilité des versions)');
+}
+
 console.log(`${n - bad} / ${n} vérifications réussies`);
 process.exit(bad ? 1 : 0);

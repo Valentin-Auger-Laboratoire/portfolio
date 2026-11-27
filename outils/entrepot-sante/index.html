@@ -163,6 +163,67 @@
       </div>
     </section>
 
+    <!-- 6. Lac, Parquet, Spark (d'après le cours) -->
+    <section class="page" id="p-lac">
+      <div class="panel row2">
+        <div><h2 data-t="typesT"></h2><div class="tablewrap"><table id="tTypes"></table></div><p class="hint" id="typesScore"></p></div>
+        <div><h2 data-t="metaT"></h2><div class="tablewrap"><table id="tMeta"></table></div><p class="note" data-t="metaNote" style="margin-top:8px"></p></div>
+      </div>
+      <div class="panel row2" style="margin-top:16px">
+        <div><h2 data-t="lacT"></h2><div class="tablewrap"><table id="tLac"></table></div><p class="note" data-t="lacNote" style="margin-top:8px"></p></div>
+        <div class="note"><h2 data-t="etlT"></h2><div class="seg"><button type="button" class="btn" data-etl="etl">ETL</button><button type="button" class="btn" data-etl="elt">ELT</button></div><pre class="code" id="cEtl"></pre><p id="etlTxt"></p><p data-t="batchTxt"></p></div>
+      </div>
+      <div class="grid" style="margin-top:16px">
+        <div class="stack"><div class="panel">
+          <h2 data-t="parqT"></h2>
+          <label class="hint" for="qS" data-t="fS"></label><select id="qS"></select>
+          <label class="hint" for="qA" data-t="fA"></label><select id="qA"><option>2025</option><option>2026</option></select>
+          <p class="note" data-t="parqNote" style="margin-top:10px"></p>
+        </div></div>
+        <div class="stack">
+          <div class="panel"><div class="tablewrap"><table id="tParq"></table></div><p class="hint" id="parqInfo"></p></div>
+          <div class="panel"><h2 data-t="encT"></h2><div class="tablewrap"><table id="tEnc"></table></div></div>
+        </div>
+      </div>
+      <div class="grid" style="margin-top:16px">
+        <div class="stack"><div class="panel">
+          <h2 data-t="scaleT"></h2>
+          <div class="ctl"><label for="sN" data-t="sN"></label><output id="osN"></output><input type="range" id="sN" min="1" max="16" step="1" value="4"></div>
+          <div class="ctl"><label for="sP" data-t="sP"></label><output id="osP"></output><input type="range" id="sP" min="1" max="9" step="1" value="6"></div>
+          <div class="ctl"><label for="sS" data-t="sS"></label><output id="osS"></output><input type="range" id="sS" min="0" max="0.3" step="0.01" value="0.05"></div>
+          <div class="ctl"><label for="sD" data-t="sD"></label><output id="osD"></output><input type="range" id="sD" min="0" max="1" step="0.05" value="0"></div>
+          <label class="check"><input type="checkbox" id="sF"> <span data-t="sF"></span></label>
+          <p class="note" data-t="scaleNote"></p>
+        </div></div>
+        <div class="stack">
+          <div class="panel"><dl class="kpis" id="kScale"></dl><p class="hint" id="scaleInfo"></p></div>
+          <div class="panel"><div class="chart"><p><span><i style="background:var(--accent)"></i><span data-t="lgTache"></span></span><span><i style="background:#6c6c70"></i><span data-t="lgSeq"></span></span><span><i style="background:var(--warn)"></i><span data-t="lgPerdue"></span></span></p><canvas id="cvGantt" style="height:260px"></canvas></div></div>
+        </div>
+      </div>
+      <div class="panel row2" style="margin-top:16px">
+        <div><h2 data-t="lazyT"></h2><pre class="code" id="cLazy"></pre><p class="note" data-t="lazyNote"></p></div>
+        <div><h2 data-t="planT"></h2><div class="tablewrap"><table id="tLazy"></table></div><pre class="code" id="cPlan"></pre></div>
+      </div>
+      <div class="grid" style="margin-top:16px">
+        <div class="stack"><div class="panel">
+          <h2 data-t="acidT"></h2>
+          <div class="scen">
+            <button type="button" class="btn" data-tx="upsert" data-t="tx_upsert"></button>
+            <button type="button" class="btn" data-tx="coupure" data-t="tx_coupure"></button>
+            <button type="button" class="btn" data-tx="refus" data-t="tx_refus"></button>
+            <button type="button" class="btn" data-tx="rgpd" data-t="tx_rgpd"></button>
+            <button type="button" class="btn" data-tx="raz" data-t="tx_raz"></button>
+          </div>
+          <div class="ctl"><label for="ver" data-t="ver"></label><output id="over"></output><input type="range" id="ver" min="0" max="0" step="1" value="0"></div>
+          <p class="note" data-t="acidNote"></p>
+        </div></div>
+        <div class="stack">
+          <div class="panel"><h2 data-t="journalTxT"></h2><div class="tablewrap"><table id="tTx"></table></div></div>
+          <div class="panel"><h2 id="vueT"></h2><div class="tablewrap"><table id="tVue"></table></div></div>
+        </div>
+      </div>
+    </section>
+
     <!-- 6. Fouille de données -->
     <section class="page" id="p-fouille">
       <div class="grid">
@@ -196,6 +257,7 @@
   </div>
   <script src="../../demos/commun/commun.js"></script>
   <script src="entrepot.js"></script>
+  <script src="stockage.js"></script>
   <script src="app.js"></script>
 </body>
 </html>
