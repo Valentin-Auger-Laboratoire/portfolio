@@ -1,0 +1,403 @@
+<!DOCTYPE html>
+<html lang="fr" translate="no">
+<head>
+  <meta charset="UTF-8">
+  <meta name="google" content="notranslate">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Signaux bruités : simulation et estimation</title>
+  <meta name="description" content="Simuler un système (linéaire, logarithmique, exponentiel, puissance), lui ajouter du bruit, puis retrouver le modèle et ses paramètres. Projet MATLAB porté en JavaScript et corrigé.">
+  <meta property="og:type" content="website">
+  <meta property="og:url" content="https://valentin-auger-laboratoire.github.io/portfolio/demos/signaux-bruites/">
+  <meta property="og:title" content="Signaux bruités : simuler un système, le bruiter, retrouver ses paramètres">
+  <meta property="og:description" content="Simuler un système (linéaire, logarithmique, exponentiel, puissance), lui ajouter du bruit, puis retrouver le modèle et ses paramètres. Projet MATLAB porté en JavaScript et corrigé.">
+  <meta property="og:image" content="https://valentin-auger-laboratoire.github.io/portfolio/assets/projets/signaux-bruites.jpg">
+  <meta property="og:image:width" content="960">
+  <meta property="og:image:height" content="600">
+  <meta name="twitter:card" content="summary_large_image">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="../commun/commun.css">
+  <link rel="icon" type="image/png" sizes="64x64" href="../../assets/favicon.png">
+  <link rel="apple-touch-icon" href="../../assets/apple-touch-icon.png">
+  <style>
+    .cmp td:nth-child(2) { color: var(--warn); }
+    .cmp td:nth-child(3) { color: var(--text); }
+    .verif li { margin: 0 0 8px 18px; }
+    .verif b { color: var(--text); }
+    .pill { display: inline-block; font: 0.7rem var(--mono); border: 1px solid var(--border-hi); border-radius: 10px; padding: 1px 8px; margin-left: 6px; }
+    .pill.ok { color: var(--ok); border-color: #2f4a2f; } .pill.ko { color: #ff8a8a; border-color: #5a2a2a; }
+    #mcInfo { min-height: 1.2em; }
+  </style>
+</head>
+<body>
+  <div class="wrap">
+    <div class="top">
+      <a class="back" href="../../index.html#projets" data-t="back">← Retour au portfolio</a>
+      <div class="lang" role="group" aria-label="Langue / Language"><button type="button" data-lang="en">EN</button><button type="button" data-lang="fr">FR</button></div>
+    </div>
+    <p class="eyebrow" data-t="eyebrow"></p>
+    <h1 data-t="title"></h1>
+    <p class="intro" data-t="intro"></p>
+    <p class="warnbox" data-t="warn"></p>
+    <div class="grid">
+      <div class="stack">
+        <div class="panel">
+          <h2 data-t="scenT"></h2>
+          <div class="scen" id="scen"></div>
+          <h3 data-t="sysT"></h3>
+          <div class="seg" id="types"></div>
+          <div class="ctl"><label for="p0" id="lp0">p0</label><output id="op0"></output><input type="range" id="p0" step="0.01"></div>
+          <div class="ctl"><label for="p1" id="lp1">p1</label><output id="op1"></output><input type="range" id="p1" step="0.01"></div>
+          <p class="hint" id="formule"></p>
+          <h3 data-t="bruitT"></h3>
+          <div class="seg"><button type="button" class="btn" data-tb="1" data-t="gauss"></button><button type="button" class="btn" data-tb="2" data-t="unif"></button></div>
+          <div class="ctl"><label for="sigma" data-t="sigma"></label><output id="osigma"></output><input type="range" id="sigma" min="0" max="5" step="0.05" value="2"></div>
+          <div class="ctl"><label for="mu" data-t="mu"></label><output id="omu"></output><input type="range" id="mu" min="-2" max="2" step="0.1" value="0"></div>
+          <h3 data-t="ptsT"></h3>
+          <div class="ctl"><label for="n" data-t="n"></label><output id="on"></output><input type="range" id="n" min="3" max="1000" step="1" value="200"></div>
+          <div class="ctl"><label for="xmax" data-t="xmax"></label><output id="oxmax"></output><input type="range" id="xmax" min="2" max="30" step="0.5" value="10"></div>
+          <button type="button" class="btn" id="tirage" data-t="tirage"></button>
+          <h3 data-t="estT"></h3>
+          <select id="modele" aria-label="modèle estimé"></select>
+          <h3 data-t="csvT"></h3>
+          <div class="seg"><button type="button" class="btn" id="exp" data-t="export"></button><button type="button" class="btn" id="imp" data-t="import"></button></div>
+          <textarea id="csv" spellcheck="false" aria-label="CSV" style="display:none"></textarea>
+          <p class="hint" id="csvInfo"></p>
+        </div>
+      </div>
+      <div class="stack">
+        <div class="panel">
+          <h2 data-t="resT"></h2>
+          <div class="tablewrap"><table class="cmp" id="cmp"></table></div>
+          <p class="hint" id="verdict"></p>
+        </div>
+        <div class="panel">
+          <div class="chart"><p><span><i style="background:#6c6c70"></i><span data-t="lgPts"></span></span><span><i style="background:var(--line)"></i><span data-t="lgVrai"></span></span><span><i style="background:var(--warn)"></i><span data-t="lgOri"></span></span><span><i style="background:var(--accent)"></i><span data-t="lgCor"></span></span></p><canvas id="cvMain" style="height:320px"></canvas></div>
+        </div>
+        <div class="panel row2">
+          <div class="chart"><p><span><i style="background:var(--accent)"></i><span data-t="lgRes"></span></span></p><canvas id="cvRes"></canvas><p class="hint" id="suites"></p></div>
+          <div class="chart"><p><span><i style="background:#6c6c70"></i><span data-t="lgHist"></span></span><span><i style="background:var(--accent)"></i><span data-t="lgLoi"></span></span></p><canvas id="cvHist"></canvas><p class="hint" data-t="histNote"></p></div>
+        </div>
+        <div class="panel">
+          <h2 data-t="modT"></h2>
+          <div class="tablewrap"><table id="mods"></table></div>
+          <p class="hint" data-t="modNote"></p>
+        </div>
+        <div class="panel">
+          <h2 data-t="mcT"></h2>
+          <p class="note" data-t="mcIntro"></p>
+          <div class="seg" style="margin-top:10px"><button type="button" class="btn primary" id="mc" data-t="mcBtn"></button><span class="hint" id="mcInfo"></span></div>
+          <div class="row2">
+            <div class="chart"><p><span><i style="background:var(--warn)"></i><span data-t="lgOri"></span></span><span><i style="background:var(--accent)"></i><span data-t="lgCor"></span></span><span><i style="background:var(--line)"></i><span data-t="lgVraiP"></span></span></p><canvas id="cvMc"></canvas></div>
+            <div class="tablewrap"><table id="mcTab"></table></div>
+          </div>
+        </div>
+        <div class="panel row2">
+          <div class="note verif"><h2 data-t="verifT"></h2><ul id="verif"></ul></div>
+          <div class="note"><h2 data-t="howT"></h2><p data-t="how1"></p><p data-t="how2"></p><p data-t="how3"></p><p data-t="how4"></p><p><a href="https://github.com/Valentin-Auger-Laboratoire/simulation-signaux-bruites" target="_blank" rel="noopener" data-t="repo"></a></p></div>
+        </div>
+      </div>
+    </div>
+  </div>
+  <script src="../commun/commun.js"></script>
+  <script src="signaux.js"></script>
+  <script>
+  (function () {
+    'use strict';
+    const S = window.Signaux, C = window.Commun, $ = (id) => document.getElementById(id);
+    const T = {
+      fr: {
+        back: '← Retour au portfolio', eyebrow: 'Démo · projet de groupe MATLAB, EPISEN (février–mars 2026)',
+        title: 'Signaux bruités : simuler un système, le bruiter, retrouver ses paramètres',
+        intro: "Un capteur ne mesure jamais la vraie valeur : il y a toujours du bruit. Ici, on simule un système (linéaire, logarithmique, exponentiel ou puissance), on lui ajoute un bruit gaussien ou uniforme, puis on essaie de retrouver, à partir des seuls points bruités, quel modèle a produit les données et avec quels paramètres. La démo fait tourner côte à côte la méthode de notre projet MATLAB et la version que j'ai corrigée en novembre 2026.",
+        warn: "La « version d'origine » reprend exactement les calculs de nos fichiers MATLAB (simu_sys, bruit, somme, analyse_automatique, IHM). La « version corrigée » est mon travail de relecture : mêmes données, mais ajustement non linéaire, intervalles de confiance et vérification des résidus. Données simulées.",
+        scenT: 'Scénarios', sysT: 'Système réel', bruitT: 'Bruit', gauss: 'Gaussien', unif: 'Uniforme', sigma: 'écart-type σ', mu: 'moyenne μ du bruit',
+        ptsT: 'Points de mesure', n: 'nombre de points', xmax: 'x de 0,1 à', tirage: 'Nouveau tirage du bruit',
+        estT: 'Modèle estimé', auto: 'Automatique (meilleur R²)', csvT: 'Fichier CSV', export: 'Exporter les données', import: 'Importer un CSV',
+        csvHint: "Colonnes X et Systeme_plus_Bruit (format exporté par l'IHM) ou X et Signal_Bruite (format de somme.m). Collez le fichier puis il est analysé directement.",
+        csvOk: 'CSV importé : {n} points. Les paramètres « vrais » sont inconnus.', csvKo: 'CSV non reconnu (au moins 3 lignes x, y).', csvExp: "Données copiées ci-dessous (même format que l'export de l'IHM).",
+        resT: 'Résultat', thV: '', thO: "Version d'origine", thC: 'Version corrigée', thR: 'Vraie valeur',
+        rMod: 'Modèle retenu', rP0: 'p0', rP1: 'p1', rSig: 'σ du bruit', rR2: 'R²', rEqm: 'écart au vrai système (RMS)',
+        sigCopie: '{s} (recopié du curseur)', inconnu: 'inconnu',
+        vBon: 'Les deux méthodes retrouvent le bon modèle.', vOriFaux: "La méthode d'origine se trompe de modèle (modèle {o} au lieu du modèle {v}) ; la version corrigée le retrouve.", vCorFaux: 'Même la version corrigée choisit le modèle {c} : avec ce bruit, les données ne permettent pas de trancher.',
+        vCoupes: ' {k} points négatifs ou nuls ont été remplacés par 0,0001 avant le passage au logarithme (méthode d\'origine) : c\'est ce qui fausse l\'estimation.',
+        vMu: ' Le bruit n\'est pas centré (μ = {m}) : il est confondu avec le modèle (ordonnée décalée de μ pour le linéaire et le logarithme).',
+        lgPts: 'mesures (système + bruit)', lgVrai: 'vrai système', lgOri: "origine", lgCor: 'corrigée', lgRes: 'résidus de la version corrigée', lgHist: 'bruit ajouté', lgLoi: 'loi théorique', lgVraiP: 'vraie valeur',
+        histNote: "Dans l'IHM d'origine, ce graphique montrait un autre tirage de bruit que celui ajouté au signal (bruit.m était appelé une deuxième fois). Ici, c'est bien le même.",
+        suitesOk: 'Test des suites : {r} changements de signe pour {e} attendus (p = {p}). Les résidus ressemblent à du bruit : le modèle convient.',
+        suitesKo: 'Test des suites : {r} changements de signe pour {e} attendus (p = {p}). Les résidus ont une forme : le modèle ne convient pas.',
+        modT: 'Les 4 modèles essayés', mNom: 'Modèle', mR2o: 'R² origine', mR2c: 'R² corrigé', mPo: 'p0, p1 origine', mPc: 'p0 ± Δ, p1 ± Δ corrigé', mSu: 'résidus',
+        modNote: "Les deux versions comparent les modèles par le R² calculé sur les données d'origine. La différence vient de l'ajustement : l'origine ajuste l'exponentielle et la puissance sur le logarithme des données, la version corrigée sur les données elles-mêmes.",
+        mcT: 'Répéter la mesure 200 fois (Monte-Carlo)',
+        mcIntro: "Une seule simulation peut tomber bien ou mal par hasard. On refait donc 200 fois la même expérience avec un nouveau bruit, et on regarde la moyenne des estimations (biais), leur dispersion, et combien de fois l'intervalle à 95 % contient la vraie valeur (il devrait le faire environ 95 fois sur 100).",
+        mcBtn: 'Lancer 200 tirages', mcCours: 'calcul… {k} / 200', mcFait: '200 tirages en {t} s', mcCsv: 'Indisponible pour un fichier importé (vraies valeurs inconnues).',
+        tP: 'paramètre', tBi: 'biais', tSd: 'écart-type', tCo: 'couverture IC 95 %', tBon: 'bon modèle reconnu',
+        verifT: 'Ce que j\'ai vérifié et corrigé en 2026',
+        v1: "<b>Exponentielle et puissance ajustées sur le logarithme.</b> polyfit sur log(y) minimise l'erreur sur le logarithme, pas sur les mesures : les paramètres sont biaisés dès qu'il y a du bruit. Corrigé : moindres carrés non linéaires (Levenberg-Marquardt) sur les données, en partant de l'estimation linéarisée.",
+        v2: "<b>Valeurs négatives remplacées par 0,0001.</b> Pour pouvoir prendre le logarithme, les mesures ≤ 0 étaient remplacées par 0,0001 (log = −9,2) : quelques points suffisent à tordre la droite. Corrigé : ces points ne servent plus que pour le départ, puis tous les points comptent normalement.",
+        v3: "<b>Le mauvais modèle gagnait.</b> À cause des deux points précédents, l'analyse automatique choisissait souvent la droite au lieu de l'exponentielle ou de la puissance (voir les 200 tirages).",
+        v4: "<b>« σ estimé » recopiait le curseur.</b> L'IHM affichait la valeur réglée, pas une estimation. Corrigé : σ = √(somme des résidus² / (n − 2)).",
+        v5: "<b>« b0 ± Δb0 » sans Δ.</b> Les champs prévus pour l'incertitude n'affichaient que la valeur. Ajouté : intervalle de confiance à 95 % (loi de Student, jacobien au point estimé), vérifié par Monte-Carlo.",
+        v6: "<b>Le bruit affiché n'était pas celui ajouté</b>, et les curseurs nombre de points / min / max de l'IHM ne changeaient rien (x fixé de 0,1 à 10 sur 200 points). Corrigé ici.",
+        v7: "<b>Bruit non centré.</b> Le curseur « moyenne » de l'IHM décale le signal : ce décalage est absorbé par le modèle sans que rien ne le signale. La démo l'indique.",
+        howT: 'Comment c\'est calculé',
+        how1: 'Modèles (simu_sys.m) : 1 · y = p0·x + p1 ; 2 · y = p0·ln x + p1 ; 3 · y = p0·e^(p1·x) ; 4 · y = p1·x^p0. Bruit (bruit.m) : σ·N(0, 1) ou σ·U(−1, 1).',
+        how2: "Linéaire et logarithme : régression linéaire exacte. Exponentielle et puissance : Levenberg-Marquardt sur la somme des carrés des écarts aux mesures, départ = linéarisation sur les seuls points positifs.",
+        how3: 'Incertitude : covariance ≈ σ̂²·(JᵀJ)⁻¹, intervalle = ± t(0,975 ; n − 2)·écart-type. Test des suites de Wald-Wolfowitz sur le signe des résidus.',
+        how4: 'Moteur vérifié par 74 tests (node tests/test.js) : formules, loi de Student, paramètres retrouvés sans bruit, absence de biais et couverture de 95 % sur des milliers de tirages.',
+        repo: 'Code MATLAB, explications et tests sur GitHub ↗',
+        sc1: 'Cas du compte rendu : droite p0 = 3, p1 = 6', sc2: 'Exponentielle décroissante bruitée', sc3: 'Puissance : le passage au log biaise', sc4: 'Exponentielle croissante', sc5: 'Bruit non centré (μ = 1)', sc6: 'Peu de points (n = 8)',
+        t1: 'Linéaire', t2: 'Logarithmique', t3: 'Exponentiel', t4: 'Puissance',
+        f1: 'y = p0·x + p1', f2: 'y = p0·ln(x) + p1', f3: 'y = p0·exp(p1·x)', f4: 'y = p1·x^p0', oui: 'aléatoires', non: 'structurés', axD: 'densité', axMc: 'part des tirages',
+      },
+      en: {
+        back: '← Back to portfolio', eyebrow: 'Demo · MATLAB group project, EPISEN (February–March 2026)',
+        title: 'Noisy signals: simulate a system, add noise, recover its parameters',
+        intro: 'A sensor never measures the true value: there is always noise. Here we simulate a system (linear, logarithmic, exponential or power), add Gaussian or uniform noise, then try to find, from the noisy points alone, which model produced the data and with which parameters. The demo runs the method of our MATLAB project side by side with the version I corrected in November 2026.',
+        warn: 'The "original version" reproduces exactly the computations of our MATLAB files (simu_sys, bruit, somme, analyse_automatique, GUI). The "corrected version" is my review: same data, but non-linear fitting, confidence intervals and residual checks. Simulated data.',
+        scenT: 'Scenarios', sysT: 'True system', bruitT: 'Noise', gauss: 'Gaussian', unif: 'Uniform', sigma: 'standard deviation σ', mu: 'noise mean μ',
+        ptsT: 'Measurement points', n: 'number of points', xmax: 'x from 0.1 to', tirage: 'New noise draw',
+        estT: 'Fitted model', auto: 'Automatic (best R²)', csvT: 'CSV file', export: 'Export the data', import: 'Import a CSV',
+        csvHint: 'Columns X and Systeme_plus_Bruit (GUI export format) or X and Signal_Bruite (somme.m format). Paste the file and it is analysed straight away.',
+        csvOk: 'CSV imported: {n} points. The "true" parameters are unknown.', csvKo: 'CSV not recognised (at least 3 x, y lines).', csvExp: 'Data copied below (same format as the GUI export).',
+        resT: 'Result', thV: '', thO: 'Original version', thC: 'Corrected version', thR: 'True value',
+        rMod: 'Selected model', rP0: 'p0', rP1: 'p1', rSig: 'noise σ', rR2: 'R²', rEqm: 'distance to true system (RMS)',
+        sigCopie: '{s} (copied from the slider)', inconnu: 'unknown',
+        vBon: 'Both methods find the right model.', vOriFaux: 'The original method picks the wrong model ({o} instead of {v}); the corrected version finds it.', vCorFaux: 'Even the corrected version picks {c}: with this noise, the data cannot tell the models apart.',
+        vCoupes: ' {k} negative or zero points were replaced by 0.0001 before taking the logarithm (original method): this is what ruins the estimate.',
+        vMu: ' The noise is not zero-mean (μ = {m}): it is absorbed by the model (intercept shifted by μ for linear and log).',
+        lgPts: 'measurements (system + noise)', lgVrai: 'true system', lgOri: 'original', lgCor: 'corrected', lgRes: 'residuals of the corrected version', lgHist: 'added noise', lgLoi: 'theoretical law', lgVraiP: 'true value',
+        histNote: 'In the original GUI, this plot showed a different noise draw from the one added to the signal (bruit.m was called a second time). Here it is the same one.',
+        suitesOk: 'Runs test: {r} sign changes for {e} expected (p = {p}). The residuals look like noise: the model fits.',
+        suitesKo: 'Runs test: {r} sign changes for {e} expected (p = {p}). The residuals have a shape: the model does not fit.',
+        modT: 'The 4 models tried', mNom: 'Model', mR2o: 'R² original', mR2c: 'R² corrected', mPo: 'p0, p1 original', mPc: 'p0 ± Δ, p1 ± Δ corrected', mSu: 'residuals',
+        modNote: 'Both versions compare models by the R² computed on the original data. The difference is the fitting: the original fits the exponential and power models on the logarithm of the data, the corrected version on the data itself.',
+        mcT: 'Repeat the measurement 200 times (Monte Carlo)',
+        mcIntro: 'A single simulation can turn out well or badly by chance. So we repeat the same experiment 200 times with fresh noise and look at the mean of the estimates (bias), their spread, and how often the 95% interval contains the true value (it should, about 95 times out of 100).',
+        mcBtn: 'Run 200 draws', mcCours: 'computing… {k} / 200', mcFait: '200 draws in {t} s', mcCsv: 'Not available for an imported file (true values unknown).',
+        tP: 'parameter', tBi: 'bias', tSd: 'std. dev.', tCo: '95% CI coverage', tBon: 'right model found',
+        verifT: 'What I checked and fixed in 2026',
+        v1: '<b>Exponential and power fitted on the logarithm.</b> polyfit on log(y) minimises the error on the logarithm, not on the measurements: parameters are biased as soon as there is noise. Fixed: non-linear least squares (Levenberg-Marquardt) on the data, starting from the linearised estimate.',
+        v2: '<b>Negative values replaced by 0.0001.</b> To take the logarithm, measurements ≤ 0 were replaced by 0.0001 (log = −9.2): a few points are enough to bend the line. Fixed: these points are only skipped for the starting guess, then every point counts normally.',
+        v3: '<b>The wrong model won.</b> Because of the two points above, the automatic analysis often picked the straight line instead of the exponential or power model (see the 200 draws).',
+        v4: '<b>"Estimated σ" copied the slider.</b> The GUI displayed the set value, not an estimate. Fixed: σ = √(sum of squared residuals / (n − 2)).',
+        v5: '<b>"b0 ± Δb0" without Δ.</b> The fields meant for the uncertainty only showed the value. Added: 95% confidence interval (Student law, Jacobian at the estimate), checked by Monte Carlo.',
+        v6: '<b>The displayed noise was not the added noise</b>, and the GUI\'s number-of-points / min / max sliders had no effect (x fixed from 0.1 to 10 over 200 points). Fixed here.',
+        v7: '<b>Non-zero-mean noise.</b> The GUI\'s "mean" slider shifts the signal: the shift is absorbed by the model without any warning. The demo points it out.',
+        howT: 'How it is computed',
+        how1: 'Models (simu_sys.m): 1 · y = p0·x + p1; 2 · y = p0·ln x + p1; 3 · y = p0·e^(p1·x); 4 · y = p1·x^p0. Noise (bruit.m): σ·N(0, 1) or σ·U(−1, 1).',
+        how2: 'Linear and log: exact linear regression. Exponential and power: Levenberg-Marquardt on the sum of squared deviations from the measurements, starting from the linearisation on positive points only.',
+        how3: 'Uncertainty: covariance ≈ σ̂²·(JᵀJ)⁻¹, interval = ± t(0.975; n − 2)·std. dev. Wald-Wolfowitz runs test on the sign of the residuals.',
+        how4: 'Engine checked by 74 tests (node tests/test.js): formulas, Student law, parameters recovered without noise, no bias and 95% coverage over thousands of draws.',
+        repo: 'MATLAB code, explanations and tests on GitHub ↗',
+        sc1: 'Report case: line p0 = 3, p1 = 6', sc2: 'Noisy decreasing exponential', sc3: 'Power law: taking the log biases', sc4: 'Increasing exponential', sc5: 'Non-zero-mean noise (μ = 1)', sc6: 'Few points (n = 8)',
+        t1: 'Linear', t2: 'Logarithmic', t3: 'Exponential', t4: 'Power',
+        f1: 'y = p0·x + p1', f2: 'y = p0·ln(x) + p1', f3: 'y = p0·exp(p1·x)', f4: 'y = p1·x^p0', oui: 'random', non: 'structured', axD: 'density', axMc: 'share of draws',
+      },
+    };
+    const PLAGES = { 1: [[-5, 5], [-10, 10]], 2: [[-5, 5], [-10, 10]], 3: [[0.1, 10], [-1, 0.5]], 4: [[-1, 2.5], [0.1, 10]] };
+    const SCEN = [
+      { k: 'sc1', type: 1, p0: 3, p1: 6, sigma: 2, mu: 0, n: 200, xmax: 10, tb: 1 },
+      { k: 'sc2', type: 3, p0: 5, p1: -0.4, sigma: 0.5, mu: 0, n: 200, xmax: 10, tb: 1 },
+      { k: 'sc3', type: 4, p0: 1.5, p1: 2, sigma: 3, mu: 0, n: 200, xmax: 10, tb: 1 },
+      { k: 'sc4', type: 3, p0: 1, p1: 0.3, sigma: 2, mu: 0, n: 200, xmax: 10, tb: 1 },
+      { k: 'sc5', type: 1, p0: 3, p1: 6, sigma: 2, mu: 1, n: 200, xmax: 10, tb: 1 },
+      { k: 'sc6', type: 2, p0: 2, p1: 1, sigma: 0.5, mu: 0, n: 8, xmax: 10, tb: 1 },
+    ];
+    let type = 1, tb = 1, graine = 2026, importe = null, sc = 0, dernier = null;
+    const L = C.Langue(T, () => { remplirStatique(); maj(); });
+    const nf = (x, d) => C.nf(x, d, L.lang);
+    const g = (x) => (Number.isFinite(x) ? (Math.abs(x) >= 1e4 ? x.toExponential(2) : Math.abs(x) < 5e-4 ? nf(0, 3) : nf(x, Math.abs(x) >= 100 ? 1 : 3)) : '—');
+    const fmt = (s, o) => s.replace(/\{(\w+)\}/g, (_, k) => o[k]);
+
+    function remplirStatique() {
+      const t = L.t;
+      $('scen').innerHTML = SCEN.map((s, i) => `<button type="button" class="btn" data-sc="${i}">${t(s.k)}</button>`).join('');
+      $('types').innerHTML = [1, 2, 3, 4].map((k) => `<button type="button" class="btn" data-ty="${k}">${t('t' + k)}</button>`).join('');
+      $('modele').innerHTML = `<option value="0">${t('auto')}</option>` + [1, 2, 3, 4].map((k) => `<option value="${k}">${t('t' + k)}</option>`).join('');
+      $('modele').value = String(modeleChoisi);
+      $('verif').innerHTML = ['v1', 'v2', 'v3', 'v4', 'v5', 'v6', 'v7'].map((k) => `<li>${t(k)}</li>`).join('');
+      document.querySelectorAll('[data-sc]').forEach((b) => b.addEventListener('click', () => appliquerScenario(+b.dataset.sc)));
+      document.querySelectorAll('[data-ty]').forEach((b) => b.addEventListener('click', () => { type = +b.dataset.ty; importe = null; sc = -1; plages(true); effacerMC(); maj(); }));
+    }
+    let modeleChoisi = 0;
+
+    function plages(milieu) {
+      const [[a0, b0], [a1, b1]] = PLAGES[type];
+      Object.assign($('p0'), { min: a0, max: b0 }); Object.assign($('p1'), { min: a1, max: b1 });
+      if (milieu) { $('p0').value = type === 3 ? 2 : type === 4 ? 1.2 : 2; $('p1').value = type === 3 ? -0.3 : type === 4 ? 2 : 1; }
+    }
+    function appliquerScenario(i) {
+      const s = SCEN[i]; sc = i; importe = null; type = s.type; tb = s.tb; plages(false);
+      $('p0').value = s.p0; $('p1').value = s.p1; $('sigma').value = s.sigma; $('mu').value = s.mu; $('n').value = s.n; $('xmax').value = s.xmax;
+      modeleChoisi = 0; $('modele').value = '0'; graine = 2026; effacerMC(); maj();
+    }
+
+    function options() {
+      return { type, p0: +$('p0').value, p1: +$('p1').value, sigma: +$('sigma').value, mu: +$('mu').value, typeBruit: tb, n: +$('n').value, xmin: 0.1, xmax: +$('xmax').value, graine, modele: modeleChoisi };
+    }
+
+    function histogramme(v, nb) {
+      const f = v.filter(Number.isFinite); if (!f.length) return null;
+      let a = Math.min(...f), b = Math.max(...f); if (a === b) { a -= 0.5; b += 0.5; }
+      const w = (b - a) / nb, c = new Array(nb).fill(0);
+      f.forEach((x) => { c[Math.min(nb - 1, Math.floor((x - a) / w))]++; });
+      return { a, b, w, c, dens: c.map((k) => k / (f.length * w)) };
+    }
+    const escalier = (h) => {
+      const xs = [h.a], ys = [0];
+      h.dens.forEach((d, i) => { xs.push(h.a + i * h.w, h.a + (i + 1) * h.w); ys.push(d, d); });
+      xs.push(h.b); ys.push(0); return { x: xs, y: ys };
+    };
+
+    function maj() {
+      const t = L.t;
+      document.querySelectorAll('[data-sc]').forEach((b) => b.setAttribute('aria-pressed', String(+b.dataset.sc === sc && !importe)));
+      document.querySelectorAll('[data-ty]').forEach((b) => b.setAttribute('aria-pressed', String(+b.dataset.ty === type && !importe)));
+      document.querySelectorAll('[data-tb]').forEach((b) => b.setAttribute('aria-pressed', String(+b.dataset.tb === tb)));
+      ['p0', 'p1'].forEach((k) => { $('o' + k).textContent = nf(+$(k).value, 2); });
+      $('osigma').textContent = nf(+$('sigma').value, 2); $('omu').textContent = nf(+$('mu').value, 1);
+      $('on').textContent = $('n').value; $('oxmax').textContent = nf(+$('xmax').value, 1);
+      $('formule').textContent = t('f' + type);
+      const o = options();
+      let sim;
+      if (importe) {
+        const ori = S.analyseOrigine(importe.x, importe.y), cor = S.analyseCorrigee(importe.x, importe.y);
+        sim = { x: importe.x, y: importe.y, ySys: null, b: null, ori, cor, choixOri: ori.stats[(o.modele || ori.meilleur) - 1], choixCor: cor.stats[(o.modele || cor.meilleur) - 1] };
+      } else sim = S.simuler(o);
+      dernier = sim;
+      const co = sim.choixOri, cc = sim.choixCor;
+      const vrai = !importe;
+      // tableau de comparaison
+      const rms = (st) => (vrai ? Math.sqrt(S.simuSys(sim.x, st.type, st.p0, st.p1).reduce((s, v, i) => s + (v - sim.ySys[i]) ** 2, 0) / sim.x.length) : NaN);
+      const pm = (v, d) => (Number.isFinite(d) ? `${g(v)} ± ${g(d)}` : g(v));
+      const rows = [
+        [t('rMod'), t('t' + co.type), t('t' + cc.type), vrai ? t('t' + type) : t('inconnu')],
+        [t('rP0'), g(co.p0), pm(cc.p0, cc.d0), vrai ? g(o.p0) : '—'],
+        [t('rP1'), g(co.p1), pm(cc.p1, cc.d1), vrai ? g(o.p1) : '—'],
+        [t('rSig'), vrai ? fmt(t('sigCopie'), { s: g(o.sigma) }) : '—', g(cc.sigma), vrai ? g(tb === 1 ? o.sigma : o.sigma / Math.sqrt(3)) : '—'],
+        [t('rR2'), nf(co.R2, 4), nf(cc.R2, 4), ''],
+        [t('rEqm'), g(rms(co)), g(rms(cc)), vrai ? '0' : ''],
+      ];
+      $('cmp').innerHTML = `<tr><th>${t('thV')}</th><th>${t('thO')}</th><th>${t('thC')}</th><th>${t('thR')}</th></tr>` + rows.map((r) => `<tr><th>${r[0]}</th><td>${r[1]}</td><td>${r[2]}</td><td>${r[3]}</td></tr>`).join('');
+      let v = '';
+      if (vrai && !o.modele) {
+        if (co.type === type && cc.type === type) v = t('vBon');
+        else if (cc.type === type) v = fmt(t('vOriFaux'), { o: t('t' + co.type).toLowerCase(), v: t('t' + type).toLowerCase() });
+        else v = fmt(t('vCorFaux'), { c: t('t' + cc.type).toLowerCase() });
+      }
+      const coupes = sim.ori.stats[co.type - 1].coupes;
+      if ((co.type === 3 || co.type === 4) && coupes) v += fmt(t('vCoupes'), { k: coupes });
+      if (vrai && o.mu) v += fmt(t('vMu'), { m: nf(o.mu, 1) });
+      $('verdict').textContent = v.trim();
+      // graphique principal
+      const xs = S.linspace(Math.min(...sim.x), Math.max(...sim.x), 400);
+      const yo = S.simuSys(xs, co.type, co.p0, co.p1), yc = S.simuSys(xs, cc.type, cc.p0, cc.p1);
+      const yv = vrai ? S.simuSys(xs, type, o.p0, o.p1) : null;
+      const tout = [...sim.y, ...yc, ...(yv || [])].filter(Number.isFinite);
+      let ymin = Math.min(...tout), ymax = Math.max(...tout); const marge = (ymax - ymin) * 0.08 || 1;
+      ymin -= marge; ymax += marge;
+      const series = [{ x: sim.x, y: sim.y, color: '#6c6c70', points: true, r: sim.x.length > 300 ? 1.6 : 2.6 }];
+      if (yv) series.push({ x: xs, y: yv, color: '#c9c9cc', width: 1.6, dash: [6, 4] });
+      series.push({ x: xs, y: yo.map((y) => Math.max(ymin - 10 * marge, Math.min(ymax + 10 * marge, y))), color: '#e0a458', width: 2 });
+      series.push({ x: xs, y: yc, color: '#c8102e', width: 2.2 });
+      C.graphique($('cvMain'), { xmin: xs[0], xmax: xs[xs.length - 1], ymin, ymax, xlabel: 'x', ylabel: 'y', series });
+      // résidus
+      const rmax = Math.max(...cc.res.map(Math.abs)) * 1.1 || 1;
+      C.graphique($('cvRes'), { xmin: xs[0], xmax: xs[xs.length - 1], ymin: -rmax, ymax: rmax, xlabel: 'x', ylabel: 'y − ŷ', hlignes: [{ y: 0, color: '#6c6c70' }],
+        series: [{ x: sim.x, y: cc.res, color: '#c8102e', points: true, r: sim.x.length > 300 ? 1.4 : 2.2 }] });
+      const su = cc.suites;
+      $('suites').textContent = Number.isFinite(su.p) ? fmt(t(su.p > 0.01 ? 'suitesOk' : 'suitesKo'), { r: su.suites, e: nf(su.attendu, 1), p: su.p < 1e-4 ? su.p.toExponential(1) : nf(su.p, 3) }) : '';
+      // histogramme du bruit (le même que celui ajouté)
+      const bn = vrai ? sim.b.map((x) => x - o.mu) : cc.res;
+      const h = histogramme(bn, Math.max(8, Math.min(40, Math.round(Math.sqrt(bn.length) * 1.5))));
+      if (h) {
+        const sg = vrai ? o.sigma : cc.sigma, tbb = vrai ? tb : 1;
+        const xx = S.linspace(Math.min(h.a, -3 * sg || -1), Math.max(h.b, 3 * sg || 1), 300);
+        const pdf = sg > 0 ? xx.map((z) => S.densiteBruit(z, sg, tbb)) : xx.map(() => 0);
+        const es = escalier(h);
+        C.graphique($('cvHist'), { xmin: xx[0], xmax: xx[xx.length - 1], ymin: 0, ymax: Math.max(...h.dens, ...pdf) * 1.1 || 1, xlabel: vrai ? 'b' : 'y − ŷ', ylabel: t('axD'),
+          series: [{ x: es.x, y: es.y, color: '#8a8a8e', width: 1.4 }, { x: xx, y: pdf, color: '#c8102e', width: 2 }] });
+      }
+      // les 4 modèles
+      $('mods').innerHTML = `<tr><th>${t('mNom')}</th><th class="n">${t('mR2o')}</th><th class="n">${t('mR2c')}</th><th>${t('mPo')}</th><th>${t('mPc')}</th><th>${t('mSu')}</th></tr>` +
+        [0, 1, 2, 3].map((i) => {
+          const a = sim.ori.stats[i], b = sim.cor.stats[i];
+          const bo = a.type === sim.ori.meilleur, bc = b.type === sim.cor.meilleur;
+          const sOk = b.suites && Number.isFinite(b.suites.p) ? (b.suites.p > 0.01 ? `<span class="pill ok">${t('oui')}</span>` : `<span class="pill ko">${t('non')}</span>`) : '';
+          return `<tr><td>${t('t' + (i + 1))}</td><td class="n ${bo ? 'mid' : ''}">${nf(a.R2, 4)}</td><td class="n ${bc ? 'good' : ''}">${nf(b.R2, 4)}</td><td>${g(a.p0)} ; ${g(a.p1)}</td><td>${pm(b.p0, b.d0)} ; ${pm(b.p1, b.d1)}</td><td>${sOk}</td></tr>`;
+        }).join('');
+      $('mcInfo').textContent = importe ? t('mcCsv') : (dernierMC ? fmt(t('mcFait'), { t: nf(dernierMC.duree, 1) }) : '');
+      $('mc').disabled = !!importe;
+    }
+
+    // Monte-Carlo par paquets (la page reste fluide)
+    function lancerMC() {
+      if (importe) return;
+      const o = options(), N = 200, t0 = performance.now();
+      const acc = { ori0: [], ori1: [], cor0: [], cor1: [], c0: 0, c1: 0, ok: 0, bo: 0, bc: 0 };
+      let k = 0;
+      $('mc').disabled = true;
+      const paquet = () => {
+        const fin = Math.min(N, k + 10);
+        for (; k < fin; k++) {
+          const r = S.monteCarlo({ ...o, graine: (o.graine * 31 + k) >>> 0 }, 1);
+          acc.ori0.push(r.ori.p0[0]); acc.ori1.push(r.ori.p1[0]); acc.cor0.push(r.cor.p0[0]); acc.cor1.push(r.cor.p1[0]);
+          acc.c0 += r.couv0; acc.c1 += r.couv1; acc.ok += r.ok; acc.bo += r.bonModeleOri; acc.bc += r.bonModeleCor;
+        }
+        $('mcInfo').textContent = fmt(L.t('mcCours'), { k });
+        if (k < N) setTimeout(paquet, 0);
+        else { afficherMC(o, acc, N, (performance.now() - t0) / 1000); $('mc').disabled = false; }
+      };
+      paquet();
+    }
+    let dernierMC = null;
+    function effacerMC() { dernierMC = null; $('mcTab').innerHTML = ''; const c = $('cvMc'); c.getContext('2d').clearRect(0, 0, c.width, c.height); }
+    function afficherMC(o, acc, N, duree) {
+      dernierMC = { o, acc, N, duree };
+      const t = L.t;
+      const st = (v, vrai) => { const f = v.filter(Number.isFinite), m = f.reduce((s, x) => s + x, 0) / f.length; return { b: m - vrai, sd: Math.sqrt(f.reduce((s, x) => s + (x - m) ** 2, 0) / (f.length - 1)) }; };
+      const pct = (x) => nf(100 * x, 0) + ' %';
+      const r0o = st(acc.ori0, o.p0), r0c = st(acc.cor0, o.p0), r1o = st(acc.ori1, o.p1), r1c = st(acc.cor1, o.p1);
+      $('mcTab').innerHTML = `<tr><th>${t('tP')}</th><th></th><th class="n">${t('tBi')}</th><th class="n">${t('tSd')}</th><th class="n">${t('tCo')}</th></tr>` +
+        `<tr><td>p0</td><td class="mid">${t('lgOri')}</td><td class="n">${g(r0o.b)}</td><td class="n">${g(r0o.sd)}</td><td class="n">—</td></tr>` +
+        `<tr><td></td><td>${t('lgCor')}</td><td class="n">${g(r0c.b)}</td><td class="n">${g(r0c.sd)}</td><td class="n">${pct(acc.c0 / acc.ok)}</td></tr>` +
+        `<tr><td>p1</td><td class="mid">${t('lgOri')}</td><td class="n">${g(r1o.b)}</td><td class="n">${g(r1o.sd)}</td><td class="n">—</td></tr>` +
+        `<tr><td></td><td>${t('lgCor')}</td><td class="n">${g(r1c.b)}</td><td class="n">${g(r1c.sd)}</td><td class="n">${pct(acc.c1 / acc.ok)}</td></tr>` +
+        `<tr><td colspan="2">${t('tBon')}</td><td class="n mid" colspan="1">${pct(acc.bo / N)}</td><td class="n good" colspan="2">${pct(acc.bc / N)}</td></tr>`;
+      const lim = (v) => { const f = v.filter(Number.isFinite).sort((a, b) => a - b); return [f[Math.floor(0.01 * f.length)], f[Math.ceil(0.99 * f.length) - 1]]; };
+      const [a1, b1] = lim([...acc.ori1, ...acc.cor1, o.p1]);
+      const bins = 30, w = (b1 - a1) / bins || 1;
+      const hist = (v) => { const c = new Array(bins).fill(0); v.forEach((x) => { const i = Math.floor((x - a1) / w); if (i >= 0 && i < bins) c[i]++; }); return { a: a1, b: a1 + bins * w, w, dens: c.map((k) => k / N) }; };
+      const ho = escalier(hist(acc.ori1)), hc = escalier(hist(acc.cor1));
+      C.graphique($('cvMc'), { xmin: a1, xmax: a1 + bins * w, ymin: 0, ymax: Math.max(...ho.y, ...hc.y) * 1.15 || 1, xlabel: 'p1', ylabel: t('axMc'),
+        series: [{ x: ho.x, y: ho.y, color: '#e0a458', width: 1.6 }, { x: hc.x, y: hc.y, color: '#c8102e', width: 2 }], vlignes: [{ x: o.p1, color: '#c9c9cc', dash: [5, 4] }] });
+      $('mcInfo').textContent = fmt(t('mcFait'), { t: nf(duree, 1) });
+    }
+
+    document.querySelectorAll('[data-tb]').forEach((b) => b.addEventListener('click', () => { tb = +b.dataset.tb; sc = -1; effacerMC(); maj(); }));
+    ['p0', 'p1', 'sigma', 'mu', 'n', 'xmax'].forEach((k) => $(k).addEventListener('input', () => { sc = -1; importe = null; effacerMC(); maj(); }));
+    $('modele').addEventListener('change', () => { modeleChoisi = +$('modele').value; maj(); });
+    $('tirage').addEventListener('click', () => { graine++; importe = null; maj(); });
+    $('mc').addEventListener('click', lancerMC);
+    $('exp').addEventListener('click', () => {
+      if (!dernier || !dernier.ySys) return;
+      $('csv').style.display = ''; $('csv').value = S.csv(dernier); $('csvInfo').textContent = L.t('csvExp');
+      try { navigator.clipboard.writeText($('csv').value); } catch (e) {}
+    });
+    $('imp').addEventListener('click', () => { $('csv').style.display = ''; $('csv').value = ''; $('csvInfo').textContent = L.t('csvHint'); $('csv').focus(); });
+    $('csv').addEventListener('input', () => {
+      const d = S.lireCSV($('csv').value);
+      if (d) { importe = d; $('csvInfo').textContent = fmt(L.t('csvOk'), { n: d.x.length }); maj(); }
+      else if ($('csv').value.trim()) $('csvInfo').textContent = L.t('csvKo');
+    });
+    window.addEventListener('resize', () => { maj(); if (dernierMC) afficherMC(dernierMC.o, dernierMC.acc, dernierMC.N, dernierMC.duree); });
+    window.__signaux = { scenario: appliquerScenario, mc: lancerMC };
+    plages(false);
+    L.appliquer(L.lang);
+    appliquerScenario(0);
+  })();
+  </script>
+</body>
+</html>
