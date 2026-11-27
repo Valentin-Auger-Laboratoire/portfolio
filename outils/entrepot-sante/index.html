@@ -1,0 +1,201 @@
+<!DOCTYPE html>
+<html lang="fr" translate="no">
+<head>
+  <meta charset="UTF-8">
+  <meta name="google" content="notranslate">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Entrepôt de données de santé</title>
+  <meta name="description" content="Les 5 V du Big Data appliqués à la santé : flux temps réel, trois formats (HL7 v2, FHIR, CSV), qualité des données, entrepôt en étoile et cube OLAP, NoSQL et MapReduce, k-means et règles d'association. Données fictives.">
+  <meta property="og:type" content="website">
+  <meta property="og:url" content="https://valentin-auger-laboratoire.github.io/portfolio/outils/entrepot-sante/">
+  <meta property="og:title" content="Entrepôt de données de santé : les 5 V du Big Data">
+  <meta property="og:description" content="Flux temps réel, trois formats (HL7 v2, FHIR, CSV), qualité des données, entrepôt en étoile et cube OLAP, NoSQL et MapReduce, k-means et règles d'association. Données fictives.">
+  <meta property="og:image" content="https://valentin-auger-laboratoire.github.io/portfolio/assets/projets/entrepot-sante.jpg">
+  <meta property="og:image:width" content="960">
+  <meta property="og:image:height" content="600">
+  <meta name="twitter:card" content="summary_large_image">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="../../demos/commun/commun.css">
+  <link rel="icon" type="image/png" sizes="64x64" href="../../assets/favicon.png">
+  <link rel="apple-touch-icon" href="../../assets/apple-touch-icon.png">
+  <style>
+    .vs { display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); gap: 10px; margin: 22px 0 6px; }
+    .v { text-align: left; background: var(--panel); border: 1px solid var(--border); border-radius: 8px; padding: 10px 12px; cursor: pointer; color: var(--text); font: inherit; }
+    .v b { display: block; font: 600 0.95rem var(--sans); }
+    .v span { font-size: 0.78rem; color: var(--dim); }
+    .v:hover, .v[aria-pressed="true"] { border-color: var(--accent); }
+    .v[aria-pressed="true"] b { color: var(--accent); }
+    .tabs { display: flex; gap: 6px; flex-wrap: wrap; margin: 14px 0 0; border-bottom: 1px solid var(--border); }
+    .tab { font: 500 0.82rem var(--sans); background: none; color: var(--dim); border: 0; border-bottom: 2px solid transparent; padding: 8px 10px; cursor: pointer; }
+    .tab[aria-selected="true"] { color: var(--text); border-bottom-color: var(--accent); }
+    .page { display: none; } .page.on { display: block; }
+    pre.code { font: 0.72rem/1.45 var(--mono); background: #0a0a0b; border: 1px solid var(--border); border-radius: 6px; padding: 8px 10px; overflow: auto; max-height: 300px; color: var(--line); white-space: pre; }
+    .row3 { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 16px; }
+    .pivot td { text-align: right; }
+    .pivot td.h, .pivot th.h { text-align: left; }
+    .pivot tr.tot td, .pivot td.tot { border-top: 1px solid var(--border-hi); color: var(--text); font-weight: 600; }
+    .ok { color: var(--ok); } .ko { color: #ff8a8a; }
+    .chk li { list-style: none; margin: 4px 0; font: 0.82rem var(--mono); }
+    svg text { font-family: var(--mono); }
+    @media (max-width: 900px) { .vs { grid-template-columns: repeat(2, minmax(0, 1fr)); } .row3 { grid-template-columns: minmax(0, 1fr); } }
+  </style>
+</head>
+<body>
+  <div class="wrap">
+    <div class="top">
+      <a class="back" href="../../index.html#projets" data-t="back">← Retour au portfolio</a>
+      <div class="lang" role="group" aria-label="Langue / Language"><button type="button" data-lang="en">EN</button><button type="button" data-lang="fr">FR</button></div>
+    </div>
+    <p class="eyebrow" data-t="eyebrow"></p>
+    <h1 data-t="title"></h1>
+    <p class="intro" data-t="intro"></p>
+    <p class="warnbox" data-t="warn"></p>
+    <div class="vs" id="vs"></div>
+    <div class="tabs" role="tablist" id="tabs"></div>
+
+    <!-- 1. Vélocité -->
+    <section class="page" id="p-velocite">
+      <div class="grid">
+        <div class="stack"><div class="panel">
+          <h2 data-t="fluxT"></h2>
+          <div class="ctl"><label for="lits" data-t="lits"></label><output id="olits"></output><input type="range" id="lits" min="10" max="3000" step="10" value="300"></div>
+          <div class="ctl"><label for="hz" data-t="hz"></label><output id="ohz"></output><input type="range" id="hz" min="1" max="25" step="1" value="1"></div>
+          <div class="ctl"><label for="cap" data-t="cap"></label><output id="ocap"></output><input type="range" id="cap" min="100" max="60000" step="100" value="2000"></div>
+          <div class="ctl"><label for="desat" data-t="desat"></label><output id="odesat"></output><input type="range" id="desat" min="0" max="0.1" step="0.005" value="0.02"></div>
+          <div class="seg"><button type="button" class="btn primary" id="go" data-t="go"></button><button type="button" class="btn" id="raz" data-t="raz"></button></div>
+          <p class="note" data-t="fluxNote"></p>
+        </div></div>
+        <div class="stack">
+          <div class="panel"><dl class="kpis" id="kFlux"></dl><p class="hint" id="vFlux"></p></div>
+          <div class="panel row2">
+            <div class="chart"><p><span><i style="background:var(--line)"></i><span data-t="lgEntree"></span></span><span><i style="background:var(--accent)"></i><span data-t="lgSortie"></span></span></p><canvas id="cvDebit"></canvas></div>
+            <div class="chart"><p><span><i style="background:var(--warn)"></i><span data-t="lgRetard"></span></span></p><canvas id="cvRetard"></canvas></div>
+          </div>
+          <div class="panel"><h2 data-t="alertesT"></h2><div class="tablewrap"><table id="tAlertes"></table></div></div>
+        </div>
+      </div>
+    </section>
+
+    <!-- 2. Variété -->
+    <section class="page" id="p-variete">
+      <div class="panel">
+        <div class="seg"><button type="button" class="btn" id="autre" data-t="autre"></button><span class="hint" id="sejInfo"></span></div>
+        <div class="row3">
+          <div><h2>HL7 v2 · <span data-t="siteA"></span></h2><pre class="code" id="cHL7"></pre></div>
+          <div><h2>FHIR R4 · <span data-t="siteB"></span></h2><pre class="code" id="cFHIR"></pre></div>
+          <div><h2>CSV · <span data-t="siteC"></span></h2><pre class="code" id="cCSV"></pre></div>
+        </div>
+      </div>
+      <div class="panel row2" style="margin-top:16px">
+        <div><h2 data-t="communT"></h2><div class="tablewrap"><table id="tCommun"></table></div></div>
+        <div class="note"><h2 data-t="sitesT"></h2><div class="tablewrap"><table id="tSites"></table></div><p data-t="varNote1" style="margin-top:10px"></p><p data-t="varNote2"></p></div>
+      </div>
+    </section>
+
+    <!-- 3. Véracité -->
+    <section class="page" id="p-veracite">
+      <div class="grid">
+        <div class="stack"><div class="panel">
+          <h2 data-t="errT"></h2>
+          <div id="taux"></div>
+          <button type="button" class="btn" id="zero" data-t="zero"></button>
+        </div></div>
+        <div class="stack">
+          <div class="panel"><h2 data-t="indT"></h2><div class="tablewrap"><table id="tInd"></table></div></div>
+          <div class="panel"><h2 data-t="reglesT"></h2><div class="tablewrap"><table id="tRegles"></table></div></div>
+          <div class="panel row2">
+            <div><h2 data-t="qualSiteT"></h2><div class="tablewrap"><table id="tQual"></table></div></div>
+            <div><h2 data-t="journalT"></h2><div class="log" id="journal"></div></div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- 4. Valeur : entrepôt et OLAP -->
+    <section class="page" id="p-valeur">
+      <div class="grid">
+        <div class="stack"><div class="panel">
+          <h2 data-t="olapT"></h2>
+          <label class="hint" for="oL" data-t="oL"></label><select id="oL"></select>
+          <div class="seg" style="margin-top:6px"><button type="button" class="btn" id="up" data-t="up"></button><button type="button" class="btn" id="down" data-t="down"></button></div>
+          <label class="hint" for="oC" data-t="oC"></label><select id="oC"></select>
+          <label class="hint" for="oM" data-t="oM"></label><select id="oM"></select>
+          <h3 data-t="sliceT"></h3>
+          <label class="hint" for="fS" data-t="fS"></label><select id="fS"></select>
+          <label class="hint" for="fA" data-t="fA"></label><select id="fA"></select>
+          <label class="hint" for="fT" data-t="fT"></label><select id="fT"></select>
+          <h3 data-t="pseudoT"></h3>
+          <p class="note" id="pseudo"></p>
+        </div></div>
+        <div class="stack">
+          <div class="panel"><div class="tablewrap"><table class="pivot" id="tPivot"></table></div><p class="hint" id="pivotInfo"></p></div>
+          <div class="panel row2">
+            <div><h2 data-t="sqlT"></h2><pre class="code" id="cSQL"></pre></div>
+            <div><h2 data-t="etoileT"></h2><svg id="etoile" viewBox="0 0 520 330" width="100%" role="img" aria-label="schéma en étoile"></svg></div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- 5. Volume : NoSQL et MapReduce -->
+    <section class="page" id="p-volume">
+      <div class="panel row2">
+        <div><h2 data-t="docT"></h2><pre class="code" id="cDoc" style="max-height:360px"></pre></div>
+        <div><h2 data-t="sqlRowsT"></h2><pre class="code" id="cRows" style="max-height:360px"></pre><p class="hint" id="nosqlInfo"></p></div>
+      </div>
+      <div class="grid" style="margin-top:16px">
+        <div class="stack"><div class="panel">
+          <h2 data-t="mrT"></h2>
+          <div class="ctl"><label for="nN" data-t="nN"></label><output id="onN"></output><input type="range" id="nN" min="1" max="12" step="1" value="4"></div>
+          <div class="ctl"><label for="nR" data-t="nR"></label><output id="onR"></output><input type="range" id="nR" min="1" max="6" step="1" value="3"></div>
+          <label class="check"><input type="checkbox" id="comb" checked> <span data-t="comb"></span></label>
+          <p class="note" data-t="mrNote"></p>
+        </div></div>
+        <div class="stack">
+          <div class="panel"><h2 data-t="mrEtapesT"></h2><div class="tablewrap"><table id="tMR"></table></div><p class="hint" id="mrInfo"></p></div>
+          <div class="panel row2">
+            <div class="chart"><p><span><i style="background:var(--accent)"></i><span data-t="lgShuffle"></span></span></p><canvas id="cvMR"></canvas></div>
+            <div><h2 data-t="mrResT"></h2><div class="tablewrap"><table id="tMRres"></table></div></div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- 6. Fouille de données -->
+    <section class="page" id="p-fouille">
+      <div class="grid">
+        <div class="stack"><div class="panel">
+          <h2>k-means</h2>
+          <div class="ctl"><label for="k" data-t="k"></label><output id="ok"></output><input type="range" id="k" min="2" max="8" step="1" value="4"></div>
+          <p class="note" data-t="kNote"></p>
+          <h3 data-t="aprT"></h3>
+          <div class="ctl"><label for="sup" data-t="sup"></label><output id="osup"></output><input type="range" id="sup" min="0.02" max="0.3" step="0.01" value="0.05"></div>
+          <div class="ctl"><label for="conf" data-t="conf"></label><output id="oconf"></output><input type="range" id="conf" min="0.3" max="1" step="0.05" value="0.6"></div>
+          <p class="note" data-t="aprNote"></p>
+        </div></div>
+        <div class="stack">
+          <div class="panel row2">
+            <div class="chart"><p><span data-t="lgAcp"></span></p><canvas id="cvAcp" style="height:280px"></canvas></div>
+            <div class="chart"><p><span><i style="background:var(--line)"></i><span data-t="lgInertie"></span></span><span><i style="background:var(--accent)"></i><span data-t="lgSil"></span></span></p><canvas id="cvCoude" style="height:280px"></canvas></div>
+          </div>
+          <div class="panel"><h2 data-t="profilsT"></h2><div class="tablewrap"><table id="tProfils"></table></div></div>
+          <div class="panel"><h2 data-t="reglesAT"></h2><div class="tablewrap"><table id="tApr"></table></div><p class="hint" id="aprInfo"></p></div>
+        </div>
+      </div>
+    </section>
+
+    <!-- 7. Vérifications -->
+    <section class="page" id="p-verif">
+      <div class="panel row2">
+        <div><h2 data-t="verifT"></h2><ul class="chk" id="chk"></ul></div>
+        <div class="note"><h2 data-t="limT"></h2><p data-t="lim1"></p><p data-t="lim2"></p><p data-t="lim3"></p><p data-t="lim4"></p><p><a href="https://github.com/Valentin-Auger-Laboratoire/entrepot-donnees-sante" target="_blank" rel="noopener" data-t="repo"></a></p></div>
+      </div>
+    </section>
+  </div>
+  <script src="../../demos/commun/commun.js"></script>
+  <script src="entrepot.js"></script>
+  <script src="app.js"></script>
+</body>
+</html>
